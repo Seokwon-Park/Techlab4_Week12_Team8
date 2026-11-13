@@ -1,6 +1,7 @@
 #include "EnginePCH.h"
 #include "ParticleSystemComponent.h"
 #include "Engine/ParticleSystemSceneProxy.h"
+#include "Particles/ParticleModuleRequired.h"
 
 namespace
 {
@@ -12,7 +13,7 @@ namespace
 		Src.eEmitterType = DET_Sprite;
 		Src.ActiveParticleCount = Count;
 		Src.ParticleStride = AlignParticleBytes(sizeof(FBaseParticle));   // 136 → 144
-		//Src.SortMode = PSORTMODE_DistanceToView;
+		Src.SortMode = PSORTMODE_DistanceToView;
 		Src.MaterialInterface = Material;
 		Src.DataContainer.Alloc(Count * Src.ParticleStride, Count);
 
@@ -95,7 +96,9 @@ FPrimitiveSceneProxy* UParticleSystemComponent::CreateSceneProxy()
 
 FBox UParticleSystemComponent::CalcLocalBounds() const
 {
-	return FBox();
+	// 지금은 FBox() (크기 0) → BVH 컬링으로 항상 사라진다.
+	// 1번이 파티클 위치로 계산하기 전까지는 넉넉한 고정 상자를 쓴다.
+	return FBox{ FVector(-10.0f, -10.0f, -10.0f), FVector(10.0f, 10.0f, 10.0f) };
 }
 
 void UParticleSystemComponent::PostEditChangeProperty(const FProperty& Property)

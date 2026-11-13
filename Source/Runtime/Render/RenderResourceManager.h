@@ -32,6 +32,8 @@ enum class EPSOType : uint8
 	ShadowMaskVisualize,     // Shadow Mask 뷰 모드: 마스크를 화면에 띄운다
 	Decal, 
 	DecalAdditive,
+	ParticleSprite_AlphaBlend,   // 새로 추가
+	ParticleSprite_Additive,     // 새로 추가
 	Count
 };
 
