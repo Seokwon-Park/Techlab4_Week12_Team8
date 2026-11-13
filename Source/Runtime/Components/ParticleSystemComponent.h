@@ -15,6 +15,9 @@ class UParticleSystemComponent : public UPrimitiveComponent
 {
 	GENERATED_BODY()
 public:
+	UParticleSystemComponent();
+	virtual ~UParticleSystemComponent() override;
+
 	// ── 데이터 ──
 	UPROPERTY(EditAnywhere)
 	UParticleSystem* Template = nullptr;     // 에셋
