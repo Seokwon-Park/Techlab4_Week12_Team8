@@ -20,7 +20,7 @@
 class UMaterialInterface;
 class UParticleModuleRequired;
 class UStaticMesh;
-struct FSceneView;
+struct FViewContext;   // struct FSceneView; 대신 (또는 함께) 선언
 struct FParticleRequiredModule;
 struct FParticleMeshEmitterInstance;
 
@@ -151,6 +151,8 @@ static_assert(std::is_trivially_copyable_v<FBaseParticle>, "파티클은 memcpy�
 -----------------------------------------------------------------------------*/
 enum EParticleStates
 {
+	/** 하위 24비트: 스폰 순번. 코어가 스폰 때 ParticleCounter를 넣는다 (UE와 같음) */
+	STATE_CounterMask = 0x00FFFFFF,
 	/** Ignore updates to the particle						*/
 	STATE_Particle_JustSpawned			= 0x02000000,
 	/** Ignore updates to the particle						*/
@@ -394,7 +396,7 @@ struct FDynamicSpriteEmitterDataBase : public FDynamicEmitterDataBase
 	 */
 	void SortSpriteParticles(int32 SortMode, bool bLocalSpace,
 		int32 ParticleCount, const uint8* ParticleData, int32 ParticleStride, const uint16* ParticleIndices,
-		const FSceneView* View, const FMatrix& LocalToWorld, FParticleOrder* ParticleOrder) const;
+		const FViewContext* View, const FMatrix& LocalToWorld, FParticleOrder* ParticleOrder) const;
 
 	/**
 	 *	Get the vertex stride for the dynamic rendering data

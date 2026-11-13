@@ -100,13 +100,15 @@ void FParticleSystemSceneProxy::DrawSpriteEmitter(const FDynamicSpriteEmitterDat
 	const int32 Stride = Src.ParticleStride;
 
 	const FParticleOrder* Order = nullptr;
-	//if (Src.SortMode != PSORTMODE_None)
-	//{
-	//	SortScratch.Reset();
-	//	SortScratch.Reserve(Count);
-	//	for (int32 i = 0; i < Count; ++i) SortScratch.Add(FParticleOrder(i, 0.0f));
-	//	Data.SortSpriteParticles(Src.SortMode, Src.bUseLocalSpace, Count ,ParticleData, Stride, ParticleIndices, &View,)
-	//}
+	if (Src.SortMode != PSORTMODE_None)
+	{
+		SortScratch.Reset();
+		SortScratch.Reserve(Count);
+		for (int32 i = 0; i < Count; ++i) SortScratch.Add(FParticleOrder(i, 0.0f));
+		Data.SortSpriteParticles(Src.SortMode, Src.bUseLocalSpace, Count, ParticleData, Stride,
+			ParticleIndices, &View, GetLocalToWorld(), SortScratch.GetData());
+		Order = SortScratch.GetData();
+	}
 
 	FParticleSpriteVertex* Dst = static_cast<FParticleSpriteVertex*>(RenderCommand::MapWriteDiscard(Slot.VertexBuffer.get()));
 	if (!Dst) return;
