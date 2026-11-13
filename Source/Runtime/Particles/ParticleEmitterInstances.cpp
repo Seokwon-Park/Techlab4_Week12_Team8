@@ -148,7 +148,28 @@ void FParticleEmitterInstance::KillParticle(int32 Index)
 bool FParticleEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBase& OutData)
 {
 	// TODO(3번 렌더 데이터 경계): 공통 필드를 채우고 파티클 메모리와 인덱스 배열을 OutData.DataContainer로 복사한다.
-	return false;
+	if (ActiveParticles <= 0 || !bEnabled || !ParticleData || !ParticleIndices)
+	{
+		return false;
+	}
+
+	OutData.eEmitterType = DET_Unknown;
+	OutData.ActiveParticleCount = ActiveParticles;
+	OutData.ParticleStride = ParticleStride;
+	OutData.SortMode = SortMode;
+	OutData.Scale = FVector(1.0f);
+
+	const int32 ParticleMemSize = MaxActiveParticles * ParticleStride;
+	OutData.DataContainer.Alloc(ParticleMemSize, MaxActiveParticles);
+	if (!OutData.DataContainer.ParticleData)
+	{
+		return false;
+	}
+
+	std::memcpy(OutData.DataContainer.ParticleData, ParticleData, ParticleMemSize);
+	std::memcpy(OutData.DataContainer.ParticleIndices, ParticleIndices, OutData.DataContainer.ParticleIndicesNumShorts * sizeof(uint16));
+
+	return true;
 }
 
 /*-----------------------------------------------------------------------------
@@ -157,19 +178,62 @@ bool FParticleEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBase& Out
 FDynamicEmitterDataBase* FParticleSpriteEmitterInstance::GetDynamicData(bool bSelected)
 {
 	// TODO(3번 렌더 데이터 경계)
-	return nullptr;
+	UParticleLODLevel* LOD = CurrentLODLevel;
+	if (!LOD || !LOD->bEnabled || !LOD->RequiredModule || ActiveParticles <= 0)
+	{
+		return nullptr;
+	}
+
+	FDynamicSpriteEmitterData* NewData = new FDynamicSpriteEmitterData(LOD->RequiredModule);
+	if (!FillReplayData(NewData->Source))
+	{
+		delete NewData;
+		return nullptr;
+	}
+
+	NewData->Init(bSelected);
+	return NewData;
 }
 
 FDynamicEmitterReplayDataBase* FParticleSpriteEmitterInstance::GetReplayData()
 {
 	// TODO(3번 렌더 데이터 경계)
-	return nullptr;
+	FDynamicSpriteEmitterReplayData* NewData = new FDynamicSpriteEmitterReplayData();
+	if (!FillReplayData(*NewData))
+	{
+		delete NewData;
+		return nullptr;
+	}
+	return NewData;
 }
 
 bool FParticleSpriteEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBase& OutData)
 {
 	// TODO(3번 렌더 데이터 경계)
-	return false;
+	UParticleLODLevel* LOD = CurrentLODLevel;
+	if (!LOD || !LOD->bEnabled || !LOD->RequiredModule)
+	{
+		return false;
+	}
+
+	// 공통 필드 채우기 및 파티클 할당
+	if (!FParticleEmitterInstance::FillReplayData(OutData))
+	{
+		return false;
+	}
+
+	OutData.eEmitterType = DET_Sprite;
+	FDynamicSpriteEmitterReplayDataBase& Data = static_cast<FDynamicSpriteEmitterReplayDataBase&>(OutData);
+
+	UParticleModuleRequired* Required = LOD->RequiredModule;
+	Data.MaterialInterface = CurrentMaterial ? CurrentMaterial : Required->Material;
+	Data.RequiredModule = nullptr;  // 컷아웃·SubUV 확장 때 FParticleRequiredModule 사본을 만든다
+	Data.bUseLocalSpace = Required->bUseLocalSpace;
+	Data.SubUVDataOffset = SubUVDataOffset;
+	Data.SubImages_Horizontal = 1;
+	Data.SubImages_Vertical = 1;
+	Data.MaxDrawCount = ActiveParticles;
+	return true;
 }
 
 /*-----------------------------------------------------------------------------
