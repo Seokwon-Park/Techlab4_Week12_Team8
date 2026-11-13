@@ -2,9 +2,9 @@
 
 #include "Components/PrimitiveComponent.h"
 #include "Particles/ParticleEmitterInstances.h"
+#include "Particles/ParticleSystem.h"
 #include "ParticleSystemComponent.generated.h"
 
-class UParticleSystem;
 struct FParticleEmitterInstance;
 struct FDynamicEmitterDataBase;
 
