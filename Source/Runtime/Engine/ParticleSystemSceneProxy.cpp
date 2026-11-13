@@ -33,7 +33,7 @@ void FParticleSystemSceneProxy::GetDynamicMeshElements(FRenderQueue& Queue, cons
 			break;
 		case DET_Mesh:
 			break;
-		cefault:
+		default:
 			break;
 		}
 	}
