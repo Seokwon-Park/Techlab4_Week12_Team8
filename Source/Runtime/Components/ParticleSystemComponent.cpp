@@ -2,6 +2,7 @@
 #include "ParticleSystemComponent.h"
 #include "Engine/ParticleSystemSceneProxy.h"
 #include "Particles/ParticleModuleRequired.h"
+#include "Asset/AssetManager.h"
 
 namespace
 {
@@ -49,6 +50,7 @@ UParticleSystemComponent::UParticleSystemComponent()
 UParticleSystemComponent::~UParticleSystemComponent()
 {
 	ResetParticles();
+	ClearDynamicData();
 }
 
 void UParticleSystemComponent::SetTemplate(UParticleSystem* NewTemplate)
@@ -77,16 +79,48 @@ void UParticleSystemComponent::Deactivate()
 
 void UParticleSystemComponent::BeginPlay()
 {
+
+	Super::BeginPlay();
 }
 
 void UParticleSystemComponent::TickComponent(float DeltaTime)
 {
 	Super::TickComponent(DeltaTime);
+
+	////////////////////파티클 테스팅 용 코드(지워도 됨)
+	if (bUseRenderTestData)
+	{
+		if (!RenderTestMaterial)
+		{
+			// SubUVMaterial을 복제한다. 텍스처는 그 에셋의 StarParticle.png를 그대로 쓴다
+			UMaterial* Base = UAssetManager::GetAssetByPath<UMaterial>("SubUVMaterial");
+			RenderTestMaterial = UMaterial::CreateInstance(Base);
+			if (RenderTestMaterial)
+			{
+				RenderTestMaterial->PSOType = EPSOType::ParticleSprite_Additive;   // AlphaBlend로 바꿔 가며 비교
+				RenderTestMaterial->SamplerState = ESamplerState::LinearClamp;
+			}
+		}
+		RenderTestTime += DeltaTime;
+		ClearDynamicData();
+		if (RenderTestMaterial)
+		{
+			FDynamicSpriteEmitterData* Data = MakeTestSpriteData(RenderTestMaterial, 32, RenderTestTime);
+			Data->EmitterIndex = 0;
+			EmitterRenderData.Add(Data);
+		}
+		return;
+	}
+	////////////////////파티클 테스팅 용 코드(지워도 됨)
+
 	UpdateDynamicData();
 }
 
 void UParticleSystemComponent::OnUnregister()
 {
+	ResetParticles();
+	ClearDynamicData();
+	Super::OnUnregister();
 }
 
 FPrimitiveSceneProxy* UParticleSystemComponent::CreateSceneProxy()
@@ -103,6 +137,7 @@ FBox UParticleSystemComponent::CalcLocalBounds() const
 
 void UParticleSystemComponent::PostEditChangeProperty(const FProperty& Property)
 {
+	Super::PostEditChangeProperty(Property);   // 빠지면 bCastShadow 등을 바꿔도 MarkRenderStateDirty가 안 불린다
 }
 
 void UParticleSystemComponent::UpdateDynamicData()

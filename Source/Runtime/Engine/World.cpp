@@ -20,6 +20,7 @@
 #include "Collision/Ray.h"
 #include "Components/BillboardComponent.h"
 #include "Components/ParticleSubUVComponent.h"
+#include "Components/ParticleSystemComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
 
 #include "Components/StaticMeshComponent.h"
@@ -241,6 +242,15 @@ void UWorld::EditorWorldTick(float DeltaTime)
 			Comp->SetParticles(10);
 		}
 
+		Comp->TickComponent(DeltaTime);
+	}
+
+	for (TObjectIterator<UParticleSystemComponent> Comp; Comp; ++Comp)
+	{
+		if (!Comp || !Comp->IsRegistered() || Comp->GetWorld() != this)
+		{
+			continue;
+		}
 		Comp->TickComponent(DeltaTime);
 	}
 

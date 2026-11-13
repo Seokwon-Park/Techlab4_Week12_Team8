@@ -143,7 +143,7 @@ void FParticleSystemSceneProxy::DrawSpriteEmitter(const FDynamicSpriteEmitterDat
 	if (Right.Length() <= 1e-6f) Right = FVector(0.0f, 1.0f, 0.0f);
 	const FVector Up = FVector::Cross(Forward, Right).Normalized();
 
-	const bool bAdditive = Material->PSOType == EPSOType::Particle_Additive;
+	const bool bAdditive = Material->PSOType == EPSOType::ParticleSprite_Additive;
 	Slot.Constants.CameraRight = FVector4(Right.X, Right.Y, Right.Z, 0.0f);
 	Slot.Constants.CameraUp = FVector4(Up.X, Up.Y, Up.Z, 0.0f);
 	Slot.Constants.SubUVInfo = FVector4(static_cast<float>(Src.SubImages_Horizontal), static_cast<float>(Src.SubImages_Vertical), bAdditive ? 1.0f : 0.0f, 0.0f);

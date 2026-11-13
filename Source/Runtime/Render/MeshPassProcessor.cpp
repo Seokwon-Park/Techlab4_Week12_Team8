@@ -107,6 +107,12 @@ namespace
 				std::memcpy(Batch.MaterialData.data(), OverrideParams, OverrideSize);
 				Batch.MaterialDataSize = OverrideSize;
 			}
+			// 새로 추가: 스프라이트 VS가 b1의 카메라 축을 읽는다
+			if (Material->PSOType == EPSOType::ParticleSprite_AlphaBlend ||
+				Material->PSOType == EPSOType::ParticleSprite_Additive)
+			{
+				Batch.MaterialStages = EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel;
+			}
 		}
 		Batch.Sampler = Material->SamplerState;
 		Batch.Textures.Reserve(Material->Textures.Num());

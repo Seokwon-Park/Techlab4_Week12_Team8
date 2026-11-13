@@ -52,4 +52,13 @@ public:
 
 	// (선택) Collision 이벤트
 	// TArray<FParticleEventCollideData> CollisionEvents;
+
+
+	////////////////////파티클 테스팅 용 코드(지워도 됨)
+	UPROPERTY(EditAnywhere)
+	bool bUseRenderTestData = false;
+	UMaterial* RenderTestMaterial = nullptr;   // 7단계에서 만든다
+	float RenderTestTime = 0.0f;
+
+	////////////////////파티클 테스팅 용 코드(지워도 됨)
 };
