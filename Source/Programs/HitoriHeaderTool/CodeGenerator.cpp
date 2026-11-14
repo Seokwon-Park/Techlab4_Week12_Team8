@@ -45,7 +45,7 @@ namespace
 			if (!Property.Meta.empty())
 			{
 				Lines.push_back("\t\tstatic_assert(TSupportsNumericMeta<" + Type + ">, \"" + Property.Name
-					+ ": meta is only allowed on float, int32, uint32, FVector, FVector4, FRotator properties.\");");
+					+ ": meta is only allowed on float, int32, uint32, FVector, FVector2, FVector4, FRotator properties.\");");
 			}
 
 			// Type=LinearColor면 프로퍼티 클래스를 직접 넘긴다. 없으면 AddProperty가 멤버 타입으로 고른다.
