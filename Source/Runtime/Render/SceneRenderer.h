@@ -33,15 +33,12 @@ struct FSceneOverlayCallbacks
 	std::function<void()> GameUI;
 };
 
-struct FScenePassCallbacks // 기본 도형 다 그려진 후 그려져야 될 목록들
+// 씬 위에 더 그릴 것이 있는 쪽(뷰포트 클라이언트)이 채우는 목록. 씬 자체의 패스(안개, 반투명, FXAA 등)는 여기에 없고
+// FSceneRenderer가 스스로 등록한다.
+struct FScenePassCallbacks
 {
-	std::function<bool()> HeightFog;
-	std::function<FConstantBuffer*(bool)> TranslucentFogConstants;
-	std::function<void()> SceneText;
 	std::function<void()> DepthVisualization;
 	std::function<void()> CascadeVisualization;
-	std::function<bool()> FXAA;
-	FTexture2D* FXAAOutput = nullptr;
 	FSceneOverlayCallbacks Overlays;
 };
 
@@ -135,11 +132,11 @@ private:
 	// ---------- AddViewportPasses가 AddCorePasses 다음에 순서대로 부르는 패스 함수 ----------
 	// 여기부터는 톤맵이 끝난 화면 색상(SceneColor)에 그린다.
 	// 높이 안개
-	bool RenderFog(FRenderGraphBuilder& Graph, FRenderGraphTextureRef SceneColor, FRenderGraphTextureRef Depth,
-		const FScenePassCallbacks& Callbacks);
+	bool RenderFog(FRenderGraphBuilder& Graph, FRenderer* Renderer, FSceneViewTargets& Targets,
+		FRenderGraphTextureRef SceneColor, FRenderGraphTextureRef Depth);
 	// 반투명 물체
 	bool RenderTranslucency(FRenderGraphBuilder& Graph, FRenderer* Renderer, FRenderGraphTextureRef SceneColor,
-		FRenderGraphTextureRef Depth, const FScenePassCallbacks& Callbacks);
+		FRenderGraphTextureRef Depth);
 	// 화면 전체 후처리. FXAA를 거치면 FinalColor를 FXAA 결과 텍스처로 바꾼다.
 	bool AddPostProcessingPasses(FRenderGraphBuilder& Graph, FRenderer* Renderer, FSceneViewTargets& Targets,
 		const FSceneRenderOptions& Options, const FScenePassCallbacks& Callbacks,
@@ -200,5 +197,7 @@ private:
 	FViewContext CachedViewContext;
 	bool bCorePassSucceeded = true;
 	bool bFXAAPassSucceeded = true;
+	// 패스들이 서로에게 남기는 값. bHasFog는 안개 패스가 실행 중에, bUseFXAA는 후처리 패스를 등록할 때 채운다.
 	bool bHasFog = false;
+	bool bUseFXAA = false;
 };

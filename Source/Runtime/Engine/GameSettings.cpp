@@ -72,11 +72,11 @@ FGameSettings FGameSettings::Load(const FString& Path)
 	Options.RenderingPath = ParseRenderingPath(Config.GetString("Rendering", "RenderingPath", ""), Options.RenderingPath);
 	Options.LightingModel = ParseLightingModel(Config.GetString("Rendering", "LightingModel", ""), Options.LightingModel);
 	Options.LightCullingMode = ParseLightCullingMode(Config.GetString("Rendering", "LightCullingMode", ""), Options.LightCullingMode);
-	Options.bEnableFXAA = Config.GetBool("Rendering", "EnableFXAA", Options.bEnableFXAA);
+	Options.ShowFlags.AntiAliasing = Config.GetBool("Rendering", "EnableFXAA", Options.ShowFlags.AntiAliasing);
 	Options.bGammaCorrection = Config.GetBool("Rendering", "GammaCorrection", Options.bGammaCorrection);
-	Options.bShowVignette = Config.GetBool("Rendering", "ShowVignette", Options.bShowVignette);
-	Options.bShowCameraOverlay = Config.GetBool("Rendering", "ShowCameraOverlay", Options.bShowCameraOverlay);
-	Options.bShowSkeletalMesh = Config.GetBool("Rendering", "ShowSkeletalMesh", Options.bShowSkeletalMesh);
+	Options.ShowFlags.Vignette = Config.GetBool("Rendering", "ShowVignette", Options.ShowFlags.Vignette);
+	Options.ShowFlags.CameraOverlay = Config.GetBool("Rendering", "ShowCameraOverlay", Options.ShowFlags.CameraOverlay);
+	Options.ShowFlags.SkeletalMeshes = Config.GetBool("Rendering", "ShowSkeletalMesh", Options.ShowFlags.SkeletalMeshes);
 	if (const FString Gamma = Config.GetString("Rendering", "DisplayGamma", ""); !Gamma.empty())
 	{
 		try { Options.DisplayGamma = FMath::Clamp(std::stof(Gamma), 1.0f, 3.0f); } catch (...) {}

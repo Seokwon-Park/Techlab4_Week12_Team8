@@ -162,10 +162,10 @@ FAssetEditorViewportClient::FAssetEditorViewportClient(FAssetEditor& InAssetEdit
 	, AssetEditor(InAssetEditor)
 {
 	// 미리보기 화면의 표시 설정. 한 번 정하면 바뀌지 않으므로 생성할 때 채운다.
-	EngineShowFlags.bEnableFog = false;
-	EngineShowFlags.bEnableFXAA = true;
-	EngineShowFlags.bShowVignette = false;
-	EngineShowFlags.bShowCameraOverlay = false;
+	EngineShowFlags.ShowFlags.Fog = false;
+	EngineShowFlags.ShowFlags.AntiAliasing = true;
+	EngineShowFlags.ShowFlags.Vignette = false;
+	EngineShowFlags.ShowFlags.CameraOverlay = false;
 	EngineShowFlags.RenderingPath = ERenderingPath::Forward;   // 웨이트 히트맵은 Forward 패스에만 있다
 }
 

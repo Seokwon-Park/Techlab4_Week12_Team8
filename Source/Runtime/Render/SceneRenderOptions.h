@@ -1,23 +1,21 @@
 #pragma once
 
 #include "Render/RenderEnums.h"
+#include "Render/ShowFlags.h"
 
 // 뷰 하나의 씬 렌더링 옵션. 에디터와 게임 뷰포트가 같은 설정을 전달한다.
+// 무엇을 보여 줄지(ShowFlags), 어떤 방식으로 보여 줄지(ViewMode), 그리고 품질과 렌더링 방식 설정으로 나뉜다.
+// UE는 앞의 둘을 FSceneViewFamily가 갖고(EngineShowFlags, ViewMode), 품질 설정은 콘솔 변수(r.Shadow.MaxResolution 등)로 둔다.
 struct FSceneRenderOptions
 {
-	bool bDrawPrimitives = true;
+	FEngineShowFlags ShowFlags;
+	EViewModeIndex ViewMode = VMI_Lit;
+
+	// ---------- 아래는 품질과 렌더링 방식 설정 ----------
 	EPcfMode PcfMode = EPcfMode::Sample8;
 	float ShadowDepthBias = 0.0001f;
 	bool bCacheShadows = true; // r.Shadow.CacheWholeSceneShadows: 바뀌지 않은 그림자 타일은 다시 그리지 않는다
-	bool bEnableFog = true;
-	bool bEnableFXAA = false;
 	ELightCullingMode LightCullingMode = ELightCullingMode::Tiled;
-	bool bShowSceneDepth = false;
-	bool bShowCascade = false;
-	bool bShowShadowMask = false;   // 언리얼 구조 그림자의 ScreenShadowMask를 화면에 띄운다 (Deferred)
-	bool bShowWorldNormal = false;
-	bool bShowLightCulling = false;
-	bool bDrawDecals = true;
 	bool bDecalCulling = true;
 	bool bDecalNarrowCulling = true;
 	bool bDecalBVHCulling = true;
@@ -29,9 +27,6 @@ struct FSceneRenderOptions
 
 	bool bGammaCorrection = true;
 	float DisplayGamma = 2.2f;
-	bool bShowVignette = true;
-	bool bShowCameraOverlay = true;
-	bool bShowSkeletalMesh = true;
 
 	ERenderingPath RenderingPath = ERenderingPath::Deferred;
 	ELightingModel LightingModel = ELightingModel::Gouraud;

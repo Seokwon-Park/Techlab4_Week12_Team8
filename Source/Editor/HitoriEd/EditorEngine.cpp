@@ -625,21 +625,21 @@ void UEditorEngine::Tick(const float DeltaTime)
 				if (SettingsPanel)
 				{
 					const FEditorSettings& S = SettingsPanel->GetSettings();
-					FSceneRenderOptions& ShowFlags = Context->GameViewport->EngineShowFlags;
-					ShowFlags.bEnableFXAA = S.bEnableFXAA;
-					ShowFlags.bCacheShadows = S.bCacheShadows;
-					ShowFlags.PcfMode = S.PcfMode;
-					ShowFlags.RenderingPath = S.RenderingPath;
-					ShowFlags.LightingModel = S.LightingModel;
-					ShowFlags.LightCullingMode = S.LightCullingMode;
-					ShowFlags.DirectionalShadowMapSize = S.GetDirectionalShadowMapSize();
-					ShowFlags.PointShadowMapSize = S.GetPointShadowMapSize();
-					ShowFlags.SpotShadowMapSize = S.GetSpotShadowMapSize();
-					ShowFlags.bGammaCorrection = S.bGammaCorrection;
-					ShowFlags.DisplayGamma = S.DisplayGamma;
-					ShowFlags.bShowVignette = S.bShowVignette;
-					ShowFlags.bShowCameraOverlay = S.bShowCameraOverlay;
-					ShowFlags.bShowSkeletalMesh = S.bShowSkeletalMesh;
+					FSceneRenderOptions& Options = Context->GameViewport->EngineShowFlags;
+					Options.ShowFlags.AntiAliasing = S.bEnableFXAA;
+					Options.bCacheShadows = S.bCacheShadows;
+					Options.PcfMode = S.PcfMode;
+					Options.RenderingPath = S.RenderingPath;
+					Options.LightingModel = S.LightingModel;
+					Options.LightCullingMode = S.LightCullingMode;
+					Options.DirectionalShadowMapSize = S.GetDirectionalShadowMapSize();
+					Options.PointShadowMapSize = S.GetPointShadowMapSize();
+					Options.SpotShadowMapSize = S.GetSpotShadowMapSize();
+					Options.bGammaCorrection = S.bGammaCorrection;
+					Options.DisplayGamma = S.DisplayGamma;
+					Options.ShowFlags.Vignette = S.bShowVignette;
+					Options.ShowFlags.CameraOverlay = S.bShowCameraOverlay;
+					Options.ShowFlags.SkeletalMeshes = S.bShowSkeletalMesh;
 				}
 			}
 		}

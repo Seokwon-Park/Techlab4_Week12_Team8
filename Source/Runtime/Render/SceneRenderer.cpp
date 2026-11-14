@@ -179,7 +179,7 @@ void FSceneRenderer::InitViews(FRenderer* Renderer, const FSceneRenderOptions& O
 		return;
 	}
 
-	CachedViewContext.bShowSkeletalMesh = Options.bShowSkeletalMesh;
+	CachedViewContext.bShowSkeletalMesh = Options.ShowFlags.SkeletalMeshes;
 
 	// 월드 프리미티브 수집 및 절두체 컬링
 	GatherRenderPackets(World->GetScene(), RenderData, CachedViewContext, &View.Frustum, Renderer);
@@ -319,7 +319,7 @@ bool FSceneRenderer::AddWorldNormalPass(FRenderGraphBuilder& Graph, FRenderer* R
 	Pass.Name = "WorldNormal";
 	Pass.ColorAttachments = { { SceneColor, ERenderGraphLoadAction::Clear, { 0.0f, 0.0f, 0.0f, 1.0f } } };
 	Pass.DepthAttachment = { Depth, ERenderGraphLoadAction::Clear, 1.0f, 0 };
-	return Graph.AddRasterPass(std::move(Pass), [this, Renderer, bDrawPrimitives = Options.bDrawPrimitives]
+	return Graph.AddRasterPass(std::move(Pass), [this, Renderer, bDrawPrimitives = Options.ShowFlags.Rendering]
 		{
 			if (!bDrawPrimitives) return;
 			FMeshPassProcessor Processor;
@@ -343,7 +343,7 @@ bool FSceneRenderer::AddCorePasses(FRenderGraphBuilder& Graph, FRenderer* Render
 
 	bCorePassSucceeded = true;
 	bTilesBuilt = false;
-	if (Options.bShowWorldNormal)
+	if (Options.ViewMode == VMI_WorldNormal)
 		return AddWorldNormalPass(Graph, Renderer, Targets, Options);
 
 	const FRenderGraphTextureRef SceneColor = Graph.ImportTexture(Targets.SceneColor.get(), "SceneColor"); // Texture Handle 리턴 해줌
@@ -408,14 +408,14 @@ bool FSceneRenderer::AddCorePasses(FRenderGraphBuilder& Graph, FRenderer* Render
 		SceneTextures.BaseColorMetallic = BaseColor;
 		SceneTextures.NormalRoughness = Normal;
 
-		if (Options.bDrawPrimitives)
+		if (Options.ShowFlags.Rendering)
 		{
 			// 불투명 물체의 표면 정보를 GBuffer에 쓴 뒤, 그 정보로 조명을 계산해 Color에 더한다.
 			if (!RenderBasePass(Graph, Renderer, Options, SceneTextures, false)) return false;
 			if (!RenderLights(Graph, Renderer, SceneTextures)) return false;
 
 			// Shadow Mask 뷰 모드: 그림자 광원을 최대 4개까지 채널 하나씩 그려 조명 대신 보여 준다.
-			if (Options.bShowShadowMask && ShadowAtlasRef)
+			if (Options.ViewMode == VMI_ShadowMask && ShadowAtlasRef)
 			{
 				const FRenderGraphTextureRef ShadowMask = Graph.CreateTexture({ Width, Height, ETextureFormat::R8G8B8A8_UNorm }, "ShadowMaskVisualization");
 				if (!ShadowMask) return false;
@@ -455,7 +455,7 @@ bool FSceneRenderer::AddCorePasses(FRenderGraphBuilder& Graph, FRenderer* Render
 	else // Forward Rendering
 	{
 		ForwardBatches.Reset();
-		if (Options.bDrawPrimitives)
+		if (Options.ShowFlags.Rendering)
 		{
 			FMeshPassProcessor Processor;
 			if (!Processor.Build(View, RenderData.RenderQueue, &RenderData,
@@ -474,12 +474,12 @@ bool FSceneRenderer::AddCorePasses(FRenderGraphBuilder& Graph, FRenderer* Render
 
 		// Off도 이번 프레임의 화면 정보와 입력 광원 개수를 갱신한다.
 		bool bUseDepthPrepass = false;
-		const bool bGridPrepared = Options.bDrawPrimitives && bLightUploadSucceeded &&
+		const bool bGridPrepared = Options.ShowFlags.Rendering && bLightUploadSucceeded &&
 			Tiles.PrepareBuild(View, GridLighting, SceneLights, Targets.Depth.get(), CullingMode);
 
 		const bool bNeedsLightCulling = bGridPrepared && CullingMode != ELightCullingMode::Off && (RenderData.HasSpotLights() || RenderData.HasPointLights());
 		// 그림자 마스크는 장면 깊이로 Projection하므로 프리패스가 필요하다. Gouraud는 FinalizeShadowLights가 채널을 주지 않는다.
-		const bool bForwardShadows = Options.bDrawPrimitives && ShadowAtlasRef && !ShadowedLights.IsEmpty();
+		const bool bForwardShadows = Options.ShowFlags.Rendering && ShadowAtlasRef && !ShadowedLights.IsEmpty();
 		if (bNeedsLightCulling || bForwardShadows)
 		{
 			// 조명보다 먼저 깊이만 그려 둔다. 라이트 컬링과 그림자 투영이 이 깊이를 읽는다.
@@ -496,7 +496,7 @@ bool FSceneRenderer::AddCorePasses(FRenderGraphBuilder& Graph, FRenderer* Render
 		// 불투명 물체를 조명까지 계산해 Color에 바로 그린다.
 		if (!RenderBasePass(Graph, Renderer, Options, SceneTextures, bUseDepthPrepass)) return false;
 
-		if (Options.bDrawDecals && !RenderDecals(Graph, Renderer, Options, SceneTextures)) return false;
+		if (Options.ShowFlags.Decals && !RenderDecals(Graph, Renderer, Options, SceneTextures)) return false;
 	}
 
 	
@@ -577,7 +577,7 @@ bool FSceneRenderer::RenderBasePass(FRenderGraphBuilder& Graph, FRenderer* Rende
 		Forward.DepthAttachment = { Depth, bUseDepthPrepass ? ERenderGraphLoadAction::Load : ERenderGraphLoadAction::Clear, 1.0f, 0 };
 		if (!Graph.AddRasterPass(std::move(Forward), [this, Renderer, &Graph, LightingOptions = Options, bUseDepthPrepass, ForwardShadowMask]
 		{
-			if (!LightingOptions.bDrawPrimitives) return;
+			if (!LightingOptions.ShowFlags.Rendering) return;
 			bCorePassSucceeded = BindForwardLighting(Renderer, LightingOptions, ForwardShadowMask ? Graph.Resolve(ForwardShadowMask) : nullptr);
 			if (!bCorePassSucceeded) return;
 			if (bUseDepthPrepass)
@@ -923,7 +923,7 @@ bool FSceneRenderer::AddViewportPasses(FRenderGraphBuilder& Graph, FRenderer* Re
 	const FScenePassCallbacks& Callbacks) // 뷰포트에 그려져야 되는 패스들을 옵션에 따라 정해진 순서로 Graph에 등록
 {
 	FSceneRenderOptions CoreOptions = Options;
-	if (Options.bShowLightCulling)
+	if (Options.ViewMode == VMI_LightCulling)
 	{
 		// 디버그 보기에서 현재 뷰의 실제 타일 목록을 생성한다.
 		CoreOptions.RenderingPath = ERenderingPath::Forward;
@@ -942,17 +942,19 @@ bool FSceneRenderer::AddViewportPasses(FRenderGraphBuilder& Graph, FRenderer* Re
 	if (!SceneColor || !Depth) return false;
 	bHasFog = false;
 	bFXAAPassSucceeded = true;
+	bUseFXAA = false;
 
 	// 불투명 물체 위에 높이 안개를 입힌다.
-	if (!Options.bShowWorldNormal && Options.bDrawPrimitives && Options.bEnableFog && Callbacks.HeightFog &&
-		!RenderFog(Graph, SceneColor, Depth, Callbacks)) return false;
+	if (Options.ViewMode != VMI_WorldNormal && Options.ShowFlags.Rendering && Options.ShowFlags.Fog &&
+		!RenderFog(Graph, Renderer, Targets, SceneColor, Depth)) return false;
 
 	// 반투명 물체는 불투명 물체와 안개가 끝난 뒤에 그린다.
-	if (!Options.bShowWorldNormal && Options.bDrawPrimitives &&
-		!RenderTranslucency(Graph, Renderer, SceneColor, Depth, Callbacks)) return false;
+	if (Options.ViewMode != VMI_WorldNormal && Options.ShowFlags.Rendering &&
+		!RenderTranslucency(Graph, Renderer, SceneColor, Depth)) return false;
 
-	if (!Options.bShowWorldNormal && Callbacks.SceneText &&
-		!Graph.AddRasterPass(MakeViewportPass("SceneText", SceneColor, Depth), Callbacks.SceneText))
+	// 월드에 놓인 글자(UTextRenderComponent)를 그린다.
+	if (Options.ViewMode != VMI_WorldNormal &&
+		!Graph.AddRasterPass(MakeViewportPass("SceneText", SceneColor, Depth), [this, Renderer] { RenderSceneText(Renderer); }))
 		return false;
 
 	// 씬을 다 그린 뒤 화면 전체에 적용하는 처리. FXAA를 거치면 FinalColor가 FXAA 결과 텍스처로 바뀐다.
@@ -980,14 +982,16 @@ bool FSceneRenderer::AddViewportPasses(FRenderGraphBuilder& Graph, FRenderer* Re
 
 
 // 불투명 물체 위에 높이 안개를 입힌다. UE의 FDeferredShadingSceneRenderer::RenderFog와 같은 자리다.
-bool FSceneRenderer::RenderFog(FRenderGraphBuilder& Graph, FRenderGraphTextureRef SceneColor, FRenderGraphTextureRef Depth,
-	const FScenePassCallbacks& Callbacks)
+// 안개를 실제로 그렸는지를 bHasFog에 남긴다. 뒤의 반투명 패스가 이 값을 보고 반투명 물체에도 안개를 입힌다.
+bool FSceneRenderer::RenderFog(FRenderGraphBuilder& Graph, FRenderer* Renderer, FSceneViewTargets& Targets,
+	FRenderGraphTextureRef SceneColor, FRenderGraphTextureRef Depth)
 {
 	FRenderGraphRasterPassDesc Pass = MakeViewportPass("HeightFog", SceneColor);
 	Pass.ReadTextures = { Depth };
-	if (!Graph.AddRasterPass(std::move(Pass), [this, DrawFog = Callbacks.HeightFog]
+	if (!Graph.AddRasterPass(std::move(Pass),
+		[this, Renderer, DepthTarget = Targets.Depth.get(), ColorTarget = Targets.SceneColor.get()]
 		{
-		bHasFog = DrawFog();
+			bHasFog = RenderHeightFog(Renderer, DepthTarget, ColorTarget);
 		})) return false;
 	return true;
 }
@@ -995,12 +999,14 @@ bool FSceneRenderer::RenderFog(FRenderGraphBuilder& Graph, FRenderGraphTextureRe
 // 반투명 물체를 그린다. UE의 FDeferredShadingSceneRenderer::RenderTranslucency와 같은 자리다.
 // 실제 드로우는 RenderTranslucent가 하고, 여기서는 그 일을 렌더 그래프의 패스로 등록한다.
 bool FSceneRenderer::RenderTranslucency(FRenderGraphBuilder& Graph, FRenderer* Renderer, FRenderGraphTextureRef SceneColor,
-	FRenderGraphTextureRef Depth, const FScenePassCallbacks& Callbacks)
+	FRenderGraphTextureRef Depth)
 {
 	if (!Graph.AddRasterPass(MakeViewportPass("Translucent", SceneColor, Depth),
-		[this, Renderer, GetFog = Callbacks.TranslucentFogConstants]
+		[this, Renderer]
 		{
-		RenderTranslucent(Renderer, GetFog ? GetFog(bHasFog) : nullptr);
+			// 반투명 셰이더가 안개를 계산할 때 쓸 상수. 이번 뷰에 안개가 없으면(bHasFog가 false) 안개를 끄는 값이 들어 있다.
+			FHeightFogRenderer* Fog = Renderer->GetHeightFog();
+			RenderTranslucent(Renderer, Fog ? Fog->GetTranslucentFogConstants(bHasFog) : nullptr);
 		})) return false;
 	return true;
 }
@@ -1012,21 +1018,21 @@ bool FSceneRenderer::AddPostProcessingPasses(FRenderGraphBuilder& Graph, FRender
 	const FSceneRenderOptions& Options, const FScenePassCallbacks& Callbacks,
 	FRenderGraphTextureRef SceneColor, FRenderGraphTextureRef Depth, FRenderGraphTextureRef& FinalColor)
 {
-	if (!Options.bShowWorldNormal && Options.bShowSceneDepth && Callbacks.DepthVisualization)
+	if (Options.ViewMode == VMI_SceneDepth && Callbacks.DepthVisualization)
 	{
 		FRenderGraphRasterPassDesc Pass = MakeViewportPass("SceneDepthVisualization", SceneColor);
 		Pass.ReadTextures = { Depth };
 		if (!Graph.AddRasterPass(std::move(Pass), Callbacks.DepthVisualization)) return false;
 	}
 
-	if (!Options.bShowWorldNormal && !Options.bShowSceneDepth &&
-		View.NeedsCameraOverlay(Options.bShowVignette, Options.bShowCameraOverlay))
+	if (Options.ViewMode != VMI_WorldNormal && Options.ViewMode != VMI_SceneDepth &&
+		View.NeedsCameraOverlay(Options.ShowFlags.Vignette, Options.ShowFlags.CameraOverlay))
 	{
 		const uint32 Width = Targets.SceneColor->GetWidth();
 		const uint32 Height = Targets.SceneColor->GetHeight();
 		if (!Graph.AddRasterPass(MakeViewportPass("CameraOverlay", SceneColor),
 			[this, Renderer, Width, Height,
-			bVignette = Options.bShowVignette, bOverlay = Options.bShowCameraOverlay]
+			bVignette = Options.ShowFlags.Vignette, bOverlay = Options.ShowFlags.CameraOverlay]
 			{
 				if (FCameraOverlayRenderer* Overlay = Renderer->GetCameraOverlay())
 					Overlay->OnRender(View, Width, Height, bVignette, bOverlay);
@@ -1034,19 +1040,25 @@ bool FSceneRenderer::AddPostProcessingPasses(FRenderGraphBuilder& Graph, FRender
 	}
 
 	FinalColor = SceneColor;
-	if (!Options.bShowWorldNormal && Callbacks.FXAAOutput && Callbacks.FXAA)
+	// FXAA는 SceneColor를 읽어 자기 출력 텍스처에 쓴다. 깊이와 노멀을 보여 주는 뷰 모드에서는 쓰지 않는다.
+	// 썼는지를 bUseFXAA에 남긴다. Render가 그래프를 실행한 뒤 이 값을 보고 SceneColor와 FXAA 출력을 맞바꾼다.
+	FFXAARenderer* FXAA = Renderer->GetFXAA();
+	FTexture2D* ColorTarget = Targets.SceneColor.get();
+	bUseFXAA = Options.ShowFlags.AntiAliasing && Options.ViewMode != VMI_SceneDepth && Options.ViewMode != VMI_WorldNormal &&
+		FXAA && FXAA->PrepareOutput(ColorTarget);
+	if (bUseFXAA)
 	{
-		FinalColor = Graph.ImportTexture(Callbacks.FXAAOutput, "FXAAOutput");
+		FinalColor = Graph.ImportTexture(FXAA->GetOutputTarget().get(), "FXAAOutput");
 		if (!FinalColor) return false;
 		FRenderGraphRasterPassDesc Pass = MakeViewportPass("FXAA", FinalColor);
 		Pass.ReadTextures = { SceneColor };
-		if (!Graph.AddRasterPass(std::move(Pass), [this, ApplyFXAA = Callbacks.FXAA]
+		if (!Graph.AddRasterPass(std::move(Pass), [this, FXAA, ColorTarget]
 			{
-			bFXAAPassSucceeded = ApplyFXAA();
+				bFXAAPassSucceeded = FXAA->OnRender(ColorTarget);
 			})) return false;
 	}
 
-	if (Options.bShowLightCulling && Options.bDrawPrimitives && !Options.bShowWorldNormal)
+	if (Options.ViewMode == VMI_LightCulling && Options.ShowFlags.Rendering)
 	{
 		FRenderGraphRasterPassDesc Debug = MakeViewportPass("LightCullingDebug", FinalColor);
 		Debug.ReadTextures = { Depth };
@@ -1072,7 +1084,7 @@ bool FSceneRenderer::AddPostProcessingPasses(FRenderGraphBuilder& Graph, FRender
 			})) return false;
 	}
 
-	if (Options.bShowCascade && Callbacks.CascadeVisualization)
+	if (Options.ViewMode == VMI_Cascade && Callbacks.CascadeVisualization)
 	{
 		FRenderGraphRasterPassDesc Pass = MakeViewportPass("CascadeFloorVisualization", FinalColor);
 		Pass.ReadTextures = { Depth };
@@ -1092,34 +1104,16 @@ bool FSceneRenderer::Render(FRenderer* Renderer, FSceneViewTargets& Targets, con
 	if (!Width || !Height || !Targets.IsValidFor(Width, Height))
 		return false;
 
+	// 씬 위에 더 그릴 것이 있는 쪽(뷰포트 클라이언트)이 Callbacks를 채운다. 씬 자체의 패스는 렌더러가 스스로 등록한다.
 	FScenePassCallbacks Callbacks;
-	Callbacks.HeightFog = [this, Renderer, DepthTarget, ColorTarget]
-		{
-			return RenderHeightFog(Renderer, DepthTarget, ColorTarget);
-		};
-	Callbacks.TranslucentFogConstants = [Renderer](bool bHasFog)
-		{
-			FHeightFogRenderer* Fog = Renderer->GetHeightFog();
-			return Fog ? Fog->GetTranslucentFogConstants(bHasFog) : nullptr;
-		};
-	Callbacks.SceneText = [this, Renderer] { RenderSceneText(Renderer); };
-
-	FFXAARenderer* FXAA = Renderer->GetFXAA();
-	const bool bUseFXAA = Options.bEnableFXAA && !Options.bShowSceneDepth &&
-		!Options.bShowWorldNormal && FXAA && FXAA->PrepareOutput(ColorTarget);
-	if (bUseFXAA)
-	{
-		Callbacks.FXAAOutput = FXAA->GetOutputTarget().get();
-		Callbacks.FXAA = [FXAA, ColorTarget] { return FXAA->OnRender(ColorTarget); };
-	}
-
 	if (ExtraPasses) ExtraPasses(Callbacks);
 
 	FRenderGraphBuilder Graph;
 	if (!AddViewportPasses(Graph, Renderer, Targets, Options, Renderer->GetSkybox(), Callbacks) ||
 		!Graph.Execute() || !DidCorePassSucceed() || !DidFXAAPassSucceed())
 		return false;
-	if (bUseFXAA && !Targets.SwapSceneColorAndBind(FXAA->GetOutputTarget()))
+	// FXAA를 썼으면 결과가 FXAA의 출력 텍스처에 있다. SceneColor와 맞바꿔 뷰포트의 색상 텍스처가 최종 화면이 되게 한다.
+	if (bUseFXAA && !Targets.SwapSceneColorAndBind(Renderer->GetFXAA()->GetOutputTarget()))
 		return false;
 
 	RenderCommand::EndRenderPass();

@@ -52,7 +52,7 @@ void FLevelEditorViewportClient::Draw(FViewport* InViewport, FUIRenderer* Canvas
 		const FEditorSettings& S = *EditorSettings;
 
 		// 모든 뷰포트에 똑같이 적용되는 에디터 설정
-		EngineShowFlags.bEnableFXAA = S.bEnableFXAA;
+		EngineShowFlags.ShowFlags.AntiAliasing = S.bEnableFXAA;
 		EngineShowFlags.bCacheShadows = S.bCacheShadows;
 		EngineShowFlags.PcfMode = S.PcfMode;
 		EngineShowFlags.RenderingPath = S.RenderingPath;
@@ -63,23 +63,28 @@ void FLevelEditorViewportClient::Draw(FViewport* InViewport, FUIRenderer* Canvas
 		EngineShowFlags.SpotShadowMapSize = S.GetSpotShadowMapSize();
 		EngineShowFlags.bGammaCorrection = S.bGammaCorrection;
 		EngineShowFlags.DisplayGamma = S.DisplayGamma;
-		EngineShowFlags.bShowVignette = S.bShowVignette;
-		EngineShowFlags.bShowCameraOverlay = S.bShowCameraOverlay;
-		EngineShowFlags.bShowSkeletalMesh = S.bShowSkeletalMesh;
-		EngineShowFlags.bDrawPrimitives = S.bDrawPrimitives;
-		EngineShowFlags.bDrawDecals = S.bDrawDecals;
+		EngineShowFlags.ShowFlags.Vignette = S.bShowVignette;
+		EngineShowFlags.ShowFlags.CameraOverlay = S.bShowCameraOverlay;
+		EngineShowFlags.ShowFlags.SkeletalMeshes = S.bShowSkeletalMesh;
+		EngineShowFlags.ShowFlags.Rendering = S.bDrawPrimitives;
+		EngineShowFlags.ShowFlags.Decals = S.bDrawDecals;
 		EngineShowFlags.bDecalCulling = S.bDecalCulling;
 		EngineShowFlags.bDecalNarrowCulling = S.bDecalNarrowCulling;
 		EngineShowFlags.bDecalBVHCulling = S.bDecalBVHCulling;
 		EngineShowFlags.bDecalOBBTree = S.bDecalOBBTree;
 
 		// 이 뷰포트의 뷰 모드에서 나오는 설정
-		EngineShowFlags.bEnableFog = ViewportMode == EViewportMode::Solid;
-		EngineShowFlags.bShowSceneDepth = IsSceneDepth();
-		EngineShowFlags.bShowCascade = IsCascade();
-		EngineShowFlags.bShowShadowMask = IsShadowMask();
-		EngineShowFlags.bShowWorldNormal = IsWorldNormal();
-		EngineShowFlags.bShowLightCulling = IsLightCulling();
+		EngineShowFlags.ShowFlags.Fog = ViewportMode == EViewportMode::Solid;
+		switch (ViewportMode)
+		{
+		case EViewportMode::Wireframe:    EngineShowFlags.ViewMode = VMI_Wireframe; break;
+		case EViewportMode::SceneDepth:   EngineShowFlags.ViewMode = VMI_SceneDepth; break;
+		case EViewportMode::WorldNormal:  EngineShowFlags.ViewMode = VMI_WorldNormal; break;
+		case EViewportMode::LightCulling: EngineShowFlags.ViewMode = VMI_LightCulling; break;
+		case EViewportMode::Cascade:      EngineShowFlags.ViewMode = VMI_Cascade; break;
+		case EViewportMode::ShadowMask:   EngineShowFlags.ViewMode = VMI_ShadowMask; break;
+		default:                          EngineShowFlags.ViewMode = VMI_Lit; break;
+		}
 		EngineShowFlags.SceneDepthRange = MaxRange;
 	}
 
