@@ -46,6 +46,8 @@ public:
 	FVector GetSafeNormal(float Tolerance = SMALL_NUMBER, const FVector& ResultIfZero = ZeroVector) const;
 
 	FVector GetClampedToMaxSize(float MaxSize) const;
+	FVector ComponentMax(const FVector& Other) const;
+	FVector ComponentMin(const FVector& Other) const;
 
 	static const FVector ZeroVector;    // (0, 0, 0)
 	static const FVector OneVector;     // (1, 1, 1)

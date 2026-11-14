@@ -1,5 +1,6 @@
 #pragma once
 #include <cmath>
+#include <cstdlib>
 #include "Vector.h"
 #include "Vector2.h"
 #include "Vector4.h"
@@ -336,4 +337,16 @@ namespace FMath
 		return fmod(X, Y);
 	}
 
+	inline float FRand() { return static_cast<float>(rand()) / static_cast<float>(RAND_MAX); }
+
+	inline float FRandRange(const float Min, const float Max) { return Min + FRand() * (Max - Min); }
+
+	inline FVector VRandRange(const FVector& Min, const FVector& Max) 
+	{
+		return FVector(
+			FRandRange(Min.X, Max.X),
+			FRandRange(Min.Y, Max.Y),
+			FRandRange(Min.Z, Max.Z)
+		);
+	}
 }
