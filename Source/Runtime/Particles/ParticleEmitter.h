@@ -22,25 +22,26 @@ public:
 
 	TArray<UParticleLODLevel*> LODLevels;
 
-	int32 PeakActiveParticles = 0;
+	int32 PeakActiveParticles = 0; // 최대 파티클 수
 
 	/** Initial allocation count - overrides calculated peak count if > 0 */
-	int32 InitialAllocationCount = 0;
+	int32 InitialAllocationCount = 0; //초기 파티클 수
 
 	//////////////////////////////////////////////////////////////////////////
 	// Below is information udpated by calling CacheEmitterModuleInfo
 
 	/** Map module pointers to their offset into the particle data. 페이로드가 있는 모듈만 들어 있다 */
-	TMap<UParticleModule*, uint32> ModuleOffsetMap;
+	TMap<UParticleModule*, uint32> ModuleOffsetMap; // 파티클별 데이터 안에서 모듈 데이터의 위치
 
 	/** Map module pointers to their offset into the instance data. */
-	TMap<UParticleModule*, uint32> ModuleInstanceOffsetMap;
+	TMap<UParticleModule*, uint32> ModuleInstanceOffsetMap; // 인스턴스별 데이터 안에서 모듈 데이터의 위치
 
-	/** FBaseParticle + 모든 페이로드. 16바이트 올림 전 값이다 */
+	/** FBaseParticle + 모든 페이로드. *16바이트 올림 전 값이다* -> Padding 제외한 값 */
 	int32 ParticleSize = sizeof(FBaseParticle);
+	/* TypeDataInstance + ModuleInstances */
 	int32 ReqInstanceBytes = 0;
 
-	int32 TypeDataOffset = 0;
+	int32 TypeDataOffset = 0; // TypeData 모듈의 페이로드 offset. 없으면 0
 	int32 TypeDataInstanceOffset = -1;
 
 	//////////////////////////////////////////////////////////////////////////
