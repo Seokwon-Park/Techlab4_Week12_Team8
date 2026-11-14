@@ -101,6 +101,24 @@ FVector FVector::GetClampedToMaxSize(float MaxSize) const
 	}	
 }
 
+FVector FVector::ComponentMax(const FVector& Other) const
+{
+	return FVector(
+		FMath::Max(X, Other.X),
+		FMath::Max(Y, Other.Y),
+		FMath::Max(Z, Other.Z)
+	);
+}
+
+FVector FVector::ComponentMin(const FVector& Other) const
+{
+	return FVector(
+		FMath::Min(X, Other.X),
+		FMath::Min(Y, Other.Y),
+		FMath::Min(Z, Other.Z)
+	);
+}
+
 float& FVector::Component(int32 index)
 {
 	assert(index >= 0 && index <= 2);
