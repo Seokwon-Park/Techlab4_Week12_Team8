@@ -10,6 +10,7 @@
 #include "UObject/Object.h"
 #include "UObject/Class.h"
 #include "Particles/ParticleHelper.h"
+#include "Particles/Distributions.h"
 #include "ParticleModule.generated.h"
 
 class UParticleModuleTypeDataBase;
