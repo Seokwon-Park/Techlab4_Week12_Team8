@@ -199,7 +199,7 @@ FSceneView FEditorViewportClient::CalcSceneView(const FRect &InViewRect) const {
     OutView.FarClip = FarClip;
     OutView.OrthoWidth = OrthoWidth;
     OutView.bIsPerspective = bIsPerspective;
-    OutView.bIsWireframe = ViewportMode == EViewportMode::Wireframe;
+    OutView.bIsWireframe = ViewModeIndex == VMI_Wireframe;
 
     if (GCameraOverlayDebug.bOverride)
     {
@@ -229,13 +229,23 @@ void FEditorViewportClient::Draw(FViewport* InViewport, FUIRenderer* Canvas)
 	// 카메라를 뷰·투영 행렬로 바꾼다.
 	const FSceneView SceneView = CalcSceneView();
 
+	// 이번에 그릴 뷰 묶음을 만든다. 어디에, 무엇을, 어떤 조건으로 그릴지를 담는다.
+	// UE도 Draw에서 FSceneViewFamilyContext를 만들고 CalcSceneView로 만든 뷰를 넣는다.
+	FSceneViewFamily ViewFamily;
+	ViewFamily.RenderTarget = &InViewport->GetViewTargets();
+	ViewFamily.World = TargetWorld;
+	ViewFamily.EngineShowFlags = EngineShowFlags;
+	ViewFamily.ViewMode = GetViewMode();
+	ViewFamily.RenderOptions = RenderOptions;
+	ViewFamily.Views.Add(&SceneView);
+
 	// 보이는 물체와 라이트를 모은다.
-	FSceneRenderer SceneRenderer(TargetWorld, SceneView, RenderData);
-	SceneRenderer.InitViews(Renderer, EngineShowFlags);
+	FSceneRenderer SceneRenderer(ViewFamily, RenderData);
+	SceneRenderer.InitViews(Renderer);
 
 	// 패스를 순서대로 실행해 뷰포트의 타깃에 그린다. 씬 위에 올릴 에디터 요소는
 	// 두 번째 Draw가 등록하고, 등록한 함수는 Render 안에서 불린다.
-	SceneRenderer.Render(Renderer, InViewport->GetViewTargets(), EngineShowFlags,
+	SceneRenderer.Render(Renderer,
 		[this, &SceneView](FScenePassCallbacks& Callbacks)
 		{
 			Draw(&SceneView, Callbacks);

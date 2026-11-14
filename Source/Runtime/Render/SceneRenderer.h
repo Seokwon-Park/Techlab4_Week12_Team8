@@ -68,13 +68,14 @@ struct FSceneTextures
 class FSceneRenderer
 {
 public:
-	FSceneRenderer(UWorld* InWorld, const FSceneView& InView, FSceneRenderData& InRenderData);
+	// InViewFamily는 이 렌더러보다 오래 살아 있어야 한다. 뷰는 InViewFamily.Views의 첫 번째를 그린다.
+	FSceneRenderer(const FSceneViewFamily& InViewFamily, FSceneRenderData& InRenderData);
 	~FSceneRenderer() = default;
 	FSceneRenderer(const FSceneRenderer&) = delete;
 	FSceneRenderer& operator=(const FSceneRenderer&) = delete;
 
 	// 가시성 검사 및 렌더 큐 수집
-	void InitViews(FRenderer* Renderer, const FSceneRenderOptions& Options);
+	void InitViews(FRenderer* Renderer);
 	static bool SetCascadeCount(uint32 Count);
 	static uint32 GetCascadeCount();
 	static bool SetCascadeLogRatio(float Ratio);
@@ -92,8 +93,8 @@ public:
 	bool DidCorePassSucceed() const { return bCorePassSucceeded; }
 	bool DidFXAAPassSucceed() const { return bFXAAPassSucceeded; }
 
-	bool Render(FRenderer* Renderer, FSceneViewTargets& Targets, const FSceneRenderOptions& Options,
-		const std::function<void(FScenePassCallbacks&)>& ExtraPasses = nullptr);
+	// 뷰 묶음의 RenderTarget에 씬을 그린다. ExtraPasses는 씬 위에 더 그릴 것을 Callbacks에 채우는 함수다.
+	bool Render(FRenderer* Renderer, const std::function<void(FScenePassCallbacks&)>& ExtraPasses = nullptr);
 
 	// 반투명 렌더링
 	void RenderTranslucent(FRenderer* Renderer, FConstantBuffer* FogConstants = nullptr);
@@ -188,6 +189,8 @@ private:
 	void RenderSceneText(FRenderer* Renderer);
 
 
+	// 이번에 그리는 뷰 묶음. 그릴 대상, 쇼 플래그, 뷰 모드, 품질 설정을 여기서 읽는다.
+	const FSceneViewFamily& ViewFamily;
 	UWorld* World = nullptr;
 	FSceneView View;
 	FSceneRenderData& RenderData;

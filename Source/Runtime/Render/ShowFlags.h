@@ -23,13 +23,14 @@ struct FEngineShowFlags
 
 // 뷰포트가 씬을 어떤 방식으로 보여 줄지. 한 번에 하나만 고른다.
 // UE의 EViewModeIndex와 같은 자리다. UE는 EngineBaseTypes.h에 둔다.
-// VMI_Wireframe, VMI_Lit은 UE에 있는 값이다. 나머지는 이 엔진 고유의 값이다.
+// VMI_Lit, VMI_Wireframe은 UE에 있는 값이다. 나머지는 이 엔진 고유의 값이다.
 // UE는 깊이나 노멀 같은 버퍼 보기를 VMI_VisualizeBuffer 하나와 버퍼 이름으로 고른다.
+// 값의 순서를 바꾸면 안 된다. 에디터가 이 값을 정수로 설정 파일에 저장하고, 뷰 모드 콤보 상자의 항목 순서로도 쓴다.
 enum EViewModeIndex
 {
-	VMI_Wireframe,
 	// 평소 화면
 	VMI_Lit,
+	VMI_Wireframe,
 	// 깊이를 밝기로 보여 준다.
 	VMI_SceneDepth,
 	// 노멀을 색으로 보여 준다.

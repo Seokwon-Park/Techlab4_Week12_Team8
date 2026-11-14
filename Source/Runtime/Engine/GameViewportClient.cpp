@@ -276,9 +276,17 @@ void FGameViewportClient::Draw(FViewport* InViewport, FUIRenderer* Canvas)
 	const FSceneView SceneView = CalcSceneView(ViewRect);
 
 	// 보이는 물체와 라이트를 모은 뒤 패스를 순서대로 실행해 뷰포트의 타깃에 그린다.
-	FSceneRenderer SceneRenderer(World, SceneView, RenderData);
-	SceneRenderer.InitViews(Renderer, EngineShowFlags);
-	SceneRenderer.Render(Renderer, InViewport->GetViewTargets(), EngineShowFlags,
+	// 뷰 묶음에는 어디에, 무엇을, 어떤 조건으로 그릴지를 담는다. 게임 화면은 항상 평소 화면(VMI_Lit)으로 그린다.
+	FSceneViewFamily ViewFamily;
+	ViewFamily.RenderTarget = &InViewport->GetViewTargets();
+	ViewFamily.World = World;
+	ViewFamily.EngineShowFlags = EngineShowFlags;
+	ViewFamily.RenderOptions = RenderOptions;
+	ViewFamily.Views.Add(&SceneView);
+
+	FSceneRenderer SceneRenderer(ViewFamily, RenderData);
+	SceneRenderer.InitViews(Renderer);
+	SceneRenderer.Render(Renderer,
 		[this, Canvas, Width, Height, &SceneView](FScenePassCallbacks& Callbacks)
 		{
 			// 게임 UI는 씬 위에 그려야 하므로 그 시점에 불릴 함수로 등록한다.

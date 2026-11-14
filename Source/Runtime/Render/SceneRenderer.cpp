@@ -104,8 +104,8 @@ float FSceneRenderer::GetCascadeLogRatio()
 }
 
 // 생성자
-FSceneRenderer::FSceneRenderer(UWorld* InWorld, const FSceneView& InView, FSceneRenderData& InRenderData)
-	: World(InWorld), View(InView), RenderData(InRenderData)
+FSceneRenderer::FSceneRenderer(const FSceneViewFamily& InViewFamily, FSceneRenderData& InRenderData)
+	: ViewFamily(InViewFamily), World(InViewFamily.World), View(*InViewFamily.Views[0]), RenderData(InRenderData)
 {
 	CachedViewContext = View.ToViewContext();
 }
@@ -170,8 +170,9 @@ void FSceneRenderer::RenderSceneText(FRenderer* Renderer)
 }
 
 // 가시성 검사 및 렌더 큐 수집
-void FSceneRenderer::InitViews(FRenderer* Renderer, const FSceneRenderOptions& Options)
+void FSceneRenderer::InitViews(FRenderer* Renderer)
 {
+	const FSceneRenderOptions& Options = ViewFamily.RenderOptions;
 	bLightUploadSucceeded = false;
 	if (!World)
 	{
@@ -179,7 +180,7 @@ void FSceneRenderer::InitViews(FRenderer* Renderer, const FSceneRenderOptions& O
 		return;
 	}
 
-	CachedViewContext.bShowSkeletalMesh = Options.ShowFlags.SkeletalMeshes;
+	CachedViewContext.bShowSkeletalMesh = ViewFamily.EngineShowFlags.SkeletalMeshes;
 
 	// 월드 프리미티브 수집 및 절두체 컬링
 	GatherRenderPackets(World->GetScene(), RenderData, CachedViewContext, &View.Frustum, Renderer);
@@ -319,7 +320,7 @@ bool FSceneRenderer::AddWorldNormalPass(FRenderGraphBuilder& Graph, FRenderer* R
 	Pass.Name = "WorldNormal";
 	Pass.ColorAttachments = { { SceneColor, ERenderGraphLoadAction::Clear, { 0.0f, 0.0f, 0.0f, 1.0f } } };
 	Pass.DepthAttachment = { Depth, ERenderGraphLoadAction::Clear, 1.0f, 0 };
-	return Graph.AddRasterPass(std::move(Pass), [this, Renderer, bDrawPrimitives = Options.ShowFlags.Rendering]
+	return Graph.AddRasterPass(std::move(Pass), [this, Renderer, bDrawPrimitives = ViewFamily.EngineShowFlags.Rendering]
 		{
 			if (!bDrawPrimitives) return;
 			FMeshPassProcessor Processor;
@@ -343,7 +344,7 @@ bool FSceneRenderer::AddCorePasses(FRenderGraphBuilder& Graph, FRenderer* Render
 
 	bCorePassSucceeded = true;
 	bTilesBuilt = false;
-	if (Options.ViewMode == VMI_WorldNormal)
+	if (ViewFamily.ViewMode == VMI_WorldNormal)
 		return AddWorldNormalPass(Graph, Renderer, Targets, Options);
 
 	const FRenderGraphTextureRef SceneColor = Graph.ImportTexture(Targets.SceneColor.get(), "SceneColor"); // Texture Handle 리턴 해줌
@@ -408,14 +409,14 @@ bool FSceneRenderer::AddCorePasses(FRenderGraphBuilder& Graph, FRenderer* Render
 		SceneTextures.BaseColorMetallic = BaseColor;
 		SceneTextures.NormalRoughness = Normal;
 
-		if (Options.ShowFlags.Rendering)
+		if (ViewFamily.EngineShowFlags.Rendering)
 		{
 			// 불투명 물체의 표면 정보를 GBuffer에 쓴 뒤, 그 정보로 조명을 계산해 Color에 더한다.
 			if (!RenderBasePass(Graph, Renderer, Options, SceneTextures, false)) return false;
 			if (!RenderLights(Graph, Renderer, SceneTextures)) return false;
 
 			// Shadow Mask 뷰 모드: 그림자 광원을 최대 4개까지 채널 하나씩 그려 조명 대신 보여 준다.
-			if (Options.ViewMode == VMI_ShadowMask && ShadowAtlasRef)
+			if (ViewFamily.ViewMode == VMI_ShadowMask && ShadowAtlasRef)
 			{
 				const FRenderGraphTextureRef ShadowMask = Graph.CreateTexture({ Width, Height, ETextureFormat::R8G8B8A8_UNorm }, "ShadowMaskVisualization");
 				if (!ShadowMask) return false;
@@ -455,7 +456,7 @@ bool FSceneRenderer::AddCorePasses(FRenderGraphBuilder& Graph, FRenderer* Render
 	else // Forward Rendering
 	{
 		ForwardBatches.Reset();
-		if (Options.ShowFlags.Rendering)
+		if (ViewFamily.EngineShowFlags.Rendering)
 		{
 			FMeshPassProcessor Processor;
 			if (!Processor.Build(View, RenderData.RenderQueue, &RenderData,
@@ -474,12 +475,12 @@ bool FSceneRenderer::AddCorePasses(FRenderGraphBuilder& Graph, FRenderer* Render
 
 		// Off도 이번 프레임의 화면 정보와 입력 광원 개수를 갱신한다.
 		bool bUseDepthPrepass = false;
-		const bool bGridPrepared = Options.ShowFlags.Rendering && bLightUploadSucceeded &&
+		const bool bGridPrepared = ViewFamily.EngineShowFlags.Rendering && bLightUploadSucceeded &&
 			Tiles.PrepareBuild(View, GridLighting, SceneLights, Targets.Depth.get(), CullingMode);
 
 		const bool bNeedsLightCulling = bGridPrepared && CullingMode != ELightCullingMode::Off && (RenderData.HasSpotLights() || RenderData.HasPointLights());
 		// 그림자 마스크는 장면 깊이로 Projection하므로 프리패스가 필요하다. Gouraud는 FinalizeShadowLights가 채널을 주지 않는다.
-		const bool bForwardShadows = Options.ShowFlags.Rendering && ShadowAtlasRef && !ShadowedLights.IsEmpty();
+		const bool bForwardShadows = ViewFamily.EngineShowFlags.Rendering && ShadowAtlasRef && !ShadowedLights.IsEmpty();
 		if (bNeedsLightCulling || bForwardShadows)
 		{
 			// 조명보다 먼저 깊이만 그려 둔다. 라이트 컬링과 그림자 투영이 이 깊이를 읽는다.
@@ -496,7 +497,7 @@ bool FSceneRenderer::AddCorePasses(FRenderGraphBuilder& Graph, FRenderer* Render
 		// 불투명 물체를 조명까지 계산해 Color에 바로 그린다.
 		if (!RenderBasePass(Graph, Renderer, Options, SceneTextures, bUseDepthPrepass)) return false;
 
-		if (Options.ShowFlags.Decals && !RenderDecals(Graph, Renderer, Options, SceneTextures)) return false;
+		if (ViewFamily.EngineShowFlags.Decals && !RenderDecals(Graph, Renderer, Options, SceneTextures)) return false;
 	}
 
 	
@@ -577,7 +578,7 @@ bool FSceneRenderer::RenderBasePass(FRenderGraphBuilder& Graph, FRenderer* Rende
 		Forward.DepthAttachment = { Depth, bUseDepthPrepass ? ERenderGraphLoadAction::Load : ERenderGraphLoadAction::Clear, 1.0f, 0 };
 		if (!Graph.AddRasterPass(std::move(Forward), [this, Renderer, &Graph, LightingOptions = Options, bUseDepthPrepass, ForwardShadowMask]
 		{
-			if (!LightingOptions.ShowFlags.Rendering) return;
+			if (!ViewFamily.EngineShowFlags.Rendering) return;
 			bCorePassSucceeded = BindForwardLighting(Renderer, LightingOptions, ForwardShadowMask ? Graph.Resolve(ForwardShadowMask) : nullptr);
 			if (!bCorePassSucceeded) return;
 			if (bUseDepthPrepass)
@@ -923,7 +924,7 @@ bool FSceneRenderer::AddViewportPasses(FRenderGraphBuilder& Graph, FRenderer* Re
 	const FScenePassCallbacks& Callbacks) // 뷰포트에 그려져야 되는 패스들을 옵션에 따라 정해진 순서로 Graph에 등록
 {
 	FSceneRenderOptions CoreOptions = Options;
-	if (Options.ViewMode == VMI_LightCulling)
+	if (ViewFamily.ViewMode == VMI_LightCulling)
 	{
 		// 디버그 보기에서 현재 뷰의 실제 타일 목록을 생성한다.
 		CoreOptions.RenderingPath = ERenderingPath::Forward;
@@ -945,15 +946,15 @@ bool FSceneRenderer::AddViewportPasses(FRenderGraphBuilder& Graph, FRenderer* Re
 	bUseFXAA = false;
 
 	// 불투명 물체 위에 높이 안개를 입힌다.
-	if (Options.ViewMode != VMI_WorldNormal && Options.ShowFlags.Rendering && Options.ShowFlags.Fog &&
+	if (ViewFamily.ViewMode != VMI_WorldNormal && ViewFamily.EngineShowFlags.Rendering && ViewFamily.EngineShowFlags.Fog &&
 		!RenderFog(Graph, Renderer, Targets, SceneColor, Depth)) return false;
 
 	// 반투명 물체는 불투명 물체와 안개가 끝난 뒤에 그린다.
-	if (Options.ViewMode != VMI_WorldNormal && Options.ShowFlags.Rendering &&
+	if (ViewFamily.ViewMode != VMI_WorldNormal && ViewFamily.EngineShowFlags.Rendering &&
 		!RenderTranslucency(Graph, Renderer, SceneColor, Depth)) return false;
 
 	// 월드에 놓인 글자(UTextRenderComponent)를 그린다.
-	if (Options.ViewMode != VMI_WorldNormal &&
+	if (ViewFamily.ViewMode != VMI_WorldNormal &&
 		!Graph.AddRasterPass(MakeViewportPass("SceneText", SceneColor, Depth), [this, Renderer] { RenderSceneText(Renderer); }))
 		return false;
 
@@ -1018,21 +1019,21 @@ bool FSceneRenderer::AddPostProcessingPasses(FRenderGraphBuilder& Graph, FRender
 	const FSceneRenderOptions& Options, const FScenePassCallbacks& Callbacks,
 	FRenderGraphTextureRef SceneColor, FRenderGraphTextureRef Depth, FRenderGraphTextureRef& FinalColor)
 {
-	if (Options.ViewMode == VMI_SceneDepth && Callbacks.DepthVisualization)
+	if (ViewFamily.ViewMode == VMI_SceneDepth && Callbacks.DepthVisualization)
 	{
 		FRenderGraphRasterPassDesc Pass = MakeViewportPass("SceneDepthVisualization", SceneColor);
 		Pass.ReadTextures = { Depth };
 		if (!Graph.AddRasterPass(std::move(Pass), Callbacks.DepthVisualization)) return false;
 	}
 
-	if (Options.ViewMode != VMI_WorldNormal && Options.ViewMode != VMI_SceneDepth &&
-		View.NeedsCameraOverlay(Options.ShowFlags.Vignette, Options.ShowFlags.CameraOverlay))
+	if (ViewFamily.ViewMode != VMI_WorldNormal && ViewFamily.ViewMode != VMI_SceneDepth &&
+		View.NeedsCameraOverlay(ViewFamily.EngineShowFlags.Vignette, ViewFamily.EngineShowFlags.CameraOverlay))
 	{
 		const uint32 Width = Targets.SceneColor->GetWidth();
 		const uint32 Height = Targets.SceneColor->GetHeight();
 		if (!Graph.AddRasterPass(MakeViewportPass("CameraOverlay", SceneColor),
 			[this, Renderer, Width, Height,
-			bVignette = Options.ShowFlags.Vignette, bOverlay = Options.ShowFlags.CameraOverlay]
+			bVignette = ViewFamily.EngineShowFlags.Vignette, bOverlay = ViewFamily.EngineShowFlags.CameraOverlay]
 			{
 				if (FCameraOverlayRenderer* Overlay = Renderer->GetCameraOverlay())
 					Overlay->OnRender(View, Width, Height, bVignette, bOverlay);
@@ -1044,7 +1045,7 @@ bool FSceneRenderer::AddPostProcessingPasses(FRenderGraphBuilder& Graph, FRender
 	// 썼는지를 bUseFXAA에 남긴다. Render가 그래프를 실행한 뒤 이 값을 보고 SceneColor와 FXAA 출력을 맞바꾼다.
 	FFXAARenderer* FXAA = Renderer->GetFXAA();
 	FTexture2D* ColorTarget = Targets.SceneColor.get();
-	bUseFXAA = Options.ShowFlags.AntiAliasing && Options.ViewMode != VMI_SceneDepth && Options.ViewMode != VMI_WorldNormal &&
+	bUseFXAA = ViewFamily.EngineShowFlags.AntiAliasing && ViewFamily.ViewMode != VMI_SceneDepth && ViewFamily.ViewMode != VMI_WorldNormal &&
 		FXAA && FXAA->PrepareOutput(ColorTarget);
 	if (bUseFXAA)
 	{
@@ -1058,7 +1059,7 @@ bool FSceneRenderer::AddPostProcessingPasses(FRenderGraphBuilder& Graph, FRender
 			})) return false;
 	}
 
-	if (Options.ViewMode == VMI_LightCulling && Options.ShowFlags.Rendering)
+	if (ViewFamily.ViewMode == VMI_LightCulling && ViewFamily.EngineShowFlags.Rendering)
 	{
 		FRenderGraphRasterPassDesc Debug = MakeViewportPass("LightCullingDebug", FinalColor);
 		Debug.ReadTextures = { Depth };
@@ -1084,7 +1085,7 @@ bool FSceneRenderer::AddPostProcessingPasses(FRenderGraphBuilder& Graph, FRender
 			})) return false;
 	}
 
-	if (Options.ViewMode == VMI_Cascade && Callbacks.CascadeVisualization)
+	if (ViewFamily.ViewMode == VMI_Cascade && Callbacks.CascadeVisualization)
 	{
 		FRenderGraphRasterPassDesc Pass = MakeViewportPass("CascadeFloorVisualization", FinalColor);
 		Pass.ReadTextures = { Depth };
@@ -1093,8 +1094,11 @@ bool FSceneRenderer::AddPostProcessingPasses(FRenderGraphBuilder& Graph, FRender
 	return true;
 }
 
-bool FSceneRenderer::Render(FRenderer* Renderer, FSceneViewTargets& Targets, const FSceneRenderOptions& Options, const std::function<void(FScenePassCallbacks&)>& ExtraPasses)
+bool FSceneRenderer::Render(FRenderer* Renderer, const std::function<void(FScenePassCallbacks&)>& ExtraPasses)
 {
+	if (!ViewFamily.RenderTarget) return false;
+	FSceneViewTargets& Targets = *ViewFamily.RenderTarget;
+	const FSceneRenderOptions& Options = ViewFamily.RenderOptions;
 	FTexture2D* ColorTarget = Targets.SceneColor.get();
 	FTexture2D* DepthTarget = Targets.Depth.get();
 	if (!World || !Renderer || !ColorTarget || !DepthTarget)

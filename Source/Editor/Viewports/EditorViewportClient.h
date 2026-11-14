@@ -31,18 +31,6 @@ enum class ELevelViewportType
 	Right,
 };
 
-// 뷰포트 렌더 모드
-enum class EViewportMode
-{
-	Solid,
-	Wireframe,
-	SceneDepth,
-	WorldNormal,
-	LightCulling,
-	Cascade,
-	ShadowMask,
-};
-
 // 에디터 뷰포트 클라이언트
 class FEditorViewportClient : public FViewportClient {
 public:
@@ -142,14 +130,15 @@ public:
 
 	FSceneRenderData& GetRenderData() { return RenderData; }
 
-	bool IsWireframe() const { return ViewportMode == EViewportMode::Wireframe; }
-	bool IsSceneDepth() const { return ViewportMode == EViewportMode::SceneDepth; }
-	bool IsWorldNormal() const { return ViewportMode == EViewportMode::WorldNormal; }
-	bool IsLightCulling() const { return ViewportMode == EViewportMode::LightCulling; }
-	bool IsCascade() const { return ViewportMode == EViewportMode::Cascade; }
-	bool IsShadowMask() const { return ViewportMode == EViewportMode::ShadowMask; }
-	EViewportMode GetViewportMode() const { return ViewportMode; }
-	void SetViewportMode(const EViewportMode InViewportMode) { ViewportMode = InViewportMode; }
+	bool IsWireframe() const { return ViewModeIndex == VMI_Wireframe; }
+	bool IsSceneDepth() const { return ViewModeIndex == VMI_SceneDepth; }
+	bool IsWorldNormal() const { return ViewModeIndex == VMI_WorldNormal; }
+	bool IsLightCulling() const { return ViewModeIndex == VMI_LightCulling; }
+	bool IsCascade() const { return ViewModeIndex == VMI_Cascade; }
+	bool IsShadowMask() const { return ViewModeIndex == VMI_ShadowMask; }
+	// 이 뷰포트의 뷰 모드. UE의 FEditorViewportClient::GetViewMode, SetViewMode와 같다.
+	EViewModeIndex GetViewMode() const { return ViewModeIndex; }
+	void SetViewMode(const EViewModeIndex InViewModeIndex) { ViewModeIndex = InViewModeIndex; }
 	float GetMaxRange() const { return MaxRange; }
 	void SetMaxRange(float InMaxRange) { MaxRange = InMaxRange; }
 
@@ -171,14 +160,17 @@ protected:
 	bool bIsPerspective = true;
 	bool bIsRealtime = true;
 	bool bActive = false;
-	EViewportMode ViewportMode = EViewportMode::Solid;
+	// 이 뷰포트의 뷰 모드. UE는 원근용과 직교용을 따로 갖는다(PerspViewModeIndex, OrthoViewModeIndex).
+	EViewModeIndex ViewModeIndex = VMI_Lit;
 
 	FRect Rect{};
 	FSceneRenderData RenderData;
-	// 이 뷰포트가 무엇을 어떻게 보여 줄지 정하는 설정. Draw가 이 값으로 씬을 그린다.
-	// UE의 FEditorViewportClient::EngineShowFlags와 같은 자리다. UE의 FEngineShowFlags는 표시 여부만 담지만
-	// 이 엔진의 FSceneRenderOptions는 그림자 해상도, 렌더링 경로 같은 품질 설정도 같이 담는다.
-	FSceneRenderOptions EngineShowFlags;
+	// 이 뷰포트에 무엇을 보여 줄지 켜고 끄는 스위치. Draw가 뷰 묶음(FSceneViewFamily)에 담아 렌더러에 넘긴다.
+	// UE의 FEditorViewportClient::EngineShowFlags와 같다.
+	FEngineShowFlags EngineShowFlags;
+	// 그림자 해상도, 렌더링 경로 같은 품질과 방식 설정. 쇼 플래그와 함께 뷰 묶음에 담는다.
+	// UE에는 없는 이 엔진 고유의 멤버다. UE는 이런 값을 콘솔 변수로 둔다.
+	FSceneRenderOptions RenderOptions;
 
 	FVector ViewLocation = FVector(0.0f, 0.0f, 0.0f);
 	FRotator ViewRotation = FRotator(0.0f, 0.0f, 0.0f);

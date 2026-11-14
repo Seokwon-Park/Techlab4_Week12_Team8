@@ -295,11 +295,11 @@ void FViewportsPanel::OnRender() {
 		}
 		ImGui::SameLine();
 		// 장면 채우기 모드 설정
-		int Mode = static_cast<int>(Client->GetViewportMode());
+		int Mode = static_cast<int>(Client->GetViewMode());
 		const char *Labels[] = {"Solid", "Wireframe", "Scene Depth", "World Normal", "Light Culling", "Cascade", "Shadow Mask"};
 		ImGui::SetNextItemWidth(120.0f);
 		if (ImGui::Combo("##FillMode", &Mode, Labels, IM_ARRAYSIZE(Labels))) {
-			Client->SetViewportMode(static_cast<EViewportMode>(Mode));
+			Client->SetViewMode(static_cast<EViewModeIndex>(Mode));
 		}
 		ImGui::SameLine();
 		if (CurrentLayoutMode == ELayoutMode::QuadSplit) {

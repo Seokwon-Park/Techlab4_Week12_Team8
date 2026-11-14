@@ -10,7 +10,19 @@
 #include "Editor/Viewports/ViewportsPanel.h"
 #include "Editor/Viewports/EditorViewportClient.h"
 
+#include "Editor/Gizmo/Gizmo.h"
 #include "GameFramework/Actor/SkeletalMeshActor.h"
+#include "GameFramework/Actor/ParticleActor.h"
+#include "GameFramework/Actor/StaticMeshActor.h"
+#include "GameFramework/Actor/DirectionalLightActor.h"
+#include "GameFramework/Actor/PointLightActor.h"
+#include "GameFramework/Actor/SpotLightActor.h"
+#include "GameFramework/Actor/RectLightActor.h"
+#include "GameFramework/Actor/SkyLightActor.h"
+#include "GameFramework/Actor/DecalActor.h"
+#include "GameFramework/Actor/TextRenderActor.h"
+#include "GameFramework/Actor/ExponentialHeightFogActor.h"
+#include "GameFramework/Character.h"
 
 #include "Input/InputSystem.h"
 
@@ -22,9 +34,44 @@ bool FEditorControlsPanel::Init()
 	return true;
 }
 
-// Space 입력으로 기즈모 편집 모드를 순환한다.
-void FEditorControlsPanel::Tick(float DeltaTime)
+namespace
 {
+	// 생성할 수 있는 액터 한 종류. 클래스는 필요할 때 함수로 얻는다.
+	struct FSpawnEntry
+	{
+		const char* Label;
+		UClass* (*GetClass)();
+	};
+
+	// 콤보에서 골라 Spawn 버튼으로 생성하는 액터
+	const FSpawnEntry ActorEntries[] = {
+		{ "StaticMesh", &AStaticMeshActor::StaticClass },
+		{ "Particle", &AParticleActor::StaticClass },
+		{ "Text", &ATextRenderActor::StaticClass },
+		{ "HeightFog", &AExponentialHeightFogActor::StaticClass },
+		{ "Character", &ACharacter::StaticClass },
+	};
+
+	// 버튼 하나로 바로 생성하는 액터
+	const FSpawnEntry LightEntries[] = {
+		{ "Directional Light", &ADirectionalLightActor::StaticClass },
+		{ "Spot Light", &ASpotLightActor::StaticClass },
+		{ "Point Light", &APointLightActor::StaticClass },
+		{ "Rect Light", &ARectLightActor::StaticClass },
+		{ "Sky Light", &ASkyLightActor::StaticClass },
+		{ "Decal", &ADecalActor::StaticClass },
+	};
+
+	// 순서는 UE::Widget::EWidgetMode, ECoordSystem의 값과 같다.
+	const char* GizmoItems[3] = { "Location", "Rotation", "Scale" };
+	const char* SpaceItems[2] = { "World", "Local" };
+}
+
+// 프레임 시간을 기억하고 Space 입력으로 기즈모 편집 모드를 순환한다.
+void FEditorControlsPanel::Tick(float InDeltaTime)
+{
+	DeltaTime = InDeltaTime;
+
 	if (ImGui::GetIO().WantTextInput)
 		return;
 
@@ -37,116 +84,78 @@ void FEditorControlsPanel::Tick(float DeltaTime)
 	}
 }
 
-// 선택한 클래스의 액터를 월드에 생성한다.
-void FEditorControlsPanel::AddActor(uint32 Index)
-{
-	if (Index >= static_cast<uint32>(Classes.Num())) return;
-	World->SpawnActor(Classes[Index]);
-}
-
-// 액터 생성·카메라 속성·기즈모·경로 추적 UI를 그린다.
+// 패널 전체를 그린다. 섹션의 순서는 여기서 정한다.
 void FEditorControlsPanel::OnRender()
 {
 	ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
 	ImGui::Begin("Editor Controls");
 	ImGui::Spacing();
 
+	// 오른쪽 위에 FPS와 프레임 시간을 적는다.
 	char FpsText[64];
 	std::snprintf(FpsText, sizeof(FpsText), "FPS %.1f   %.1f ms", 1.0f / DeltaTime, DeltaTime * 1000.0f);
-	float TextWidth = ImGui::CalcTextSize(FpsText).x;
-	float CursorX = ImGui::GetCursorPosX();
-	float AvailableWidth = ImGui::GetContentRegionAvail().x;
-
-	ImGui::SetCursorPosX(CursorX + AvailableWidth - TextWidth);
+	ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize(FpsText).x);
 	ImGui::TextDisabled("%s", FpsText);
 
-	//////////////////////////////////////////////////////
+	if (World)
+	{
+		DrawSpawnSection();
+		DrawGizmoSection();
+		DrawCameraProperties();
+		DrawSkeletalMeshSection();
+	}
 
+	ImGui::End();
+}
+
+// 액터 종류를 골라 생성하는 줄과, 라이트와 데칼을 바로 생성하는 버튼 줄을 그린다.
+void FEditorControlsPanel::DrawSpawnSection()
+{
 	ImGui::Dummy(ImVec2(0.0f, SectionGap));
 	ImGui::SeparatorText("Actor Spawn");
 
-	const float SpawnButtonWidth = 70.0f;
-
+	// 한 줄에 콤보, Spawn 버튼, 액터 수를 놓는다. 콤보가 남는 너비를 차지한다.
 	char CountText[32];
-	std::snprintf(
-		CountText,
-		sizeof(CountText),
-		"%d Actors",
-		World->GetActorNum()
-	);
+	std::snprintf(CountText, sizeof(CountText), "%d Actors", World->GetActorNum());
 
-	const float CountWidth = ImGui::CalcTextSize(CountText).x;
-	const float Available = ImGui::GetContentRegionAvail().x;
+	const float SpawnButtonWidth = 70.0f;
 	const float Spacing = ImGui::GetStyle().ItemSpacing.x;
-
-	const float ComboWidth =
-		Available - SpawnButtonWidth - CountWidth - Spacing * 2.0f;
+	const float ComboWidth = ImGui::GetContentRegionAvail().x - SpawnButtonWidth
+		- ImGui::CalcTextSize(CountText).x - Spacing * 2.0f;
 
 	ImGui::SetNextItemWidth(ComboWidth);
-	ImGui::Combo("##ActorType", &SelectedIndex, Items, IM_ARRAYSIZE(Items));
+	if (ImGui::BeginCombo("##ActorType", ActorEntries[SelectedActorIndex].Label))
+	{
+		for (int32 Index = 0; Index < IM_ARRAYSIZE(ActorEntries); ++Index)
+		{
+			if (ImGui::Selectable(ActorEntries[Index].Label, Index == SelectedActorIndex))
+				SelectedActorIndex = Index;
+		}
+		ImGui::EndCombo();
+	}
 
 	ImGui::SameLine();
-
 	if (ImGui::Button("Spawn", ImVec2(SpawnButtonWidth, 0)))
-	{
-		AddActor(SelectedIndex);
-	}
+		World->SpawnActor(ActorEntries[SelectedActorIndex].GetClass());
 
 	ImGui::SameLine();
 	ImGui::TextDisabled("%s", CountText);
 
 	ImGui::Dummy(ImVec2(0.0f, SubsectionGap));
 	ImGui::SeparatorText("Light Spawn");
-	if (ImGui::Button("Directional Light"))
-		World->SpawnActor(ADirectionalLightActor::StaticClass());
-	ImGui::SameLine();
-	if (ImGui::Button("Spot Light"))
-		World->SpawnActor(ASpotLightActor::StaticClass());
-	ImGui::SameLine();
-	if (ImGui::Button("Point Light"))
-		World->SpawnActor(APointLightActor::StaticClass());
-	ImGui::SameLine();
-	if (ImGui::Button("Rect Light"))
-		World->SpawnActor(ARectLightActor::StaticClass());
-	ImGui::SameLine();
-	if (ImGui::Button("Sky Light"))
-		World->SpawnActor(ASkyLightActor::StaticClass());
-	ImGui::SameLine();
-	if (ImGui::Button("Decal"))
-		World->SpawnActor(ADecalActor::StaticClass());
-
-	ImGui::Dummy(ImVec2(0.0f, SubsectionGap));
-	ImGui::SeparatorText("Skeletal Mesh");
-	if (ImGui::Button("Test Bone Stick"))
-		World->SpawnActor(ASkeletalMeshActor::StaticClass());
-
-	bool bGPU = USkinnedMeshComponent::bUseGPUSkinning;    // 지역 복사본에 체크
-	if (ImGui::Checkbox("GPU Skinning", &bGPU))
-		USkinnedMeshComponent::SetGPUSkinningEnabled(bGPU);
-
-	static float Bone1Pitch = 0.0f;
-	if (ImGui::SliderFloat("Bone_1 Pitch", &Bone1Pitch, -90.0f, 90.0f))
+	for (int32 Index = 0; Index < IM_ARRAYSIZE(LightEntries); ++Index)
 	{
-		for (AActor* Actor : World->GetPersistentLevel()->GetActors())
-		{
-			ASkeletalMeshActor* SkelActor = Cast<ASkeletalMeshActor>(Actor);
-			if (!SkelActor) continue;
-			USkeletalMeshComponent* Comp = SkelActor->GetSkeletalMeshComponent();
-			const int32 Bone = Comp->FindBoneIndex("Bone_1");
-			if (Bone < 0) continue;
-
-			FTransform Local = Comp->GetBoneLocalTransform(Bone);
-			Local.Rotation = FRotator(Bone1Pitch, 0.0f, 0.0f).Quaternion();
-			Comp->SetBoneLocalTransform(Bone, Local);
-			Comp->RefreshBoneTransformsNow();   // 에디터 월드에서 Tick이 안 돌아도 바로 반영
-		}
+		if (Index > 0) ImGui::SameLine();
+		if (ImGui::Button(LightEntries[Index].Label))
+			World->SpawnActor(LightEntries[Index].GetClass());
 	}
+}
 
-	//////////////////////////////////////////////////////
-
-	DrawCameraProperties();
-
-	//////////////////////////////////////////////////////
+// 기즈모의 편집 모드와 좌표계를 고르는 콤보를 그린다. 값은 레벨 에디터의 모드 툴이 갖는다.
+void FEditorControlsPanel::DrawGizmoSection()
+{
+	int32 GizmoSelectedIndex = 0;
+	int32 SpaceSelectedIndex = 0;
 
 	// Gizmo가 없는 앱(Benchmark 등)에서는 이 섹션을 통째로 건너뛴다.
 	if (Gizmo)
@@ -190,10 +199,37 @@ void FEditorControlsPanel::OnRender()
 
 		ImGui::EndTable();
 	}
+}
 
-	//////////////////////////////////////////////////////
+// GPU 스키닝 토글과 본 테스트용 도구를 그린다.
+void FEditorControlsPanel::DrawSkeletalMeshSection()
+{
+	ImGui::Dummy(ImVec2(0.0f, SectionGap));
+	ImGui::SeparatorText("Skeletal Mesh");
+	if (ImGui::Button("Test Bone Stick"))
+		World->SpawnActor(ASkeletalMeshActor::StaticClass());
 
-	ImGui::End();
+	bool bGPU = USkinnedMeshComponent::bUseGPUSkinning;    // 지역 복사본에 체크
+	if (ImGui::Checkbox("GPU Skinning", &bGPU))
+		USkinnedMeshComponent::SetGPUSkinningEnabled(bGPU);
+
+	static float Bone1Pitch = 0.0f;
+	if (ImGui::SliderFloat("Bone_1 Pitch", &Bone1Pitch, -90.0f, 90.0f))
+	{
+		for (AActor* Actor : World->GetPersistentLevel()->GetActors())
+		{
+			ASkeletalMeshActor* SkelActor = Cast<ASkeletalMeshActor>(Actor);
+			if (!SkelActor) continue;
+			USkeletalMeshComponent* Comp = SkelActor->GetSkeletalMeshComponent();
+			const int32 Bone = Comp->FindBoneIndex("Bone_1");
+			if (Bone < 0) continue;
+
+			FTransform Local = Comp->GetBoneLocalTransform(Bone);
+			Local.Rotation = FRotator(Bone1Pitch, 0.0f, 0.0f).Quaternion();
+			Comp->SetBoneLocalTransform(Bone, Local);
+			Comp->RefreshBoneTransformsNow();   // 에디터 월드에서 Tick이 안 돌아도 바로 반영
+		}
+	}
 }
 
 // 실제 View 속성을 편집하며 패널 이동 후에도 마지막 View를 유지하고 변경된 값만 반영한다.

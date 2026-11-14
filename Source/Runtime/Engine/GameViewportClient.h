@@ -64,10 +64,13 @@ public:
 	// UE의 UGameViewportClient::Viewport와 같은 자리이고 UE에서도 public 멤버다.
 	FViewport* Viewport = nullptr;
 
-	// 이 뷰포트가 무엇을 어떻게 보여 줄지 정하는 설정. Draw가 이 값으로 씬을 그린다.
-	// UE의 UGameViewportClient::EngineShowFlags와 같은 자리이고 UE에서도 public 멤버다.
+	// 이 뷰포트에 무엇을 보여 줄지 켜고 끄는 스위치. Draw가 뷰 묶음(FSceneViewFamily)에 담아 렌더러에 넘긴다.
+	// UE의 UGameViewportClient::EngineShowFlags와 같고 UE에서도 public 멤버다.
 	// 게임 빌드는 UGameEngine이 게임 설정으로, PIE는 UEditorEngine이 에디터 설정으로 채운다.
-	FSceneRenderOptions EngineShowFlags;
+	FEngineShowFlags EngineShowFlags;
+	// 그림자 해상도, 렌더링 경로 같은 품질과 방식 설정. 채우는 쪽은 위와 같다.
+	// UE에는 없는 이 엔진 고유의 멤버다. UE는 이런 값을 콘솔 변수로 둔다.
+	FSceneRenderOptions RenderOptions;
 
 	// Draw가 패스를 등록할 때 부른다. 에디터가 PIE 화면에 충돌 도형, 기즈모 같은 것을 올릴 때 쓴다. 게임 빌드에서는 비어 있다.
 	FDebugDrawDelegate DebugDrawDelegate;

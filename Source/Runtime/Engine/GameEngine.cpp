@@ -184,7 +184,8 @@ void UGameEngine::RedrawViewports(FGameViewportClient& GameViewport)
 	SceneViewport->UpdateViewportRHI(false, Width, Height);
 
 	// 게임 설정 파일에서 읽은 렌더 설정을 뷰포트 클라이언트에 넘긴다.
-	GameViewport.EngineShowFlags = Settings.RenderOptions;
+	GameViewport.EngineShowFlags = Settings.ShowFlags;
+	GameViewport.RenderOptions = Settings.RenderOptions;
 
 	// 뷰포트가 자기 클라이언트의 Draw를 부른다.
 	SceneViewport->Draw();

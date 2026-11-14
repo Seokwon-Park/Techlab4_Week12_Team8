@@ -43,7 +43,7 @@ FLevelEditorViewportClient::~FLevelEditorViewportClient()
 }
 
 // 이번 프레임의 표시 설정을 채운 뒤 기반 클래스의 Draw로 씬을 그린다.
-// 에디터 설정 창의 값과 이 뷰포트의 뷰 모드를 EngineShowFlags에 옮긴다.
+// 에디터 설정 창의 값을 이 뷰포트의 쇼 플래그(EngineShowFlags)와 품질 설정(RenderOptions)에 옮긴다.
 // UE의 FLevelEditorViewportClient::Draw(FViewport*, FCanvas*)도 준비를 한 뒤 FEditorViewportClient::Draw를 부른다.
 void FLevelEditorViewportClient::Draw(FViewport* InViewport, FUIRenderer* Canvas)
 {
@@ -52,40 +52,30 @@ void FLevelEditorViewportClient::Draw(FViewport* InViewport, FUIRenderer* Canvas
 		const FEditorSettings& S = *EditorSettings;
 
 		// 모든 뷰포트에 똑같이 적용되는 에디터 설정
-		EngineShowFlags.ShowFlags.AntiAliasing = S.bEnableFXAA;
-		EngineShowFlags.bCacheShadows = S.bCacheShadows;
-		EngineShowFlags.PcfMode = S.PcfMode;
-		EngineShowFlags.RenderingPath = S.RenderingPath;
-		EngineShowFlags.LightingModel = S.LightingModel;
-		EngineShowFlags.LightCullingMode = S.LightCullingMode;
-		EngineShowFlags.DirectionalShadowMapSize = S.GetDirectionalShadowMapSize();
-		EngineShowFlags.PointShadowMapSize = S.GetPointShadowMapSize();
-		EngineShowFlags.SpotShadowMapSize = S.GetSpotShadowMapSize();
-		EngineShowFlags.bGammaCorrection = S.bGammaCorrection;
-		EngineShowFlags.DisplayGamma = S.DisplayGamma;
-		EngineShowFlags.ShowFlags.Vignette = S.bShowVignette;
-		EngineShowFlags.ShowFlags.CameraOverlay = S.bShowCameraOverlay;
-		EngineShowFlags.ShowFlags.SkeletalMeshes = S.bShowSkeletalMesh;
-		EngineShowFlags.ShowFlags.Rendering = S.bDrawPrimitives;
-		EngineShowFlags.ShowFlags.Decals = S.bDrawDecals;
-		EngineShowFlags.bDecalCulling = S.bDecalCulling;
-		EngineShowFlags.bDecalNarrowCulling = S.bDecalNarrowCulling;
-		EngineShowFlags.bDecalBVHCulling = S.bDecalBVHCulling;
-		EngineShowFlags.bDecalOBBTree = S.bDecalOBBTree;
+		EngineShowFlags.AntiAliasing = S.bEnableFXAA;
+		RenderOptions.bCacheShadows = S.bCacheShadows;
+		RenderOptions.PcfMode = S.PcfMode;
+		RenderOptions.RenderingPath = S.RenderingPath;
+		RenderOptions.LightingModel = S.LightingModel;
+		RenderOptions.LightCullingMode = S.LightCullingMode;
+		RenderOptions.DirectionalShadowMapSize = S.GetDirectionalShadowMapSize();
+		RenderOptions.PointShadowMapSize = S.GetPointShadowMapSize();
+		RenderOptions.SpotShadowMapSize = S.GetSpotShadowMapSize();
+		RenderOptions.bGammaCorrection = S.bGammaCorrection;
+		RenderOptions.DisplayGamma = S.DisplayGamma;
+		EngineShowFlags.Vignette = S.bShowVignette;
+		EngineShowFlags.CameraOverlay = S.bShowCameraOverlay;
+		EngineShowFlags.SkeletalMeshes = S.bShowSkeletalMesh;
+		EngineShowFlags.Rendering = S.bDrawPrimitives;
+		EngineShowFlags.Decals = S.bDrawDecals;
+		RenderOptions.bDecalCulling = S.bDecalCulling;
+		RenderOptions.bDecalNarrowCulling = S.bDecalNarrowCulling;
+		RenderOptions.bDecalBVHCulling = S.bDecalBVHCulling;
+		RenderOptions.bDecalOBBTree = S.bDecalOBBTree;
 
 		// 이 뷰포트의 뷰 모드에서 나오는 설정
-		EngineShowFlags.ShowFlags.Fog = ViewportMode == EViewportMode::Solid;
-		switch (ViewportMode)
-		{
-		case EViewportMode::Wireframe:    EngineShowFlags.ViewMode = VMI_Wireframe; break;
-		case EViewportMode::SceneDepth:   EngineShowFlags.ViewMode = VMI_SceneDepth; break;
-		case EViewportMode::WorldNormal:  EngineShowFlags.ViewMode = VMI_WorldNormal; break;
-		case EViewportMode::LightCulling: EngineShowFlags.ViewMode = VMI_LightCulling; break;
-		case EViewportMode::Cascade:      EngineShowFlags.ViewMode = VMI_Cascade; break;
-		case EViewportMode::ShadowMask:   EngineShowFlags.ViewMode = VMI_ShadowMask; break;
-		default:                          EngineShowFlags.ViewMode = VMI_Lit; break;
-		}
-		EngineShowFlags.SceneDepthRange = MaxRange;
+		EngineShowFlags.Fog = ViewModeIndex == VMI_Lit;
+		RenderOptions.SceneDepthRange = MaxRange;
 	}
 
 	FEditorViewportClient::Draw(InViewport, Canvas);

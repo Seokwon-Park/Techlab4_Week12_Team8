@@ -294,7 +294,6 @@ void UEditorEngine::InitPanels()
 	DetailsPanel->SetWorld(GetActiveWorld());
 
 	EditorControlsPanel->SetWorld(EditorWorld);
-	EditorControlsPanel->SetIsPlayingQuery([this]() { return IsPlaying(); });
 	EditorControlsPanel->SetGizmo(Gizmo.get());
 	EditorControlsPanel->SetViewportsPanel(ViewportsPanel);
 
@@ -409,7 +408,6 @@ void UEditorEngine::Tick(const float DeltaTime)
 	// 패키징 진행, 통계 표시, 패널에 넘길 DeltaTime을 갱신하고 Delete 키를 처리한다.
 	Packager.Tick();
 	FStatOverlay::Tick(DeltaTime);
-	EditorControlsPanel->FEditorControlsPanel::DeltaTime = DeltaTime;
 
 	if (!ImGui::GetIO().WantTextInput && FInputSystem::IsKeyPressed(EKeyCode::Delete))
 		DeleteActor(GetSelectedActors()->GetTop<AActor>());
@@ -625,8 +623,9 @@ void UEditorEngine::Tick(const float DeltaTime)
 				if (SettingsPanel)
 				{
 					const FEditorSettings& S = SettingsPanel->GetSettings();
-					FSceneRenderOptions& Options = Context->GameViewport->EngineShowFlags;
-					Options.ShowFlags.AntiAliasing = S.bEnableFXAA;
+					FEngineShowFlags& ShowFlags = Context->GameViewport->EngineShowFlags;
+					FSceneRenderOptions& Options = Context->GameViewport->RenderOptions;
+					ShowFlags.AntiAliasing = S.bEnableFXAA;
 					Options.bCacheShadows = S.bCacheShadows;
 					Options.PcfMode = S.PcfMode;
 					Options.RenderingPath = S.RenderingPath;
@@ -637,9 +636,9 @@ void UEditorEngine::Tick(const float DeltaTime)
 					Options.SpotShadowMapSize = S.GetSpotShadowMapSize();
 					Options.bGammaCorrection = S.bGammaCorrection;
 					Options.DisplayGamma = S.DisplayGamma;
-					Options.ShowFlags.Vignette = S.bShowVignette;
-					Options.ShowFlags.CameraOverlay = S.bShowCameraOverlay;
-					Options.ShowFlags.SkeletalMeshes = S.bShowSkeletalMesh;
+					ShowFlags.Vignette = S.bShowVignette;
+					ShowFlags.CameraOverlay = S.bShowCameraOverlay;
+					ShowFlags.SkeletalMeshes = S.bShowSkeletalMesh;
 				}
 			}
 		}

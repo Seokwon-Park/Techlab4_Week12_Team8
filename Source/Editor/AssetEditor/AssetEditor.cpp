@@ -162,11 +162,11 @@ FAssetEditorViewportClient::FAssetEditorViewportClient(FAssetEditor& InAssetEdit
 	, AssetEditor(InAssetEditor)
 {
 	// 미리보기 화면의 표시 설정. 한 번 정하면 바뀌지 않으므로 생성할 때 채운다.
-	EngineShowFlags.ShowFlags.Fog = false;
-	EngineShowFlags.ShowFlags.AntiAliasing = true;
-	EngineShowFlags.ShowFlags.Vignette = false;
-	EngineShowFlags.ShowFlags.CameraOverlay = false;
-	EngineShowFlags.RenderingPath = ERenderingPath::Forward;   // 웨이트 히트맵은 Forward 패스에만 있다
+	EngineShowFlags.Fog = false;
+	EngineShowFlags.AntiAliasing = true;
+	EngineShowFlags.Vignette = false;
+	EngineShowFlags.CameraOverlay = false;
+	RenderOptions.RenderingPath = ERenderingPath::Forward;   // 웨이트 히트맵은 Forward 패스에만 있다
 }
 
 // 미리보기 씬 위에 에디터가 주는 선과 기즈모를 올린다. 씬은 기반 클래스의 Draw가 그린다.

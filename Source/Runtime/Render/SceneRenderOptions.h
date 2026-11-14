@@ -1,17 +1,12 @@
 #pragma once
 
 #include "Render/RenderEnums.h"
-#include "Render/ShowFlags.h"
 
-// 뷰 하나의 씬 렌더링 옵션. 에디터와 게임 뷰포트가 같은 설정을 전달한다.
-// 무엇을 보여 줄지(ShowFlags), 어떤 방식으로 보여 줄지(ViewMode), 그리고 품질과 렌더링 방식 설정으로 나뉜다.
-// UE는 앞의 둘을 FSceneViewFamily가 갖고(EngineShowFlags, ViewMode), 품질 설정은 콘솔 변수(r.Shadow.MaxResolution 등)로 둔다.
+// 씬을 그릴 때의 품질과 렌더링 방식 설정. 에디터와 게임 뷰포트가 같은 구조체로 전달한다.
+// 무엇을 보여 줄지(FEngineShowFlags)와 어떤 방식으로 보여 줄지(EViewModeIndex)는 여기에 없고 FSceneViewFamily가 따로 갖는다.
+// UE에는 없는 이 엔진 고유의 구조체다. UE는 이런 값을 콘솔 변수(r.Shadow.MaxResolution 등)로 둔다.
 struct FSceneRenderOptions
 {
-	FEngineShowFlags ShowFlags;
-	EViewModeIndex ViewMode = VMI_Lit;
-
-	// ---------- 아래는 품질과 렌더링 방식 설정 ----------
 	EPcfMode PcfMode = EPcfMode::Sample8;
 	float ShadowDepthBias = 0.0001f;
 	bool bCacheShadows = true; // r.Shadow.CacheWholeSceneShadows: 바뀌지 않은 그림자 타일은 다시 그리지 않는다
