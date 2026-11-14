@@ -46,6 +46,27 @@ public:
 	// Modules가 바뀔 때마다 호출한다. Modules에서 bSpawnModule / bUpdateModule인 것을 순서대로 모은다.
 	void UpdateModuleLists()
 	{
-		// TODO(1번 코어)
+		// 재호출 시 이전 목록이 남지 않도록 비우고 Modules 순서대로 다시 만든다.
+		SpawnModules.Reset();
+		UpdateModules.Reset();
+
+		for (UParticleModule* Module : Modules)
+		{
+			if (!Module)
+			{
+				continue;
+			}
+
+			// 두 플래그는 독립적이므로 하나의 모듈이 두 목록에 모두 들어갈 수 있다.
+			if (Module->bSpawnModule)
+			{
+				SpawnModules.Add(Module);
+			}
+
+			if (Module->bUpdateModule)
+			{
+				UpdateModules.Add(Module);
+			}
+		}
 	}
 };
