@@ -44,7 +44,6 @@ public:
 	UPROPERTY(EditAnywhere)
 	FLinearColor BackgroundColor = FLinearColor(0.05f, 0.05f, 0.07f, 0.85f);   // UE는 WidgetStyle.BackgroundImage
 	// 디자인 해상도 기준 픽셀. 배경 안쪽으로 채움을 줄이는 여백이다.
-	// UE는 FVector2D(가로, 세로)지만 이 엔진에는 FVector2 UPROPERTY가 없어 X, Y만 쓰는 FVector로 둔다.
 	UPROPERTY(EditAnywhere)
-	FVector BorderPadding = FVector(2.0f, 2.0f, 0.0f);
+	FVector2 BorderPadding = FVector2(2.0f, 2.0f);
 };

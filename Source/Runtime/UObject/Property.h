@@ -133,7 +133,7 @@ class FUInt32Property : public TProperty_Numeric<uint32>
     DECLARE_FIELD(FUInt32Property, TProperty_Numeric<uint32>)
 };
 
-// UE에서는 셋 다 FStructProperty(Struct = TBaseStructure<FVector>) 하나로 처리한다
+// UE에서는 넷 다 FStructProperty(Struct = TBaseStructure<FVector>) 하나로 처리한다
 class FVectorProperty : public TProperty_Numeric<FVector>
 {
     DECLARE_FIELD(FVectorProperty, TProperty_Numeric<FVector>)
@@ -142,6 +142,11 @@ class FVectorProperty : public TProperty_Numeric<FVector>
 class FVector4Property : public TProperty_Numeric<FVector4>
 {
     DECLARE_FIELD(FVector4Property, TProperty_Numeric<FVector4>)
+};
+
+class FVector2Property : public TProperty_Numeric<FVector2>
+{
+    DECLARE_FIELD(FVector2Property, TProperty_Numeric<FVector2>)
 };
 
 class FRotatorProperty : public TProperty_Numeric<FRotator>
@@ -249,6 +254,7 @@ DEFINE_PROPERTY_TYPE(int32, FIntProperty)
 DEFINE_PROPERTY_TYPE(uint32, FUInt32Property)
 DEFINE_PROPERTY_TYPE(FVector, FVectorProperty)
 DEFINE_PROPERTY_TYPE(FVector4, FVector4Property)
+DEFINE_PROPERTY_TYPE(FVector2, FVector2Property)
 DEFINE_PROPERTY_TYPE(FRotator, FRotatorProperty)
 DEFINE_PROPERTY_TYPE(bool, FBoolProperty)
 DEFINE_PROPERTY_TYPE(FString, FStrProperty)

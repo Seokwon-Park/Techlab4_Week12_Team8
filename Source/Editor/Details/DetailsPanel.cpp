@@ -1056,6 +1056,14 @@ namespace
 			if (bChanged) ClampToMeta(&Value.X, 4, Vector4Property->Meta);
 			return bChanged;
 		}
+		if (const FVector2Property* Vector2Property = CastField<FVector2Property>(&Property))
+		{
+			FVector2& Value = Vector2Property->GetPropertyValue(ValuePtr);
+			const FDragSettings Drag = GetDragSettings(Vector2Property->Meta, 0.1f);
+			const bool bChanged = ImGui::DragFloat2(Label, &Value.X, Drag.Speed, Drag.Min, Drag.Max);
+			if (bChanged) ClampToMeta(&Value.X, 2, Vector2Property->Meta);
+			return bChanged;
+		}
 		if (const FBoolProperty* BoolProperty = CastField<FBoolProperty>(&Property))
 		{
 			return ImGui::Checkbox(Label, &BoolProperty->GetPropertyValue(ValuePtr));
