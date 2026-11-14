@@ -7,6 +7,8 @@
 #include "Render/SceneRenderData.h"
 #include "Render/SceneRenderOptions.h"
 #include "Render/RenderGraph/RenderGraph.h"
+#include "Render/RenderEnums.h"
+#include "Math/IntPoint.h"
 #include "Components/DecalComponent.h"
 
 class UWorld;
@@ -43,6 +45,27 @@ struct FScenePassCallbacks // 기본 도형 다 그려진 후 그려져야 될 �
 	FSceneOverlayCallbacks Overlays;
 };
 
+
+// 한 뷰를 그리는 동안 패스들이 주고받는 렌더 그래프 텍스처 묶음. AddCorePasses가 채워서 패스 함수에 넘긴다.
+// UE의 FSceneTextures와 같은 자리다. Extent, Color, Depth는 UE의 FSceneTextures에 있는 이름이고(Extent는 Config 안에 있다),
+// 나머지 넷은 이 엔진 고유의 이름이다. UE의 GBuffer는 GBufferA~F로 나뉘고 구성이 달라서 이름을 맞추지 않았다.
+struct FSceneTextures
+{
+	// 텍스처 크기(픽셀)
+	FIntPoint Extent;
+	// 조명 결과가 쌓이는 HDR 색상. 마지막에 톤맵으로 화면 색상이 된다.
+	FRenderGraphTextureRef Color;
+	// 장면 깊이
+	FRenderGraphTextureRef Depth;
+
+	// Deferred의 GBuffer 두 장
+	FRenderGraphTextureRef BaseColorMetallic;
+	FRenderGraphTextureRef NormalRoughness;
+	// 그림자 깊이 아틀라스. 이번 뷰에 그림자가 없으면 비어 있다.
+	FRenderGraphTextureRef ShadowDepthAtlas;
+	// Forward의 화면 크기 그림자 마스크. RenderForwardShadowProjections가 만든다.
+	FRenderGraphTextureRef ScreenShadowMask;
+};
 
 // 씬 렌더링 조율자
 class FSceneRenderer
@@ -91,6 +114,24 @@ private:
 		const FSceneRenderOptions& Options, FSkyboxRenderer* Skybox);
 	bool AddWorldNormalPass(FRenderGraphBuilder& Graph, FRenderer* Renderer, FSceneViewTargets& Targets,
 		const FSceneRenderOptions& Options);
+
+	// ---------- AddCorePasses가 순서대로 부르는 패스 함수. 각자 렌더 그래프에 패스를 등록한다. ----------
+	// 불투명 물체. Deferred는 GBuffer에, Forward는 조명까지 계산해 Color에 그린다.
+	bool RenderBasePass(FRenderGraphBuilder& Graph, FRenderer* Renderer, const FSceneRenderOptions& Options,
+		const FSceneTextures& SceneTextures, bool bUseDepthPrepass);
+	// Deferred 조명
+	bool RenderLights(FRenderGraphBuilder& Graph, FRenderer* Renderer, const FSceneTextures& SceneTextures);
+	// 깊이 프리패스 (Forward)
+	bool RenderPrePass(FRenderGraphBuilder& Graph, FRenderer* Renderer, const FSceneTextures& SceneTextures);
+	// 그림자 마스크 (Forward). SceneTextures.ScreenShadowMask를 만든다.
+	bool RenderForwardShadowProjections(FRenderGraphBuilder& Graph, FSceneTextures& SceneTextures);
+	// 라이트 컬링 (Forward)
+	bool ComputeLightGrid(FRenderGraphBuilder& Graph, FRenderer* Renderer, FSceneViewTargets& Targets,
+		ELightCullingMode CullingMode);
+	// 데칼 (Forward)
+	bool RenderDecals(FRenderGraphBuilder& Graph, FRenderer* Renderer, const FSceneRenderOptions& Options,
+		const FSceneTextures& SceneTextures);
+
 	// SingleLightIndex < 0: 그림자 없는 광원 전부 + Ambient/Sky. 0 이상: VisibleLights[SingleLightIndex] 하나만 ScreenShadowMask를 곱해 더한다.
 	bool BindDeferredLighting(FRenderer* Renderer, uint32 Width, uint32 Height, int32 SingleLightIndex);
 	bool BindForwardLighting(FRenderer* Renderer, const FSceneRenderOptions& Options, FTexture2D* ShadowMask);
