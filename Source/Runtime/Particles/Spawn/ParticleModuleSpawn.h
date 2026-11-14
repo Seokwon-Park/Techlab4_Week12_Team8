@@ -11,8 +11,8 @@ class UParticleModuleSpawn : public UParticleModule
 
 public:
 	UParticleModuleSpawn() = default;
+	virtual ~UParticleModuleSpawn() override = default;
 
-	/** Number of particles to spawn per second. 0 이하이면 생성하지 않는다. */
 	UPROPERTY(EditAnywhere)
-	float Rate = 10.0f;
+	float Rate = 20.0f;
 };
