@@ -1,5 +1,6 @@
 #include "EnginePCH.h"
 
+#include "Editor/EditorModeManager.h"
 #include "Editor/EditorControls/EditorControlsPanel.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
@@ -29,8 +30,10 @@ void FEditorControlsPanel::Tick(float DeltaTime)
 
 	if (Gizmo && FInputSystem::IsKeyPressed(EKeyCode::Space))
 	{
-		const int NextMode = (static_cast<int>(Gizmo->GetMode()) + 1) % 3;
-		Gizmo->SetMode(static_cast<EGizmoMode>(NextMode));
+		// 편집 모드는 레벨 에디터의 모드 툴이 갖는다.
+		FEditorModeTools& ModeTools = GLevelEditorModeTools();
+		const int NextMode = (static_cast<int>(ModeTools.GetWidgetMode()) + 1) % 3;
+		ModeTools.SetWidgetMode(static_cast<UE::Widget::EWidgetMode>(NextMode));
 	}
 }
 
@@ -164,10 +167,11 @@ void FEditorControlsPanel::OnRender()
 		ImGui::TableSetColumnIndex(1);
 		ImGui::SetNextItemWidth(-1.0f);
 
-		GizmoSelectedIndex = static_cast<int32>(Gizmo->GetMode());
+		FEditorModeTools& ModeTools = GLevelEditorModeTools();
+		GizmoSelectedIndex = static_cast<int32>(ModeTools.GetWidgetMode());
 		if (ImGui::Combo("##GizmoMode", &GizmoSelectedIndex, GizmoItems, IM_ARRAYSIZE(GizmoItems)))
 		{
-			Gizmo->SetMode(static_cast<EGizmoMode>(GizmoSelectedIndex));
+			ModeTools.SetWidgetMode(static_cast<UE::Widget::EWidgetMode>(GizmoSelectedIndex));
 		}
 
 		ImGui::TableNextRow();
@@ -177,9 +181,11 @@ void FEditorControlsPanel::OnRender()
 		ImGui::TableSetColumnIndex(1);
 		ImGui::SetNextItemWidth(-1.0f);
 
+		// SpaceItems의 순서는 ECoordSystem의 값(World가 0, Local이 1)과 같다.
+		SpaceSelectedIndex = static_cast<int32>(ModeTools.GetCoordSystem());
 		if (ImGui::Combo("##GizmoSpace", &SpaceSelectedIndex, SpaceItems, IM_ARRAYSIZE(SpaceItems)))
 		{
-			Gizmo->SetSpace(static_cast<EGizmoSpace>(SpaceSelectedIndex));
+			ModeTools.SetCoordSystem(static_cast<ECoordSystem>(SpaceSelectedIndex));
 		}
 
 		ImGui::EndTable();

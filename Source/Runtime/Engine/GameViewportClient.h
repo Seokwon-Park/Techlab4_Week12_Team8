@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Engine/ViewportClient.h"
+#include "Engine/Viewport.h"
 #include "Math/Vector.h"
 #include "Math/Rotator.h"
 #include "Math/Matrix.h"
 #include "Render/SceneView.h"
 #include "Render/SceneRenderData.h"
-#include "Render/SceneViewTargets.h"
 #include "Render/SceneRenderOptions.h"
 #include "UI/UIDrawList.h"
 
@@ -53,12 +53,16 @@ public:
 	// 게임 카메라 시점 계산
 	FSceneView CalcSceneView(const FRect& InViewRect);
 
-	// 이 뷰포트의 월드를 자기 카메라로 자기 타깃(ViewTargets)에 그린다. UE의 UGameViewportClient::Draw와 같은 자리다.
-	// UE는 Draw(FViewport*, FCanvas*)이고, 이 엔진은 렌더러와 UI 렌더러를 인자로 받는다.
+	// 이 뷰포트의 월드를 자기 카메라로 InViewport의 타깃에 그린다. FViewport::Draw가 부른다.
+	// UE의 UGameViewportClient::Draw(FViewport*, FCanvas*)와 같다.
 	// 무엇을 어떻게 보여 줄지는 EngineShowFlags에서 읽는다.
-	// UIRenderer는 게임 UI를 그리는 데 쓴다. UE의 FCanvas에 해당하며 nullptr이면 UI를 그리지 않는다.
-	// 씬을 그렸으면 true를 돌려준다.
-	bool Draw(FRenderer* Renderer, FUIRenderer* UIRenderer);
+	// Canvas는 게임 UI를 그리는 데 쓴다. nullptr이면 UI를 그리지 않는다.
+	void Draw(FViewport* InViewport, FUIRenderer* Canvas) override;
+
+	// 이 클라이언트가 그리는 뷰포트. 그릴 대상(색상, 깊이 텍스처)과 크기는 뷰포트가 갖는다.
+	// 뷰포트를 만든 쪽(게임 엔진, 에디터 엔진)이 채운다.
+	// UE의 UGameViewportClient::Viewport와 같은 자리이고 UE에서도 public 멤버다.
+	FViewport* Viewport = nullptr;
 
 	// 이 뷰포트가 무엇을 어떻게 보여 줄지 정하는 설정. Draw가 이 값으로 씬을 그린다.
 	// UE의 UGameViewportClient::EngineShowFlags와 같은 자리이고 UE에서도 public 멤버다.
@@ -68,20 +72,12 @@ public:
 	// Draw가 패스를 등록할 때 부른다. 에디터가 PIE 화면에 충돌 도형, 기즈모 같은 것을 올릴 때 쓴다. 게임 빌드에서는 비어 있다.
 	FDebugDrawDelegate DebugDrawDelegate;
 
-	// 렌더 타깃 크기 관리
-	virtual void Resize(FViewport* Viewport, uint32 NewWidth, uint32 NewHeight) override { Resize(NewWidth, NewHeight); }
-	void Resize(uint32 InWidth, uint32 InHeight);
-
 	const FRect& GetRect() const { return Rect; }
 	void SetRect(const FRect& InRect) { Rect = InRect; }
-	uint32 GetWidth() const { return Width; }
-	uint32 GetHeight() const { return Height; }
-	class FTexture2D* GetColorTarget() const { return ViewTargets.SceneColor.get(); }
-	FTexture2D* SwapSceneColorAndBind(TUniquePtr<FTexture2D>& Output) { return ViewTargets.SwapSceneColorAndBind(Output); }
-	class FTexture2D* GetDepthTarget() const { return ViewTargets.Depth.get(); }
+	// 이 클라이언트가 그리는 뷰포트의 크기. 뷰포트가 아직 없으면 0이다.
+	uint32 GetWidth() const { return Viewport ? static_cast<uint32>(Viewport->GetSizeXY().X) : 0; }
+	uint32 GetHeight() const { return Viewport ? static_cast<uint32>(Viewport->GetSizeXY().Y) : 0; }
 	FSceneRenderData& GetRenderData() { return RenderData; }
-	FSceneViewTargets& GetViewTargets() { return ViewTargets; }
-	const FSceneViewTargets& GetViewTargets() const { return ViewTargets; }
 
 	void SetGameInstance(UGameInstance* InGameInstance) { GameInstance = InGameInstance; }
 	UGameInstance* GetGameInstance() const { return GameInstance; }
@@ -130,11 +126,8 @@ private:
 	UCameraComponent* CameraComponent = nullptr;
 	bool bExitRequested = false;
 
-	// 렌더 타깃 버퍼
+	// 화면에서 이 뷰포트가 차지하는 영역. 마우스 좌표를 바꿀 때 쓴다.
 	FRect Rect{};
-	uint32 Width = 0;
-	uint32 Height = 0;
-	FSceneViewTargets ViewTargets;
 	FSceneRenderData RenderData;
 	// Draw가 게임 UI를 그릴 때 채우는 목록. 매 프레임 다시 채운다.
 	FUIDrawList UIDrawList;

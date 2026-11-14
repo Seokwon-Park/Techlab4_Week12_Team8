@@ -17,7 +17,7 @@ void FSkeletalPreviewViewportPanel::DrawContent()
     // 이미지 영역을 입력 항목으로 등록하여 드래그 중에도 카메라 조작을 유지한다
     ImGui::InvisibleButton("##AnimViewport", Size,
         ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
-    if (FTexture2D* Target = Client->GetColorTarget(); Target && Target->GetSRV())
+    if (FTexture2D* Target = Client->Viewport ? Client->Viewport->GetRenderTargetTexture() : nullptr; Target && Target->GetSRV())
     {
         ImGui::GetWindowDrawList()->AddImage(Target->GetSRV(), Origin,
             ImVec2(Origin.x + Size.x, Origin.y + Size.y));

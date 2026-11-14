@@ -39,7 +39,11 @@ bool FViewportsPanel::Init() {
 	for (int32 i = 0; i < 4; ++i) {
 		ViewportClients[i] = MakeUnique<FLevelEditorViewportClient>();
 		ViewportClients[i]->SetViewIndex(i);
-		ViewportClients[i]->Resize(1, 1);
+
+		// 뷰포트를 만들어 클라이언트와 서로 연결하고, 타깃을 최소 크기로 만들어 둔다.
+		Viewports[i] = MakeUnique<FViewport>(ViewportClients[i].get());
+		ViewportClients[i]->Viewport = Viewports[i].get();
+		Viewports[i]->UpdateViewportRHI(false, 1, 1);
 	}
 
 	// 초기 시점 설정
@@ -68,10 +72,10 @@ void FViewportsPanel::SetView(const int32 ViewIndex, const FRect &Rect,
 	if (!bSlotActive)
 		return;
 
+	// 크기가 같으면 뷰포트가 아무것도 하지 않는다. 바뀌면 타깃을 다시 만들고 클라이언트에 알린다.
 	const uint32 Width = static_cast<uint32>(std::max(1.0f, Rect.Width));
 	const uint32 Height = static_cast<uint32>(std::max(1.0f, Rect.Height));
-	if (Width != Client->GetWidth() || Height != Client->GetHeight())
-		Client->Resize(Width, Height);
+	Viewports[ViewIndex]->UpdateViewportRHI(false, Width, Height);
 }
 
 // 마우스 위치에서 패널 원점을 빼 로컬 좌표로 바꾼다.
@@ -189,8 +193,8 @@ void FViewportsPanel::OnRender() {
 		}
 
 		FTexture2D* DisplayTarget = bGameViewport
-			? GameViewportClient->GetColorTarget()
-			: Client->GetColorTarget();
+			? (GameViewportClient->Viewport ? GameViewportClient->Viewport->GetRenderTargetTexture() : nullptr)
+			: Viewports[ViewIndex]->GetRenderTargetTexture();
 		if (!DisplayTarget || !DisplayTarget->GetSRV())
 			continue;
 

@@ -1,11 +1,11 @@
 #pragma once
 
 #include "Engine/ViewportClient.h"
+#include "Engine/Viewport.h"
 #include "Math/Matrix.h"
 #include "Math/Rotator.h"
 #include "Math/Vector.h"
 #include "Math/Vector2.h"
-#include "Render/SceneViewTargets.h"
 #include "Render/SceneView.h"
 #include "Render/SceneRenderData.h"
 #include "Render/SceneRenderOptions.h"
@@ -114,11 +114,11 @@ public:
 	FSceneView CalcSceneView(const FRect& InViewRect) const;
 	FSceneView CalcSceneView() const;
 
-	// 이 뷰포트의 월드를 자기 카메라로 자기 타깃(ViewTargets)에 그린다. 엔진과 에셋 에디터가 부르는 입구다.
-	// UE의 FEditorViewportClient::Draw(FViewport*, FCanvas*)와 같은 자리이고,
-	// 이 엔진은 렌더러를 인자로 받는다. 무엇을 어떻게 보여 줄지는 자기 EngineShowFlags에서 읽는다.
+	// 이 뷰포트의 월드를 자기 카메라로 InViewport의 타깃에 그린다. FViewport::Draw가 부른다.
+	// UE의 FEditorViewportClient::Draw(FViewport*, FCanvas*)와 같다.
+	// 무엇을 어떻게 보여 줄지는 자기 EngineShowFlags에서 읽는다. 에디터 뷰포트는 Canvas를 쓰지 않는다.
 	// 씬을 그리는 도중에 아래의 두 번째 Draw를 부른다.
-	virtual void Draw(FRenderer* Renderer);
+	void Draw(FViewport* InViewport, FUIRenderer* Canvas) override;
 
 	// 씬 위에 올릴 에디터 요소(선, 그리드, 기즈모 등)를 등록한다. 기본 구현은 아무것도 올리지 않는다.
 	// 레벨 에디터와 에셋 에디터의 클라이언트가 이 함수만 재정의한다.
@@ -136,15 +136,11 @@ public:
 	bool IsActive() const { return bActive; }
 	void SetActive(const bool bInActive) { bActive = bInActive; }
 
-	uint32 GetWidth() const { return Width; }
-	uint32 GetHeight() const { return Height; }
+	// 이 클라이언트가 그리는 뷰포트의 크기. 뷰포트가 아직 없으면 0이다.
+	uint32 GetWidth() const { return Viewport ? static_cast<uint32>(Viewport->GetSizeXY().X) : 0; }
+	uint32 GetHeight() const { return Viewport ? static_cast<uint32>(Viewport->GetSizeXY().Y) : 0; }
 
-	FTexture2D* GetColorTarget() const { return ViewTargets.SceneColor.get(); }
-	FTexture2D* SwapSceneColorAndBind(TUniquePtr<FTexture2D>& Output) { return ViewTargets.SwapSceneColorAndBind(Output); }
-	FTexture2D* GetDepthTarget() const { return ViewTargets.Depth.get(); }
 	FSceneRenderData& GetRenderData() { return RenderData; }
-	FSceneViewTargets& GetViewTargets() { return ViewTargets; }
-	const FSceneViewTargets& GetViewTargets() const { return ViewTargets; }
 
 	bool IsWireframe() const { return ViewportMode == EViewportMode::Wireframe; }
 	bool IsSceneDepth() const { return ViewportMode == EViewportMode::SceneDepth; }
@@ -157,8 +153,14 @@ public:
 	float GetMaxRange() const { return MaxRange; }
 	void SetMaxRange(float InMaxRange) { MaxRange = InMaxRange; }
 
-	// 타깃 크기 변경
-	void Resize(uint32 InWidth, uint32 InHeight);
+	// 뷰포트 크기가 바뀔 때 FViewport::UpdateViewportRHI가 부른다. 종횡비와 직교 배율을 새 크기에 맞춘다.
+	// 불리는 시점에 InViewport->GetSizeXY()는 아직 이전 크기다.
+	void Resize(FViewport* InViewport, uint32 NewWidth, uint32 NewHeight) override;
+
+	// 이 클라이언트가 그리는 뷰포트. 그릴 대상(색상, 깊이 텍스처)과 크기는 뷰포트가 갖는다.
+	// 뷰포트를 만든 쪽(뷰포트 패널, 에셋 에디터)이 채운다.
+	// UE의 FEditorViewportClient::Viewport와 같은 자리이고 UE에서도 public 멤버다.
+	FViewport* Viewport = nullptr;
 
 protected:
 	// 프리뷰 장면은 클라이언트보다 오래 살아 있어야 합니다.
@@ -172,9 +174,6 @@ protected:
 	EViewportMode ViewportMode = EViewportMode::Solid;
 
 	FRect Rect{};
-	uint32 Width = 0;
-	uint32 Height = 0;
-	FSceneViewTargets ViewTargets;
 	FSceneRenderData RenderData;
 	// 이 뷰포트가 무엇을 어떻게 보여 줄지 정하는 설정. Draw가 이 값으로 씬을 그린다.
 	// UE의 FEditorViewportClient::EngineShowFlags와 같은 자리다. UE의 FEngineShowFlags는 표시 여부만 담지만

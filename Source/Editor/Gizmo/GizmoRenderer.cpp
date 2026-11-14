@@ -53,11 +53,11 @@ void FGizmoRenderer::OnRender(
 		return;
 
 	UStaticMesh* AxisMesh = nullptr;
-	switch (Gizmo.GetMode())
+	switch (Gizmo.GetWidgetMode())
 	{
-	case EGizmoMode::Location: AxisMesh = LocationMesh; break;
-	case EGizmoMode::Rotation: AxisMesh = RotationMesh; break;
-	case EGizmoMode::Scale:    AxisMesh = ScaleMesh;    break;
+	case UE::Widget::WM_Translate: AxisMesh = LocationMesh; break;
+	case UE::Widget::WM_Rotate: AxisMesh = RotationMesh; break;
+	case UE::Widget::WM_Scale:    AxisMesh = ScaleMesh;    break;
 	default: return;
 	}
 
@@ -75,7 +75,7 @@ void FGizmoRenderer::OnRender(
 	{
 		FMatrix World;
 
-		if (Gizmo.GetMode() == EGizmoMode::Scale || Gizmo.GetSpace() == EGizmoSpace::Local)
+		if (Gizmo.GetWidgetMode() == UE::Widget::WM_Scale || Gizmo.GetWidgetCoordSystemSpace() == COORD_Local)
 		{
 			FMatrix AxisRot = AxisDataArray[i].Rotator.Quaternion().ToFMatrix();
 			FMatrix ObjRot = Gizmo.GetAxisRotation().Quaternion().ToFMatrix();
@@ -99,7 +99,7 @@ void FGizmoRenderer::OnRender(
 		DrawMesh(AxisMesh, Data);
 	}
 
-	if (Gizmo.GetMode() != EGizmoMode::Rotation)
+	if (Gizmo.GetWidgetMode() != UE::Widget::WM_Rotate)
 	{
 		// 중앙 구
 		Transform.Rotation = FQuat::Identity();

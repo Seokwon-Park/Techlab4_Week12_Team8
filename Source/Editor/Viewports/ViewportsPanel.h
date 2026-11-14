@@ -50,6 +50,11 @@ public:
 			}
 			return nullptr;
 	}
+	// View 하나의 뷰포트. 엔진이 이 뷰포트의 Draw를 불러 그리게 한다.
+	FViewport* GetViewport(const int32 ViewIndex) const
+	{
+		return (ViewIndex >= 0 && ViewIndex < 4) ? Viewports[ViewIndex].get() : nullptr;
+	}
 	void SetGameViewportClient(int32 ViewIndex, FGameViewportClient* InGameClient) {
 		if (ViewIndex < 0 || ViewIndex >= 4)
 			return;
@@ -71,6 +76,9 @@ private:
 	void DrawStatOverlay(ImDrawList* DrawList, const ImVec2& ViewMin, FEditorViewportClient* Client) const;
 
 	TUniquePtr<FLevelEditorViewportClient> ViewportClients[4]{};
+	// View마다 하나씩 있는 뷰포트. 그릴 대상(텍스처)과 크기를 갖고, 그리는 일은 위의 클라이언트에게 맡긴다.
+	// UE에서는 뷰포트 위젯(SEditorViewport)이 FSceneViewport를 갖는다. 이 엔진은 그 자리가 이 패널이다.
+	TUniquePtr<FViewport> Viewports[4]{};
 	// PIE 월드 컨텍스트가 소유하며, 세션 종료 전에 비운다.
 	FGameViewportClient* GameViewportClient = nullptr;
 	int32 GameViewportIndex = -1;

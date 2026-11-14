@@ -48,5 +48,4 @@ private:
 	UStaticMesh* SphereMesh;
 	TUniquePtr<FConstantBuffer> CB;
 
-	//EGizmoMode Mode = EGizmoMode::Scale;
 };

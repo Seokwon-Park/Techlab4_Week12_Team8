@@ -16,7 +16,7 @@ void FSkeletalMeshViewportPanel::DrawContent()
 	constexpr const char* GizmoModeNames[] = { "Location", "Rotation", "Scale" };
 	if (ImGui::Combo("##GizmoMode", &Mode, GizmoModeNames, IM_ARRAYSIZE(GizmoModeNames)))
 	{
-		Editor.SetGizmoMode(static_cast<EGizmoMode>(Mode));
+		Editor.SetGizmoMode(static_cast<UE::Widget::EWidgetMode>(Mode));
 	}
 
 	FEditorViewportClient* Client = Editor.GetViewportClient();
@@ -31,7 +31,7 @@ void FSkeletalMeshViewportPanel::DrawContent()
 	// 이미지 영역을 입력 항목으로 등록하여 드래그 중에도 카메라 조작을 유지합니다.
 	ImGui::InvisibleButton("##SkeletalMeshViewport", Size,
 		ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
-	if (FTexture2D* Target = Client->GetColorTarget(); Target && Target->GetSRV())
+	if (FTexture2D* Target = Client->Viewport ? Client->Viewport->GetRenderTargetTexture() : nullptr; Target && Target->GetSRV())
 	{
 		ImGui::GetWindowDrawList()->AddImage(Target->GetSRV(), Origin,
 			ImVec2(Origin.x + Size.x, Origin.y + Size.y));
@@ -91,15 +91,15 @@ void FSkeletalMeshViewportPanel::DrawContent()
 	{
 		if (ImGui::IsKeyDown(ImGuiKey_W))
 		{
-			Editor.SetGizmoMode(EGizmoMode::Location);
+			Editor.SetGizmoMode(UE::Widget::WM_Translate);
 		}
 		if (ImGui::IsKeyDown(ImGuiKey_E))
 		{
-			Editor.SetGizmoMode(EGizmoMode::Rotation);
+			Editor.SetGizmoMode(UE::Widget::WM_Rotate);
 		}
 		if (ImGui::IsKeyDown(ImGuiKey_R))
 		{
-			Editor.SetGizmoMode(EGizmoMode::Scale);
+			Editor.SetGizmoMode(UE::Widget::WM_Scale);
 		}
 
 		// 뷰포트에서 Space를 누를 때마다 이동, 회전, 크기 모드를 순환합니다.
@@ -107,7 +107,7 @@ void FSkeletalMeshViewportPanel::DrawContent()
 			!Editor.IsGizmoDragging() && ImGui::IsKeyPressed(ImGuiKey_Space, false))
 		{
 			const int32 NextMode = (static_cast<int32>(Editor.GetGizmoMode()) + 1) % IM_ARRAYSIZE(GizmoModeNames);
-			Editor.SetGizmoMode(static_cast<EGizmoMode>(NextMode));
+			Editor.SetGizmoMode(static_cast<UE::Widget::EWidgetMode>(NextMode));
 		}
 	}
 

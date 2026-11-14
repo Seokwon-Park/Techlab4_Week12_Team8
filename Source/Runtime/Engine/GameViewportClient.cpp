@@ -16,6 +16,7 @@
 #include "UI/UIRenderer.h"
 #include "Render/Renderer.h"
 #include "Render/SceneRenderer.h"
+#include "Launch/LaunchEngineLoop.h"
 
 FGameViewportClient::FGameViewportClient()
 {
@@ -90,6 +91,8 @@ bool FGameViewportClient::ScreenToWorldRay(
 	assert(OutRay);
 
 	const FRect& Rect = GetRect();
+	const uint32 Width = GetWidth();
+	const uint32 Height = GetHeight();
 
 	if (!CameraComponent ||
 		Rect.Width <= 0.0f || Rect.Height <= 0.0f ||
@@ -145,12 +148,8 @@ FSceneView FGameViewportClient::CalcSceneView(const FRect& InViewRect)
 	OutView.bGameView = true;
 	OutView.ViewRect = InViewRect;
 
-	Resize(
-		static_cast<uint32>(std::max(InViewRect.Width, 1.0f)),
-		static_cast<uint32>(std::max(InViewRect.Height, 1.0f))
-	);
-
-	const float Aspect = static_cast<float>(Width) / static_cast<float>(Height);
+	// 종횡비는 넘겨받은 영역에서 구한다. 타깃 크기는 뷰포트가 맡으므로 여기서 바꾸지 않는다.
+	const float Aspect = std::max(InViewRect.Width, 1.0f) / std::max(InViewRect.Height, 1.0f);
 
 	if (!CameraComponent && World)
 	{
@@ -263,50 +262,36 @@ void FGameViewportClient::SetCameraComponent(UCameraComponent* InCameraComponent
 	CameraComponent = InCameraComponent;
 }
 
-bool FGameViewportClient::Draw(FRenderer* Renderer, FUIRenderer* UIRenderer)
+void FGameViewportClient::Draw(FViewport* InViewport, FUIRenderer* Canvas)
 {
-	if (!World || !Renderer || !Width || !Height) return false;
+	FRenderer* Renderer = GEngine ? GEngine->GetEngineLoop().GetRenderer() : nullptr;
+	if (!World || !Renderer || !InViewport) return;
+
+	const uint32 Width = static_cast<uint32>(InViewport->GetSizeXY().X);
+	const uint32 Height = static_cast<uint32>(InViewport->GetSizeXY().Y);
+	if (!Width || !Height) return;
 
 	// 카메라를 뷰·투영 행렬로 바꾼다.
 	const FRect ViewRect{ 0.0f, 0.0f, static_cast<float>(Width), static_cast<float>(Height) };
 	const FSceneView SceneView = CalcSceneView(ViewRect);
 
-	// 보이는 물체와 라이트를 모은 뒤 패스를 순서대로 실행해 ViewTargets에 그린다.
+	// 보이는 물체와 라이트를 모은 뒤 패스를 순서대로 실행해 뷰포트의 타깃에 그린다.
 	FSceneRenderer SceneRenderer(World, SceneView, RenderData);
 	SceneRenderer.InitViews(Renderer, EngineShowFlags);
-	return SceneRenderer.Render(Renderer, ViewTargets, EngineShowFlags,
-		[this, UIRenderer, &SceneView](FScenePassCallbacks& Callbacks)
+	SceneRenderer.Render(Renderer, InViewport->GetViewTargets(), EngineShowFlags,
+		[this, Canvas, Width, Height, &SceneView](FScenePassCallbacks& Callbacks)
 		{
 			// 게임 UI는 씬 위에 그려야 하므로 그 시점에 불릴 함수로 등록한다.
-			Callbacks.Overlays.GameUI = [this, UIRenderer]
+			Callbacks.Overlays.GameUI = [this, Canvas, Width, Height]
 				{
-					if (!UIRenderer) return;
+					if (!Canvas) return;
 					PaintUI(UIDrawList);
-					UIRenderer->Render(UIDrawList, Width, Height);
+					Canvas->Render(UIDrawList, Width, Height);
 				};
 
 			// 에디터가 등록해 둔 디버그 요소가 있으면 같이 등록한다.
 			if (DebugDrawDelegate) DebugDrawDelegate(SceneView, Callbacks.Overlays);
 		});
-}
-
-void FGameViewportClient::Resize(uint32 InWidth, uint32 InHeight)
-{
-	if (Width == InWidth && Height == InHeight && ViewTargets.IsValidFor(InWidth, InHeight))
-	{
-		return;
-	}
-
-	Width = InWidth;
-	Height = InHeight;
-
-	if (Width == 0 || Height == 0)
-	{
-		ViewTargets.Reset();
-		return;
-	}
-
-	ViewTargets.Resize(Width, Height);
 }
 
 void FGameViewportClient::Reset()
@@ -321,10 +306,6 @@ void FGameViewportClient::Reset()
 	GameInstance = nullptr;
 	Engine = nullptr;
 	CameraComponent = nullptr;
-
-	ViewTargets.Reset();
-	Width = 0;
-	Height = 0;
 }
 
 void FGameViewportClient::AddViewportWidget(UUserWidget* Widget)
@@ -372,6 +353,8 @@ void FGameViewportClient::TickUI(float DeltaTime)
 void FGameViewportClient::PaintUI(FUIDrawList& DrawList)
 {
 	DrawList.Reset();
+	const uint32 Width = GetWidth();
+	const uint32 Height = GetHeight();
 	if (Width == 0 || Height == 0) return;
 
 	const FUIGeometry Screen{ FUIRect{ 0.0f, 0.0f, static_cast<float>(Width), static_cast<float>(Height) },

@@ -47,6 +47,7 @@
 #include "UI/UIRenderer.h"
 #include "UI/UIDrawList.h"
 
+#include "Editor/Selection.h"
 #include "EditorEngine.generated.h"
 
 inline constexpr int32 InvalidViewIndex = -1;
@@ -65,8 +66,6 @@ public:
 	void UpdateGizmoAndPicking();
 	// PIE 게임 화면 위에 Settings > Debug Draw (PIE)에서 켠 디버그 표시를 그린다.
 	void DrawPIEDebug(UWorld* World, const FMatrix& ViewProjection);
-	// 위젯 에디터가 미리보기 텍스처를 그릴 때 쓴다. 초기화 전에는 nullptr이다.
-	FUIRenderer* GetUIRenderer() const { return UIRenderer.get(); }
 	void DeleteActor(AActor* Actor);
 	void DeleteComponent(UActorComponent* Component);
 
@@ -97,6 +96,24 @@ public:
 	FGizmo* GetGizmo() const { return Gizmo.get(); }
 	// 지금 선택된 메시의 외곽선
 	FOutline* GetOutline() const { return Outline.get(); }
+
+	// 선택된 액터와 컴포넌트의 집합. 패널과 뷰포트는 선택을 따로 기억하지 않고 여기서 읽는다.
+	// UE의 UEditorEngine::GetSelectedActors, GetSelectedComponents와 같다.
+	USelection* GetSelectedActors() const { return SelectedActors; }
+	USelection* GetSelectedComponents() const { return SelectedComponents; }
+
+	// 액터 하나를 선택하거나 선택에서 뺀다. 액터 선택이 바뀌면 컴포넌트 선택은 비운다.
+	// bNotify가 true면 NoteSelectionChange를 불러 기즈모, 외곽선, 디테일 패널을 새 선택에 맞춘다.
+	// 이 엔진은 한 번에 하나만 선택하므로, 다른 액터를 고를 때는 SelectNone(false)을 먼저 부른다. UE에서도 클릭 선택은 그렇게 한다.
+	// UE의 UEditorEngine::SelectActor와 같다. UE에는 뒤에 인자가 더 있다(bSelectEvenIfHidden, bForceRefresh).
+	void SelectActor(AActor* Actor, bool bInSelected, bool bNotify);
+	// 컴포넌트 하나를 선택하거나 선택에서 뺀다. UE의 UEditorEngine::SelectComponent와 같다.
+	void SelectComponent(UActorComponent* Component, bool bInSelected, bool bNotify);
+	// 액터와 컴포넌트 선택을 모두 비운다. UE의 UEditorEngine::SelectNone와 같다. UE에는 뒤에 인자가 더 있다.
+	void SelectNone(bool bNoteSelectionChange);
+	// 선택이 바뀐 뒤에 부른다. 기즈모 대상, 외곽선 대상, 디테일 패널의 대상을 지금의 선택에 맞춘다.
+	// UE의 UEditorEngine::NoteSelectionChange와 같은 자리다. UE는 여기서 이벤트를 알리고 각 패널이 받아서 스스로 갱신한다.
+	void NoteSelectionChange();
 
 	// 에디터 월드가 들어 있는 월드 컨텍스트. UE에서도 public이라 GEditor->GetEditorWorldContext().World()로 에디터 월드를 얻는다.
 	FWorldContext& GetEditorWorldContext();
@@ -166,8 +183,11 @@ private:
 
 	TUniquePtr<FImGuiRenderer> ImGuiRenderer;
 	TUniquePtr<FOutline> Outline;
-	TUniquePtr<FUIRenderer> UIRenderer;
 	TUniquePtr<FGizmo> Gizmo;
+
+	// 선택된 액터와 컴포넌트. InitEditorRenderers에서 만들고 PreExit에서 지운다.
+	USelection* SelectedActors = nullptr;
+	USelection* SelectedComponents = nullptr;
 
 
 	FLevelEditorTab* LevelEditorTab = nullptr;
@@ -193,6 +213,12 @@ private:
 
 	// Play 버튼이 다음 세션을 띄울 위치
 	EPlayModeType PlayMode = EPlayModeType::InViewport;
+
+	// PIE 게임 화면의 뷰포트. PIE를 시작할 때 만들고 끝낼 때 버린다. 에디터 View 안에서 플레이할 때와 별도 창일 때 모두 쓴다.
+	// 그릴 대상(텍스처)과 크기를 갖고, 그리는 일은 PIE 월드 컨텍스트의 게임 뷰포트 클라이언트에게 맡긴다.
+	// 이 엔진 고유의 이름이다. UE는 PIE 화면의 FSceneViewport를 Slate 위젯이 갖는다
+	// (별도 창은 FSlatePlayInEditorInfo::SlatePlayInEditorWindowViewport, 에디터 안은 SLevelViewport::ActiveViewport).
+	TUniquePtr<FViewport> PlayInEditorViewport;
 
 	// New Editor Window(PIE) 모드에서만 존재한다. Swapchain이 창 핸들을 쓰므로 창보다 먼저 해제한다.
 	TUniquePtr<FWindow> PIEWindow;

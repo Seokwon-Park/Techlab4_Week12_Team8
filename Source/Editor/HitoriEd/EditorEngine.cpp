@@ -15,6 +15,7 @@
 #include "Engine/Level.h"
 #include "Engine/GameInstance.h"
 #include "Engine/GameViewportClient.h"
+#include "Editor/EditorModeManager.h"
 
 #include "Render/Renderer.h"
 #include "Render/SceneRenderer.h"
@@ -181,9 +182,14 @@ void UEditorEngine::InitImGui()
 // 선택 상태(기즈모, 외곽선 대상)와 UI 렌더러를 만든다. 뷰포트에 그리는 도구는 뷰포트 클라이언트가 갖는다.
 void UEditorEngine::InitEditorRenderers()
 {
-	Gizmo = MakeUnique<FGizmo>();
+	// 레벨 에디터의 기즈모는 레벨 에디터의 모드 툴에서 편집 모드와 좌표계를 읽는다.
+	Gizmo = MakeUnique<FGizmo>(&GLevelEditorModeTools());
 
 	Outline = MakeUnique<FOutline>();
+
+	// 선택 집합. 패널보다 먼저 만들어야 패널이 처음 그릴 때부터 읽을 수 있다.
+	SelectedActors = NewObject<USelection>();
+	SelectedComponents = NewObject<USelection>();
 
 	UIRenderer = MakeUnique<FUIRenderer>();
 	UIRenderer->Init();
@@ -256,39 +262,18 @@ void UEditorEngine::InitPanels()
 
 	OutlinerPanel = LevelEditorTab->AddPanel<FOutlinerPanel>();
 	OutlinerPanel->SetWorld(GetActiveWorld());
-	OutlinerPanel->SetSelectionCallback(
-		[this](USceneComponent* Root)
-		{
-			Gizmo->SetTarget(Root, true);
-			DetailsPanel->SetTarget(Root ? Root->GetOwner() : nullptr);
-
-			UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Root);
-			if (!Primitive && Root && Root->GetOwner())
-			{
-				for (UActorComponent* C : Root->GetOwner()->GetComponents())
-					if ((Primitive = Cast<UPrimitiveComponent>(C))) break;
-			}
-			Outline->SetTarget(Primitive);
-		});
-
+	// 디테일 패널의 컴포넌트 목록에서 고른 컴포넌트를 선택에 반영한다. 고른 것이 없으면 컴포넌트 선택만 비운다.
 	DetailsPanel->SetSelectionCallback(
 		[this](UActorComponent* Component)
 		{
-			if (USceneComponent* SceneComponent = Cast<USceneComponent>(Component))
+			if (Component)
 			{
-				AActor* Owner = SceneComponent->GetOwner();
-				if (Owner && SceneComponent == Owner->GetRootComponent())
-				{
-					Gizmo->SetTarget(SceneComponent, true);
-				}
-				else
-				{
-					Gizmo->SetTarget(SceneComponent);
-				}
+				SelectComponent(Component, true, true);
 			}
 			else
 			{
-				Gizmo->SetTarget(nullptr);
+				SelectedComponents->DeselectAll();
+				NoteSelectionChange();
 			}
 		}
 	);
@@ -427,7 +412,7 @@ void UEditorEngine::Tick(const float DeltaTime)
 	EditorControlsPanel->FEditorControlsPanel::DeltaTime = DeltaTime;
 
 	if (!ImGui::GetIO().WantTextInput && FInputSystem::IsKeyPressed(EKeyCode::Delete))
-		DeleteActor(OutlinerPanel->GetSelectedActor());
+		DeleteActor(GetSelectedActors()->GetTop<AActor>());
 
 	// 뷰포트 레이아웃과 에디터 카메라를 갱신한다. 패널의 요청(레이아웃 변경, 분할선 드래그)을 적용하고,
 	// 어느 View 위에 마우스가 있는지 찾아 활성 View를 정한 뒤 View마다 카메라 입력을 처리한다.
@@ -678,12 +663,10 @@ void UEditorEngine::Tick(const float DeltaTime)
 		FWorldContext* Context = GetPIEWorldContext();
 		if (Context && Context->GameViewport && Context->World())
 		{
-			FGameViewportClient* GameClient = Context->GameViewport.get();
-			const uint32 Width = GameClient->GetWidth();
-			const uint32 Height = GameClient->GetHeight();
-			if (Width > 0 && Height > 0)
+			// 타깃 크기는 UpdatePIEWindowTargets가 PIE 창 크기에 맞춰 두었다.
+			if (PlayInEditorViewport && PlayInEditorViewport->GetSizeXY().X > 0 && PlayInEditorViewport->GetSizeXY().Y > 0)
 			{
-				GameClient->Draw(Renderer, UIRenderer.get());
+				PlayInEditorViewport->Draw();
 
 				CopyPIEWindowToBackbuffer();
 			}
@@ -775,19 +758,23 @@ void UEditorEngine::UpdateSingleViewportClient(FEditorViewportClient* ViewClient
 				WorldContextlist[WorldIdx].GameViewport)
 			{
 				GameClient = WorldContextlist[WorldIdx].GameViewport.get();
-				// 게임 뷰포트의 타깃 크기를 이 View의 영역에 맞춘 뒤 그린다.
-				GameClient->Resize(
-					static_cast<uint32>(std::max(ViewRect.Width, 1.0f)),
-					static_cast<uint32>(std::max(ViewRect.Height, 1.0f)));
-				GameClient->Draw(Renderer, UIRenderer.get());
+				// PIE 뷰포트의 타깃 크기를 이 View의 영역에 맞춘 뒤 그린다. 뷰포트가 게임 뷰포트 클라이언트의 Draw를 부른다.
+				if (PlayInEditorViewport && PlayInEditorViewport->GetClient() == GameClient)
+				{
+					PlayInEditorViewport->UpdateViewportRHI(false,
+						static_cast<uint32>(std::max(ViewRect.Width, 1.0f)),
+						static_cast<uint32>(std::max(ViewRect.Height, 1.0f)));
+					PlayInEditorViewport->Draw();
+				}
 
 				break;
 			}
 		}
 	}
-	else
+	else if (ViewClient->Viewport)
 	{
-		ViewClient->Draw(Renderer);
+		// 뷰포트가 자기 클라이언트의 Draw를 부른다. UE도 여기서 Viewport->Draw()를 부른다.
+		ViewClient->Viewport->Draw();
 	}
 }
 
@@ -832,8 +819,11 @@ void UEditorEngine::UpdateGizmoAndPicking()
 		return;
 
 	const FVector2 LocalMousePosition = ViewportsPanel->GetLocalMousePosition();
+	// 클릭으로 고른 액터 하나만 선택한다. 빈 곳을 누르면 SelectedActor가 nullptr이라 선택이 비워진다.
 	ViewClient->UpdateGizmoAndPicking(Gizmo.get(), LocalMousePosition, [this](AActor* SelectedActor) {
-		OutlinerPanel->SelectActor(SelectedActor);
+		SelectNone(false);
+		SelectActor(SelectedActor, true, false);
+		NoteSelectionChange();
 		});
 }
 
@@ -906,6 +896,12 @@ void UEditorEngine::PreExit()
 	AllViewportClients.Empty();
 
 	ImGuiRenderer->Shutdown();
+
+	delete SelectedActors;
+	delete SelectedComponents;
+	SelectedActors = nullptr;
+	SelectedComponents = nullptr;
+
 	GEditor = nullptr;
 }
 
@@ -918,7 +914,7 @@ void UEditorEngine::DeleteActor(AActor* Actor)
 	if (IsPlaying() && !bIsPaused && !IsSimulatingInEditor())
 		return;
 
-	OutlinerPanel->SelectActor(nullptr);
+	SelectNone(true);
 	DetailsPanel->SelectComponent(nullptr);
 
 	Actor->Destroy();
@@ -930,9 +926,14 @@ void UEditorEngine::DeleteComponent(UActorComponent* Component)
 		return;
 	if (IsPlaying() && !bIsPaused && !IsSimulatingInEditor())
 		return;
+	// 지울 컴포넌트를 가리키는 참조를 먼저 모두 끊는다.
+	SelectedComponents->DeselectAll();
 	DetailsPanel->SelectComponent(nullptr);
+	Gizmo->SetTarget(nullptr, false);
 	Outline->SetTarget(nullptr);
 	Component->GetOwner()->DestroyComponent(Component);
+	// 남은 선택(액터)에 맞춰 기즈모와 외곽선 대상을 다시 정한다.
+	NoteSelectionChange();
 }
 
 void UEditorEngine::OnActiveWorldChanged()
@@ -965,10 +966,90 @@ void UEditorEngine::OnActiveWorldChanged()
 // 씬 변경으로 무효화된 에디터의 선택 참조를 모두 해제한다.
 void UEditorEngine::ResetSceneSelection()
 {
-	Gizmo->SetTarget(nullptr, false);
-	Outline->SetTarget(nullptr);
-	DetailsPanel->SetTarget(nullptr);
-	OutlinerPanel->SelectActor(nullptr);
+	SelectNone(true);
+}
+
+void UEditorEngine::SelectActor(AActor* Actor, bool bInSelected, bool bNotify)
+{
+	if (!Actor || !SelectedActors) return;
+
+	if (bInSelected)
+	{
+		SelectedActors->Select(Actor);
+		HTR_LOG(Info, "{} UUID {} is selected", Actor->GetName(), Actor->GetUUID());
+	}
+	else
+	{
+		SelectedActors->Deselect(Actor);
+	}
+	// 컴포넌트 선택은 선택된 액터 안에서만 뜻이 있으므로 액터 선택이 바뀌면 비운다.
+	SelectedComponents->DeselectAll();
+
+	if (bNotify) NoteSelectionChange();
+}
+
+void UEditorEngine::SelectComponent(UActorComponent* Component, bool bInSelected, bool bNotify)
+{
+	if (!Component || !SelectedComponents) return;
+
+	// 컴포넌트도 한 번에 하나만 선택한다.
+	SelectedComponents->DeselectAll();
+	if (bInSelected)
+		SelectedComponents->Select(Component);
+
+	if (bNotify) NoteSelectionChange();
+}
+
+void UEditorEngine::SelectNone(bool bNoteSelectionChange)
+{
+	if (!SelectedActors || !SelectedComponents) return;
+
+	SelectedActors->DeselectAll();
+	SelectedComponents->DeselectAll();
+
+	if (bNoteSelectionChange) NoteSelectionChange();
+}
+
+void UEditorEngine::NoteSelectionChange()
+{
+	if (!SelectedActors || !SelectedComponents) return;
+
+	AActor* Actor = SelectedActors->GetTop<AActor>();
+	UActorComponent* Component = SelectedComponents->GetTop<UActorComponent>();
+	USceneComponent* Root = Actor ? Actor->GetRootComponent() : nullptr;
+
+	// 기즈모는 선택된 컴포넌트에 붙는다. 컴포넌트를 따로 고르지 않았으면 액터의 루트에 붙는다.
+	// 위치가 없는 컴포넌트(USceneComponent가 아닌 것)를 고르면 기즈모를 숨긴다.
+	if (Gizmo)
+	{
+		if (Component)
+		{
+			USceneComponent* SceneComponent = Cast<USceneComponent>(Component);
+			AActor* Owner = SceneComponent ? SceneComponent->GetOwner() : nullptr;
+			Gizmo->SetTarget(SceneComponent, Owner && SceneComponent == Owner->GetRootComponent());
+		}
+		else
+		{
+			Gizmo->SetTarget(Root, true);
+		}
+	}
+
+	// 외곽선은 선택된 액터의 메시에 그린다. 루트가 메시가 아니면 액터의 첫 번째 메시 컴포넌트를 쓴다.
+	if (Outline)
+	{
+		UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Root);
+		if (!Primitive && Actor)
+		{
+			for (UActorComponent* C : Actor->GetComponents())
+				if ((Primitive = Cast<UPrimitiveComponent>(C))) break;
+		}
+		Outline->SetTarget(Primitive);
+	}
+
+	// 디테일 패널은 선택된 액터를 보여 준다. 컴포넌트를 고른 경우에는 패널이 이미 그 컴포넌트를 보여 주고 있으므로 건드리지 않는다.
+	// SetTarget은 패널이 보여 주는 컴포넌트를 루트로 되돌리기 때문이다.
+	if (DetailsPanel && !Component)
+		DetailsPanel->SetTarget(Actor);
 }
 
 // 새 씬 생성이 성공하면 에디터 선택 상태를 초기화한다.

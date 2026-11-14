@@ -45,7 +45,7 @@ FLevelEditorViewportClient::~FLevelEditorViewportClient()
 // 이번 프레임의 표시 설정을 채운 뒤 기반 클래스의 Draw로 씬을 그린다.
 // 에디터 설정 창의 값과 이 뷰포트의 뷰 모드를 EngineShowFlags에 옮긴다.
 // UE의 FLevelEditorViewportClient::Draw(FViewport*, FCanvas*)도 준비를 한 뒤 FEditorViewportClient::Draw를 부른다.
-void FLevelEditorViewportClient::Draw(FRenderer* Renderer)
+void FLevelEditorViewportClient::Draw(FViewport* InViewport, FUIRenderer* Canvas)
 {
 	if (const FEditorSettings* EditorSettings = GEditor ? GEditor->GetEditorSettings() : nullptr)
 	{
@@ -83,14 +83,14 @@ void FLevelEditorViewportClient::Draw(FRenderer* Renderer)
 		EngineShowFlags.SceneDepthRange = MaxRange;
 	}
 
-	FEditorViewportClient::Draw(Renderer);
+	FEditorViewportClient::Draw(InViewport, Canvas);
 }
 
 // 레벨 에디터 뷰포트의 씬 위에 선, 그리드, 외곽선, 기즈모를 올린다. 씬은 기반 클래스의 Draw가 그린다.
 // 여기서는 그릴 시점에 불릴 함수를 등록만 하고, 등록한 함수는 FSceneRenderer::Render 안에서 불린다.
 void FLevelEditorViewportClient::Draw(const FSceneView* View, FScenePassCallbacks& Callbacks)
 {
-	if (!GEditor || !GEditor->GetEditorSettings()) return;
+	if (!GEditor || !GEditor->GetEditorSettings() || !Viewport) return;
 	const FSceneView& SceneView = *View;
 
 	// 디버그 선은 이 뷰포트가 보는 월드의 LineBatcher로 그린다.
@@ -101,8 +101,8 @@ void FLevelEditorViewportClient::Draw(const FSceneView* View, FScenePassCallback
 	FOutline* Outline = GEditor->GetOutline();
 
 	// 뷰 모드가 Scene Depth, Cascade일 때 깊이를 색으로 바꿔 보여 준다.
-	FTexture2D* ColorTarget = ViewTargets.SceneColor.get();
-	FTexture2D* DepthTarget = ViewTargets.Depth.get();
+	FTexture2D* ColorTarget = Viewport->GetViewTargets().SceneColor.get();
+	FTexture2D* DepthTarget = Viewport->GetViewTargets().Depth.get();
 	Callbacks.DepthVisualization = [this, &SceneView, DepthTarget, ColorTarget]
 		{
 			SceneDepthRenderer.OnRender(SceneView, DepthTarget, ColorTarget, MaxRange);
@@ -113,18 +113,20 @@ void FLevelEditorViewportClient::Draw(const FSceneView* View, FScenePassCallback
 			CascadeFloorRenderer.OnRender(SceneView, RenderData, DepthTarget, ColorTarget);
 		};
 
-	const FViewportSettings ViewportSetting{ 0, 0, ViewTargets.SceneColor->GetWidth(), ViewTargets.SceneColor->GetHeight(), 0.0f, 1.0f };
+	const FViewportSettings ViewportSetting{ 0, 0, ColorTarget->GetWidth(), ColorTarget->GetHeight(), 0.0f, 1.0f };
 	const bool bIsActiveViewport = (GCurrentLevelEditingViewportClient == this);
 
-	const bool bDrawSelectedLight = bIsActiveViewport && Gizmo->GetTarget() &&
-		(Cast<ASpotLightActor>(Gizmo->GetTarget()->GetOwner()) ||
-			Cast<APointLightActor>(Gizmo->GetTarget()->GetOwner()) ||
-			Cast<ARectLightActor>(Gizmo->GetTarget()->GetOwner()) ||
-			Cast<ADecalActor>(Gizmo->GetTarget()->GetOwner()));
+	// 선택된 액터는 에디터의 선택 집합에서 읽는다.
+	AActor* SelectedActor = GEditor->GetSelectedActors()->GetTop<AActor>();
+	const bool bDrawSelectedLight = bIsActiveViewport && SelectedActor &&
+		(Cast<ASpotLightActor>(SelectedActor) ||
+			Cast<APointLightActor>(SelectedActor) ||
+			Cast<ARectLightActor>(SelectedActor) ||
+			Cast<ADecalActor>(SelectedActor));
 
 	const bool bDrawCascadeBounds = Settings.bDrawCascadeBounds;
 	{
-		Callbacks.Overlays.EditorLines = [this, &SceneView, &Settings, LineBatcher, Gizmo, bDrawSelectedLight, bDrawCascadeBounds]
+		Callbacks.Overlays.EditorLines = [this, &SceneView, &Settings, LineBatcher, SelectedActor, bDrawSelectedLight, bDrawCascadeBounds]
 			{
 				LineBatcher->BeginFrame();
 				if (bDrawCascadeBounds)
@@ -160,18 +162,15 @@ void FLevelEditorViewportClient::Draw(const FSceneView* View, FScenePassCallback
 				
 				if (bDrawSelectedLight)
 				{
-					if (ASpotLightActor* Light = Cast<ASpotLightActor>(Gizmo->GetTarget()->GetOwner()))
+					if (ASpotLightActor* Light = Cast<ASpotLightActor>(SelectedActor))
 						Light->GetSpotLightComponent()->DrawDebug(LineBatcher);
-					else if (APointLightActor* Light = Cast<APointLightActor>(Gizmo->GetTarget()->GetOwner()))
+					else if (APointLightActor* Light = Cast<APointLightActor>(SelectedActor))
 						Light->GetPointLightComponent()->DrawDebug(LineBatcher);
-					else if (ARectLightActor* Light = Cast<ARectLightActor>(Gizmo->GetTarget()->GetOwner()))
+					else if (ARectLightActor* Light = Cast<ARectLightActor>(SelectedActor))
 						Light->GetRectLightComponent()->DrawDebug(LineBatcher);
-					else if (ADecalActor* Decal = Cast<ADecalActor>(Gizmo->GetTarget()->GetOwner()))
+					else if (ADecalActor* Decal = Cast<ADecalActor>(SelectedActor))
 						Decal->GetDecalComponent()->DrawDebug(LineBatcher);
 				}
-
-				const AActor* SelectedActor =
-					Gizmo->GetTarget() ? Gizmo->GetTarget()->GetOwner() : nullptr;
 
 				// 이 뷰포트가 보고 있는 월드의 것을 그린다. PIE와 SIE 중에는 PIE 월드다.
 				DrawCollisionShapes(GetWorld(), LineBatcher, SelectedActor);

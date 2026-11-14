@@ -135,6 +135,10 @@ bool FAssetEditor::InitializeResources()
 	ViewportClient = MakeUnique<FAssetEditorViewportClient>(*this, PreviewScene);
 	ViewportClient->SetViewRotation(FRotator(30.0f, 210.0f, 0.0f));
 
+	// 뷰포트를 만들어 클라이언트와 서로 연결한다. 크기는 미리보기 패널이 보일 때 정해진다.
+	Viewport = MakeUnique<FViewport>(ViewportClient.get());
+	ViewportClient->Viewport = Viewport.get();
+
 	// Scene 세팅
 	PreviewScene.Setup();
 
@@ -148,6 +152,7 @@ TUniquePtr<IEditorTab> FAssetEditor::CreateTab()
 
 void FAssetEditor::ShutdownResources()
 {
+	Viewport.reset();
 	ViewportClient.reset();
 	PreviewScene.Release();
 }

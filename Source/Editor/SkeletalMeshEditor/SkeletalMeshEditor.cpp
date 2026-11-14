@@ -34,17 +34,17 @@ TUniquePtr<IEditorTab> FSkeletalMeshEditor::CreateTab()
 	return MakeUnique<FSkeletalMeshEditorTab>(*this);
 }
 
-void FSkeletalMeshEditor::SetGizmoMode(EGizmoMode Mode)
+void FSkeletalMeshEditor::SetGizmoMode(UE::Widget::EWidgetMode Mode)
 {
 	BoneGizmo.EndDrag();
-	BoneGizmo.SetMode(Mode);
+	ModeTools.SetWidgetMode(Mode);
 	SyncBoneGizmo();
 }
 
-void FSkeletalMeshEditor::SetGizmoSpace(EGizmoSpace Space)
+void FSkeletalMeshEditor::SetGizmoSpace(ECoordSystem Space)
 {
 	BoneGizmo.EndDrag();
-	BoneGizmo.SetSpace(Space);
+	ModeTools.SetCoordSystem(Space);
 	SyncBoneGizmo();
 }
 
@@ -134,7 +134,7 @@ bool FSkeletalMeshEditor::UpdateBoneGizmo()
 			? MeshComponent->GetBoneWorldMatrix(ParentIndex) : MeshComponent->GetWorldMatrix();
 
 		// 스케일이 0인 부모의 역행렬로 이동을 계산할 수 없습니다.
-		if (BoneGizmo.GetMode() == EGizmoMode::Location && fabsf(ParentWorld.Determinant()) < 1e-12f)
+		if (ModeTools.GetWidgetMode() == UE::Widget::WM_Translate && fabsf(ParentWorld.Determinant()) < 1e-12f)
 		{
 			BoneGizmo.EndDrag();
 			return true;
@@ -142,7 +142,7 @@ bool FSkeletalMeshEditor::UpdateBoneGizmo()
 
 		DragStartBoneTransform = MeshComponent->GetBoneLocalTransform(SelectedBoneIndex);
 		DragParentRotation = GetBoneWorldRotation(ParentIndex);
-		if (BoneGizmo.GetMode() == EGizmoMode::Location)
+		if (ModeTools.GetWidgetMode() == UE::Widget::WM_Translate)
 		{
 			DragParentInverse = ParentWorld.Inverse();
 		}
@@ -163,16 +163,16 @@ bool FSkeletalMeshEditor::UpdateBoneGizmo()
 void FSkeletalMeshEditor::ApplyBoneGizmoTransform()
 {
 	FTransform Local = DragStartBoneTransform;
-	switch (BoneGizmo.GetMode())
+	switch (ModeTools.GetWidgetMode())
 	{
-	case EGizmoMode::Location:
+	case UE::Widget::WM_Translate:
 		Local.Location = DragParentInverse.TransformPosition(BoneGizmoTarget->GetWorldLocation());
 		break;
-	case EGizmoMode::Rotation:
+	case UE::Widget::WM_Rotate:
 		Local.Rotation = (DragParentRotation.Inverse() *
 			BoneGizmoTarget->GetRelativeRotation().Quaternion()).Normalized();
 		break;
-	case EGizmoMode::Scale:
+	case UE::Widget::WM_Scale:
 		Local.Scale = DragStartBoneTransform.Scale * BoneGizmoTarget->GetRelativeScale3D();
 		break;
 	}

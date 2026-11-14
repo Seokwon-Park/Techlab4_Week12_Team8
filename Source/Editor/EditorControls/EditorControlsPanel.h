@@ -45,7 +45,7 @@ public:
 	const char* GizmoItems[3] ={"Location","Rotation","Scale"};
 
 	int32 SpaceSelectedIndex = 0;
-	const char* SpaceItems[2] ={"Local","World"};
+	const char* SpaceItems[2] ={"World","Local"};
 
 	TArray<UClass*> Classes
 	{

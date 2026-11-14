@@ -167,25 +167,31 @@ void UGameEngine::DispatchInput(FGameViewportClient& Viewport, float DeltaTime)
 
 // 게임 뷰포트를 다시 그린다. UE의 UGameEngine::RedrawViewports와 같은 자리다.
 // 그리는 일은 뷰포트 클라이언트의 Draw가 하고, 여기서는 크기를 맞추고 결과를 백버퍼로 옮긴다.
-void UGameEngine::RedrawViewports(FGameViewportClient& Viewport)
+void UGameEngine::RedrawViewports(FGameViewportClient& GameViewport)
 {
 	FEngineLoop& Loop = GetEngineLoop();
 	const uint32 Width = Loop.GetViewportWidth();
 	const uint32 Height = Loop.GetViewportHeight();
 	if (!Width || !Height) return;
 
+	// 게임 창의 뷰포트는 처음 그릴 때 만들고, 게임 뷰포트 클라이언트와 서로 연결한다.
+	if (!SceneViewport)
+		SceneViewport = MakeUnique<FViewport>(&GameViewport);
+	SceneViewport->SetViewportClient(&GameViewport);
+	GameViewport.Viewport = SceneViewport.get();
+
 	// 크기가 같으면 아무것도 하지 않으므로 매 프레임 불러도 된다. 창 크기 변경도 여기서 따라간다.
-	Viewport.Resize(Width, Height);
+	SceneViewport->UpdateViewportRHI(false, Width, Height);
 
-	// 게임 설정 파일에서 읽은 렌더 설정을 뷰포트에 넘긴다.
-	Viewport.EngineShowFlags = Settings.RenderOptions;
+	// 게임 설정 파일에서 읽은 렌더 설정을 뷰포트 클라이언트에 넘긴다.
+	GameViewport.EngineShowFlags = Settings.RenderOptions;
 
-	if (!Viewport.Draw(Loop.GetRenderer(), UIRenderer.get()))
-		return;
+	// 뷰포트가 자기 클라이언트의 Draw를 부른다.
+	SceneViewport->Draw();
 
 	// FXAA를 켜면 SceneColor가 FXAA 결과로 바뀌어 있다. PIE 별도 창과 같은 방식으로 복사한다.
 	FTexture2D* Backbuffer = Loop.GetSwapchain()->GetBackbuffer();
-	FTexture2D* SceneColor = Viewport.GetColorTarget();
+	FTexture2D* SceneColor = SceneViewport->GetRenderTargetTexture();
 	if (!Backbuffer || !SceneColor ||
 		Backbuffer->GetWidth() != SceneColor->GetWidth() || Backbuffer->GetHeight() != SceneColor->GetHeight())
 		return;
@@ -197,5 +203,7 @@ void UGameEngine::PreExit()
 {
 	if (FWorldContext* Context = GetWorldContextFromType(EWorldType::Game))
 		DestroyWorldContext(Context->World());
+	// 뷰포트의 텍스처는 Device보다 먼저 놓아야 한다. 클라이언트는 위에서 월드 컨텍스트와 함께 사라졌다.
+	SceneViewport.reset();
 	UIRenderer.reset();
 }

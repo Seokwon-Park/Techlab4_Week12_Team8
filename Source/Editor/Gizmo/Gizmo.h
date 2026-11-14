@@ -5,27 +5,18 @@
 #include "Components/SceneComponent.h"
 #include "Components/LocalLightComponent.h"
 
+#include "Editor/UnrealWidgetFwd.h"
+
 class UCameraComponent;
 class FGizmoRenderer;
+class FEditorModeTools;
 struct FSceneView;
-
-enum class EGizmoMode
-{
-	Location,
-	Rotation,
-	Scale,
-};
-
-enum class EGizmoSpace
-{
-	Local,
-	World,
-};
 
 class FGizmo   // 상태 + 로직
 {
 public:
-	FGizmo();
+	// InModeTools는 이 기즈모가 편집 모드와 좌표계를 읽어 올 모드 툴이다. 기즈모보다 오래 살아 있어야 한다.
+	explicit FGizmo(FEditorModeTools* InModeTools);
 	~FGizmo();
 
 	// 이 기즈모를 View의 카메라 기준으로 그린다. 씬 위에 올리는 패스 안에서 부른다.
@@ -40,12 +31,11 @@ public:
 	}
 	USceneComponent* GetTarget() const { return Target; }
 
-	// Gizmo 모드(이동, 회전, 크기)
-	void SetMode(EGizmoMode InMode) { Mode = InMode; }
-	EGizmoMode GetMode() const { return Mode; }
-
-	void SetSpace(EGizmoSpace InSpace) { Space = InSpace; }
-	EGizmoSpace GetSpace() const { return Space; }
+	// 지금의 편집 모드(이동, 회전, 크기)와 좌표계. 기즈모가 갖지 않고 모드 툴에서 읽는다. 바꾸려면 모드 툴에 설정한다.
+	// UE에서는 FWidget이 뷰포트 클라이언트의 GetWidgetMode, GetWidgetCoordSystemSpace로 읽고,
+	// 뷰포트 클라이언트는 자기 모드 툴에 묻는다. 이 엔진은 아직 기즈모가 뷰포트에 속하지 않아 모드 툴에 바로 묻는다.
+	UE::Widget::EWidgetMode GetWidgetMode() const;
+	ECoordSystem GetWidgetCoordSystemSpace() const;
 
 	// Active View의 Ray와 행렬만 사용해 Hover·Drag 상태를 갱신한다.
 	void Update(const FRay& MouseRay, const FVector2& MousePos,
@@ -79,8 +69,7 @@ public:
 	FVector GetCameraLocation() const;
 	FVector GetAxisDirection(int Axis) const;
 private:
-	EGizmoMode Mode = EGizmoMode::Location;
-	EGizmoSpace Space = EGizmoSpace::Local;
+	FEditorModeTools* ModeTools = nullptr;
 	FTransform Transform = FTransform();
 	USceneComponent* Target = nullptr;
 	bool bUseActorBounds = false;

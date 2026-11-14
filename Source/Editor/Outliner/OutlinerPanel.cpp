@@ -1,5 +1,6 @@
 ﻿#include "EnginePCH.h"
 #include "Editor/Outliner/OutlinerPanel.h"
+#include "Editor/HitoriEd/Editor.h"
 
 #include "Engine/Level.h"
 #include "Engine/World.h"
@@ -103,15 +104,18 @@ void FOutlinerPanel::DrawActorNode(AActor* Actor)
         ImGuiTreeNodeFlags_SpanAvailWidth;
 
     // Actor 선택 시 UI 선택 상태
-    if (SelectedObject == Actor)
+    if (GEditor && GEditor->GetSelectedActors()->IsSelected(Actor))
         Flags |= ImGuiTreeNodeFlags_Selected;
 
     ImGui::TreeNodeEx(Actor, Flags, "%s", ActorName.c_str());
 
     // UI에서 Actor 클릭
-    if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Left) && GEditor)
     {
-        SelectActor(Actor);
+        // 누른 액터 하나만 선택한다. 뷰포트에서 클릭으로 고를 때와 같은 순서다.
+        GEditor->SelectNone(false);
+        GEditor->SelectActor(Actor, true, false);
+        GEditor->NoteSelectionChange();
     }
 
     if (ImGui::BeginPopupContextItem())
@@ -124,33 +128,4 @@ void FOutlinerPanel::DrawActorNode(AActor* Actor)
         ImGui::EndPopup();
     }
     
-}
-
-// 선택 Object 변경
-void FOutlinerPanel::SelectActor(AActor* Actor)
-{
-    if (!Actor)
-    {
-        SelectedObject = nullptr;
-
-        if (Callback)
-            Callback(nullptr);
-
-        return;
-    }
-
-    SelectedObject = Actor;
-
-    HTR_LOG(Info, "{} UUID {} is selected", SelectedObject->GetName(), SelectedObject->GetUUID());
-
-    USceneComponent* Scene = Cast<USceneComponent>(Actor->GetRootComponent());
-
-    if (Callback)
-        Callback(Scene);
-}
-
-
-AActor* FOutlinerPanel::GetSelectedActor() const
-{
-    return Cast<AActor>(SelectedObject);
 }

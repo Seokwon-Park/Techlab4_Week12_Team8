@@ -201,16 +201,16 @@ void FSkeletalPreviewEditor::OnRenderPreview()
 		return;
 	}
 
-	if (!ViewportClient->GetWorld())
+	if (!ViewportClient->GetWorld() || !Viewport)
 	{
 		return;
 	}
 
-	// ViewportClient 크기 변경
-	ViewportClient->Resize(ViewportWidth, ViewportHeight);
+	// 뷰포트 크기 변경. 크기가 같으면 아무것도 하지 않는다.
+	Viewport->UpdateViewportRHI(false, ViewportWidth, ViewportHeight);
 
-	// ViewportClient의 RTV가 없다면 렌더링하지 않음
-	if (!ViewportClient->GetViewTargets().IsValidFor(ViewportWidth, ViewportHeight))
+	// 뷰포트의 타깃이 없다면 렌더링하지 않음
+	if (!Viewport->GetViewTargets().IsValidFor(ViewportWidth, ViewportHeight))
 	{
 		return;
 	}
@@ -222,8 +222,8 @@ void FSkeletalPreviewEditor::OnRenderPreview()
 		bInitialFocusPending = false;
 	}
 
-	// 뷰포트 클라이언트에게 그리게 한다.
-	ViewportClient->Draw(EditorEngine.GetEngineLoop().GetRenderer());
+	// 뷰포트를 그린다. 뷰포트가 자기 클라이언트의 Draw를 부른다.
+	Viewport->Draw();
 }
 
 void FSkeletalPreviewEditor::UpdateBonePicking()

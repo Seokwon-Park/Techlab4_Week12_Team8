@@ -12,6 +12,8 @@
 #include "Math/BoxSphereBounds.h"
 #include "Render/Renderer.h"
 #include "Render/SceneRenderer.h"
+#include "Engine/Engine.h"
+#include "Launch/LaunchEngineLoop.h"
 
 FEditorViewportClient::FEditorViewportClient() {}
 
@@ -63,6 +65,7 @@ void FEditorViewportClient::TickInput(float DeltaTime, bool bCaptured,
   Input.bLeft = FInputSystem::IsKeyDown(EKeyCode::A);
   Input.bUp = FInputSystem::IsKeyDown(EKeyCode::E);
   Input.bDown = FInputSystem::IsKeyDown(EKeyCode::Q);
+  const uint32 Width = GetWidth();
   FViewportCameraState Camera{ViewLocation, ViewRotation, OrthoWidth,
       Width > 0 ? static_cast<float>(Width) : 800.0f, bIsPerspective};
   ApplyViewportCameraMovement(Camera, Input, DeltaTime, MoveSpeed, MouseSensitivity);
@@ -213,14 +216,15 @@ FSceneView FEditorViewportClient::CalcSceneView(const FRect &InViewRect) const {
 // 씬 뷰 생성
 FSceneView FEditorViewportClient::CalcSceneView() const {
   return CalcSceneView(
-      FRect(0.0f, 0.0f, static_cast<float>(Width), static_cast<float>(Height)));
+      FRect(0.0f, 0.0f, static_cast<float>(GetWidth()), static_cast<float>(GetHeight())));
 }
 
-// 이 뷰포트의 월드를 자기 카메라로 자기 타깃에 그린다. 레벨 에디터와 에셋 에디터가 같이 쓰는 순서다.
-void FEditorViewportClient::Draw(FRenderer* Renderer)
+// 이 뷰포트의 월드를 자기 카메라로 InViewport의 타깃에 그린다. 레벨 에디터와 에셋 에디터가 같이 쓰는 순서다.
+void FEditorViewportClient::Draw(FViewport* InViewport, FUIRenderer* Canvas)
 {
 	UWorld* TargetWorld = GetWorld();
-	if (!TargetWorld || !Renderer) return;
+	FRenderer* Renderer = GEngine ? GEngine->GetEngineLoop().GetRenderer() : nullptr;
+	if (!TargetWorld || !Renderer || !InViewport) return;
 
 	// 카메라를 뷰·투영 행렬로 바꾼다.
 	const FSceneView SceneView = CalcSceneView();
@@ -229,9 +233,9 @@ void FEditorViewportClient::Draw(FRenderer* Renderer)
 	FSceneRenderer SceneRenderer(TargetWorld, SceneView, RenderData);
 	SceneRenderer.InitViews(Renderer, EngineShowFlags);
 
-	// 패스를 순서대로 실행해 ViewTargets에 그린다. 씬 위에 올릴 에디터 요소는
+	// 패스를 순서대로 실행해 뷰포트의 타깃에 그린다. 씬 위에 올릴 에디터 요소는
 	// 두 번째 Draw가 등록하고, 등록한 함수는 Render 안에서 불린다.
-	SceneRenderer.Render(Renderer, ViewTargets, EngineShowFlags,
+	SceneRenderer.Render(Renderer, InViewport->GetViewTargets(), EngineShowFlags,
 		[this, &SceneView](FScenePassCallbacks& Callbacks)
 		{
 			Draw(&SceneView, Callbacks);
@@ -243,34 +247,21 @@ void FEditorViewportClient::Draw(const FSceneView* View, FScenePassCallbacks& Ca
 {
 }
 
-// 뷰포트 크기 변경 및 타깃 생성
-void FEditorViewportClient::Resize(const uint32 InWidth,
-                                   const uint32 InHeight) {
-  if (InWidth == 0 || InHeight == 0) {
-    return;
-  }
+// 뷰포트 크기가 바뀔 때 종횡비와 직교 배율을 새 크기에 맞춘다. 타깃은 뷰포트가 다시 만든다.
+void FEditorViewportClient::Resize(FViewport* InViewport, const uint32 NewWidth, const uint32 NewHeight)
+{
+	if (NewWidth == 0 || NewHeight == 0) return;
 
-  if (Width == InWidth && Height == InHeight &&
-      ViewTargets.IsValidFor(InWidth, InHeight)) {
-    return;
-  }
+	// 뷰포트는 크기를 바꾸기 전에 알리므로 여기서 읽는 크기는 이전 크기다.
+	const uint32 OldWidth = InViewport ? static_cast<uint32>(InViewport->GetSizeXY().X) : 0;
 
-  const uint32 OldWidth = Width;
-  const uint32 OldHeight = Height;
+	SetAspectRatio(static_cast<float>(NewWidth) / static_cast<float>(NewHeight));
 
-  Width = InWidth;
-  Height = InHeight;
-
-  ViewTargets.Resize(Width, Height);
-
-  if (Height > 0) {
-    SetAspectRatio(static_cast<float>(Width) / static_cast<float>(Height));
-  }
-
-  if (!bIsPerspective && OldWidth > 1 && Width > 1) {
-    // 화면 크기 변경 시 직교 배율 유지
-    OrthoWidth *= static_cast<float>(Width) / static_cast<float>(OldWidth);
-  }
+	if (!bIsPerspective && OldWidth > 1 && NewWidth > 1)
+	{
+		// 화면 크기 변경 시 직교 배율 유지
+		OrthoWidth *= static_cast<float>(NewWidth) / static_cast<float>(OldWidth);
+	}
 }
 
 // 뷰포트 시점 설정
@@ -303,6 +294,8 @@ void FEditorViewportClient::SetViewportType(const ELevelViewportType InType) {
 // 화면 좌표 역투영
 FRay FEditorViewportClient::DeprojectScreenToWorld(
     const FVector2 &ScreenPos) const {
+  const uint32 Width = GetWidth();
+  const uint32 Height = GetHeight();
   if (Width == 0 || Height == 0) {
     return FRay();
   }
