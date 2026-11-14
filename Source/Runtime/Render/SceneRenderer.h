@@ -132,6 +132,19 @@ private:
 	bool RenderDecals(FRenderGraphBuilder& Graph, FRenderer* Renderer, const FSceneRenderOptions& Options,
 		const FSceneTextures& SceneTextures);
 
+	// ---------- AddViewportPasses가 AddCorePasses 다음에 순서대로 부르는 패스 함수 ----------
+	// 여기부터는 톤맵이 끝난 화면 색상(SceneColor)에 그린다.
+	// 높이 안개
+	bool RenderFog(FRenderGraphBuilder& Graph, FRenderGraphTextureRef SceneColor, FRenderGraphTextureRef Depth,
+		const FScenePassCallbacks& Callbacks);
+	// 반투명 물체
+	bool RenderTranslucency(FRenderGraphBuilder& Graph, FRenderer* Renderer, FRenderGraphTextureRef SceneColor,
+		FRenderGraphTextureRef Depth, const FScenePassCallbacks& Callbacks);
+	// 화면 전체 후처리. FXAA를 거치면 FinalColor를 FXAA 결과 텍스처로 바꾼다.
+	bool AddPostProcessingPasses(FRenderGraphBuilder& Graph, FRenderer* Renderer, FSceneViewTargets& Targets,
+		const FSceneRenderOptions& Options, const FScenePassCallbacks& Callbacks,
+		FRenderGraphTextureRef SceneColor, FRenderGraphTextureRef Depth, FRenderGraphTextureRef& FinalColor);
+
 	// SingleLightIndex < 0: 그림자 없는 광원 전부 + Ambient/Sky. 0 이상: VisibleLights[SingleLightIndex] 하나만 ScreenShadowMask를 곱해 더한다.
 	bool BindDeferredLighting(FRenderer* Renderer, uint32 Width, uint32 Height, int32 SingleLightIndex);
 	bool BindForwardLighting(FRenderer* Renderer, const FSceneRenderOptions& Options, FTexture2D* ShadowMask);

@@ -943,27 +943,75 @@ bool FSceneRenderer::AddViewportPasses(FRenderGraphBuilder& Graph, FRenderer* Re
 	bHasFog = false;
 	bFXAAPassSucceeded = true;
 
-	if (!Options.bShowWorldNormal && Options.bDrawPrimitives && Options.bEnableFog && Callbacks.HeightFog)
-	{
-		FRenderGraphRasterPassDesc Pass = MakeViewportPass("HeightFog", SceneColor);
-		Pass.ReadTextures = { Depth };
-		if (!Graph.AddRasterPass(std::move(Pass), [this, DrawFog = Callbacks.HeightFog]
-			{
-			bHasFog = DrawFog();
-			})) return false;
-	}
-	if (!Options.bShowWorldNormal && Options.bDrawPrimitives)
-	{
-		if (!Graph.AddRasterPass(MakeViewportPass("Translucent", SceneColor, Depth),
-			[this, Renderer, GetFog = Callbacks.TranslucentFogConstants]
-			{
-			RenderTranslucent(Renderer, GetFog ? GetFog(bHasFog) : nullptr);
-			})) return false;
-	}
+	// 불투명 물체 위에 높이 안개를 입힌다.
+	if (!Options.bShowWorldNormal && Options.bDrawPrimitives && Options.bEnableFog && Callbacks.HeightFog &&
+		!RenderFog(Graph, SceneColor, Depth, Callbacks)) return false;
+
+	// 반투명 물체는 불투명 물체와 안개가 끝난 뒤에 그린다.
+	if (!Options.bShowWorldNormal && Options.bDrawPrimitives &&
+		!RenderTranslucency(Graph, Renderer, SceneColor, Depth, Callbacks)) return false;
+
 	if (!Options.bShowWorldNormal && Callbacks.SceneText &&
 		!Graph.AddRasterPass(MakeViewportPass("SceneText", SceneColor, Depth), Callbacks.SceneText))
 		return false;
 
+	// 씬을 다 그린 뒤 화면 전체에 적용하는 처리. FXAA를 거치면 FinalColor가 FXAA 결과 텍스처로 바뀐다.
+	FRenderGraphTextureRef FinalColor = SceneColor;
+	if (!AddPostProcessingPasses(Graph, Renderer, Targets, Options, Callbacks, SceneColor, Depth, FinalColor)) return false;
+
+	// 에디터 요소와 게임 UI는 후처리가 끝난 화면 위에 올린다.
+	const FSceneOverlayCallbacks& Overlay = Callbacks.Overlays;
+	if (!AddOverlayPass(Graph, "EditorLines", FinalColor, Depth, Overlay.EditorLines) ||
+		!AddOverlayPass(Graph, "EditorGrid", FinalColor, Depth, Overlay.EditorGrid) ||
+		!AddOverlayPass(Graph, "EditorOutline", FinalColor, Depth, Overlay.EditorOutline) ||
+		!AddOverlayPass(Graph, "EditorGizmo", FinalColor, Depth, Overlay.EditorGizmo, ERenderGraphLoadAction::Clear))
+		return false;
+	if (Overlay.bClearEditorDepth)
+	{
+		FRenderGraphRasterPassDesc ClearDepth{};
+		ClearDepth.Name = "EditorClearDepth";
+		ClearDepth.DepthAttachment = { Depth, ERenderGraphLoadAction::Clear, 1.0f, 0 };
+		if (!Graph.AddRasterPass(std::move(ClearDepth), [] {})) return false;
+	}
+	if (!AddOverlayPass(Graph, "EditorUUID", FinalColor, Depth, Overlay.EditorUUID)) return false;
+	if (!AddOverlayPass(Graph, "GameUI", FinalColor, Depth, Overlay.GameUI)) return false;
+	return true;
+}
+
+
+// 불투명 물체 위에 높이 안개를 입힌다. UE의 FDeferredShadingSceneRenderer::RenderFog와 같은 자리다.
+bool FSceneRenderer::RenderFog(FRenderGraphBuilder& Graph, FRenderGraphTextureRef SceneColor, FRenderGraphTextureRef Depth,
+	const FScenePassCallbacks& Callbacks)
+{
+	FRenderGraphRasterPassDesc Pass = MakeViewportPass("HeightFog", SceneColor);
+	Pass.ReadTextures = { Depth };
+	if (!Graph.AddRasterPass(std::move(Pass), [this, DrawFog = Callbacks.HeightFog]
+		{
+		bHasFog = DrawFog();
+		})) return false;
+	return true;
+}
+
+// 반투명 물체를 그린다. UE의 FDeferredShadingSceneRenderer::RenderTranslucency와 같은 자리다.
+// 실제 드로우는 RenderTranslucent가 하고, 여기서는 그 일을 렌더 그래프의 패스로 등록한다.
+bool FSceneRenderer::RenderTranslucency(FRenderGraphBuilder& Graph, FRenderer* Renderer, FRenderGraphTextureRef SceneColor,
+	FRenderGraphTextureRef Depth, const FScenePassCallbacks& Callbacks)
+{
+	if (!Graph.AddRasterPass(MakeViewportPass("Translucent", SceneColor, Depth),
+		[this, Renderer, GetFog = Callbacks.TranslucentFogConstants]
+		{
+		RenderTranslucent(Renderer, GetFog ? GetFog(bHasFog) : nullptr);
+		})) return false;
+	return true;
+}
+
+// 씬을 다 그린 뒤 화면 전체에 적용하는 처리를 순서대로 등록한다. UE의 AddPostProcessingPasses와 같은 자리다.
+// 깊이 시각화, 카메라 오버레이(비네트 등), FXAA, 라이트 컬링 디버그, 캐스케이드 시각화 순서다.
+// FXAA를 거치면 FinalColor를 FXAA 결과 텍스처로 바꿔 돌려준다. 뒤의 패스는 FinalColor에 그려야 한다.
+bool FSceneRenderer::AddPostProcessingPasses(FRenderGraphBuilder& Graph, FRenderer* Renderer, FSceneViewTargets& Targets,
+	const FSceneRenderOptions& Options, const FScenePassCallbacks& Callbacks,
+	FRenderGraphTextureRef SceneColor, FRenderGraphTextureRef Depth, FRenderGraphTextureRef& FinalColor)
+{
 	if (!Options.bShowWorldNormal && Options.bShowSceneDepth && Callbacks.DepthVisualization)
 	{
 		FRenderGraphRasterPassDesc Pass = MakeViewportPass("SceneDepthVisualization", SceneColor);
@@ -985,7 +1033,7 @@ bool FSceneRenderer::AddViewportPasses(FRenderGraphBuilder& Graph, FRenderer* Re
 			})) return false;
 	}
 
-	FRenderGraphTextureRef FinalColor = SceneColor;
+	FinalColor = SceneColor;
 	if (!Options.bShowWorldNormal && Callbacks.FXAAOutput && Callbacks.FXAA)
 	{
 		FinalColor = Graph.ImportTexture(Callbacks.FXAAOutput, "FXAAOutput");
@@ -1024,30 +1072,14 @@ bool FSceneRenderer::AddViewportPasses(FRenderGraphBuilder& Graph, FRenderer* Re
 			})) return false;
 	}
 
-	const FSceneOverlayCallbacks& Overlay = Callbacks.Overlays;
 	if (Options.bShowCascade && Callbacks.CascadeVisualization)
 	{
 		FRenderGraphRasterPassDesc Pass = MakeViewportPass("CascadeFloorVisualization", FinalColor);
 		Pass.ReadTextures = { Depth };
 		if (!Graph.AddRasterPass(std::move(Pass), Callbacks.CascadeVisualization)) return false;
 	}
-	if (!AddOverlayPass(Graph, "EditorLines", FinalColor, Depth, Overlay.EditorLines) ||
-		!AddOverlayPass(Graph, "EditorGrid", FinalColor, Depth, Overlay.EditorGrid) ||
-		!AddOverlayPass(Graph, "EditorOutline", FinalColor, Depth, Overlay.EditorOutline) ||
-		!AddOverlayPass(Graph, "EditorGizmo", FinalColor, Depth, Overlay.EditorGizmo, ERenderGraphLoadAction::Clear))
-		return false;
-	if (Overlay.bClearEditorDepth)
-	{
-		FRenderGraphRasterPassDesc ClearDepth{};
-		ClearDepth.Name = "EditorClearDepth";
-		ClearDepth.DepthAttachment = { Depth, ERenderGraphLoadAction::Clear, 1.0f, 0 };
-		if (!Graph.AddRasterPass(std::move(ClearDepth), [] {})) return false;
-	}
-	if (!AddOverlayPass(Graph, "EditorUUID", FinalColor, Depth, Overlay.EditorUUID)) return false;
-	if (!AddOverlayPass(Graph, "GameUI", FinalColor, Depth, Overlay.GameUI)) return false;
 	return true;
 }
-
 
 bool FSceneRenderer::Render(FRenderer* Renderer, FSceneViewTargets& Targets, const FSceneRenderOptions& Options, const std::function<void(FScenePassCallbacks&)>& ExtraPasses)
 {
