@@ -242,6 +242,7 @@ void UEditorEngine::InitPanels()
 	SettingsPanel = LevelEditorTab->AddPanel<FSettingsPanel>();
 	SequencerPanel = LevelEditorTab->AddPanel<FSequencerPanel>();
 	OutputLogPanel->SetEditorSettings(&SettingsPanel->GetMutableSettings());
+	ViewportsPanel->SetCameraSpeedTarget(&SettingsPanel->GetMutableSettings().CameraSpeed);
 
 	// 위젯 에셋은 다른 에셋처럼 EditorManager가 여는 탭에서 편집한다.
 	// 새로 만들 때는 디스크에 바로 만들어 콘텐츠 드로어에 곧장 보이도록 한 뒤 연다.

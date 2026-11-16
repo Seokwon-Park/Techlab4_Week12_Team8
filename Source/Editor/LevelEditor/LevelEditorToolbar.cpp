@@ -112,7 +112,7 @@ void FLevelEditorToolbar::DrawSelectionModeMenu()
 	const bool bClicked = EditorIcons::Button("##SelectionMode", EEditorIcon::SelectMode,
 		ImGui::GetColorU32(ImGuiCol_Text, 0.9f), "Selection Mode", true, bPopupOpen);
 	EndToolbarGroup();
-	ImGui::SetItemTooltip("Change the editor mode and transform tool settings");
+	ImGui::SetItemTooltip("Change the editor mode");
 	if (bClicked)
 		ImGui::OpenPopup("##SelectionModeMenu");
 
@@ -126,27 +126,9 @@ void FLevelEditorToolbar::DrawSelectionModeMenu()
 			ModeTools->ActivateMode(EEditorModeID::Selection);
 
 		ImGui::Spacing();
-		EditorIcons::MenuSection("Transform");
-		const UE::Widget::EWidgetMode WidgetMode = ModeTools->GetWidgetMode();
-		if (EditorIcons::MenuRow("Translate", EEditorIcon::Translate, WidgetMode == UE::Widget::WM_Translate))
-			ModeTools->SetWidgetMode(UE::Widget::WM_Translate);
-		if (EditorIcons::MenuRow("Rotate", EEditorIcon::Rotate, WidgetMode == UE::Widget::WM_Rotate))
-			ModeTools->SetWidgetMode(UE::Widget::WM_Rotate);
-		if (EditorIcons::MenuRow("Scale", EEditorIcon::Scale, WidgetMode == UE::Widget::WM_Scale))
-			ModeTools->SetWidgetMode(UE::Widget::WM_Scale);
-
-		ImGui::Spacing();
-		EditorIcons::MenuSection("Coordinate Space");
-		const ECoordSystem Coord = ModeTools->GetCoordSystem();
-		if (EditorIcons::MenuRow("World", EEditorIcon::World, Coord == COORD_World))
-			ModeTools->SetCoordSystem(COORD_World);
-		if (EditorIcons::MenuRow("Local", EEditorIcon::Local, Coord == COORD_Local))
-			ModeTools->SetCoordSystem(COORD_Local);
-
-		ImGui::Spacing();
 		ImGui::Separator();
 		ImGui::Spacing();
-		EditorIcons::MenuNote("Press Space in the viewport to cycle Translate, Rotate and Scale.");
+		EditorIcons::MenuNote("Transform tools and coordinate space are in each viewport toolbar.");
 		ImGui::EndPopup();
 	}
 	ImGui::PopStyleVar(2);

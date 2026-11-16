@@ -296,6 +296,37 @@ namespace EditorIcons
 			Pen.Ring(-0.08f, -0.08f, 0.26f, C, 0.10f);
 			Pen.Line(0.12f, 0.12f, 0.40f, 0.40f, C, 0.13f);
 			break;
+		case EEditorIcon::Camera:
+			Pen.Rect(-0.46f, -0.26f, 0.16f, 0.28f, C, 0.06f);
+			Pen.Quad(Pen.P(0.16f, -0.04f), Pen.P(0.46f, -0.26f), Pen.P(0.46f, 0.28f), Pen.P(0.16f, 0.06f), C);
+			break;
+		case EEditorIcon::CameraSpeed:
+			Pen.Line(-0.46f, -0.20f, -0.10f, -0.20f, C, 0.08f);
+			Pen.Line(-0.40f, 0.0f, -0.10f, 0.0f, C, 0.08f);
+			Pen.Line(-0.46f, 0.20f, -0.10f, 0.20f, C, 0.08f);
+			Pen.Tri(-0.02f, -0.34f, -0.02f, 0.34f, 0.46f, 0.0f, C);
+			break;
+		case EEditorIcon::Lit:
+			Pen.Circle(0.0f, 0.0f, 0.42f, Shade(C, 0.45f));
+			Pen.Circle(-0.07f, -0.07f, 0.33f, C);
+			break;
+		case EEditorIcon::LayoutQuad:
+			Pen.Rect(-0.42f, -0.36f, -0.03f, -0.03f, C, 0.03f);
+			Pen.Rect(0.03f, -0.36f, 0.42f, -0.03f, C, 0.03f);
+			Pen.Rect(-0.42f, 0.03f, -0.03f, 0.36f, C, 0.03f);
+			Pen.Rect(0.03f, 0.03f, 0.42f, 0.36f, C, 0.03f);
+			break;
+		case EEditorIcon::LayoutSingle:
+			Pen.Rect(-0.42f, -0.36f, 0.42f, 0.36f, C, 0.04f);
+			break;
+		case EEditorIcon::Select:
+		{
+			// 화살표 커서 (오목한 모양이라 AddConcavePolyFilled)
+			const ImVec2 Arrow[] = { Pen.P(-0.28f, -0.46f), Pen.P(-0.28f, 0.30f), Pen.P(-0.10f, 0.13f),
+				Pen.P(0.04f, 0.44f), Pen.P(0.17f, 0.38f), Pen.P(0.03f, 0.08f), Pen.P(0.27f, 0.08f) };
+			DrawList->AddConcavePolyFilled(Arrow, IM_ARRAYSIZE(Arrow), C);
+			break;
+		}
 		case EEditorIcon::None:
 		default:
 			break;
@@ -431,17 +462,20 @@ namespace EditorIcons
 		ImGui::TextDisabled("%s", Upper);
 	}
 
-	bool MenuRow(const char* Label, EEditorIcon Icon, bool bChecked, bool bEnabled)
+	bool MenuRow(const char* Label, EEditorIcon Icon, bool bChecked, bool bEnabled, bool bKeepOpen,
+		const char* Shortcut, bool bRadio)
 	{
 		const float S = GetScale();
 		const float H = ImGui::GetFontSize() + 10.0f * S;
 		const float CheckX = 12.0f * S, IconX = 34.0f * S, TextX = 54.0f * S;
-		const float RowWidth = TextX + ImGui::CalcTextSize(Label).x + 24.0f * S;
+		const float ShortcutWidth = Shortcut ? ImGui::CalcTextSize(Shortcut).x + 28.0f * S : 0.0f;
+		const float RowWidth = TextX + ImGui::CalcTextSize(Label).x + 24.0f * S + ShortcutWidth;
 
 		ImGui::PushID(Label);
 		ImGui::BeginDisabled(!bEnabled);
 		const ImVec2 Min = ImGui::GetCursorScreenPos();
-		const bool bPressed = ImGui::Selectable("##Row", false, ImGuiSelectableFlags_None,
+		const bool bPressed = ImGui::Selectable("##Row", false,
+			bKeepOpen ? ImGuiSelectableFlags_NoAutoClosePopups : ImGuiSelectableFlags_None,
 			ImVec2(ImMax(RowWidth, ImGui::GetContentRegionAvail().x), H));
 		const bool bHovered = ImGui::IsItemHovered();
 
@@ -450,11 +484,20 @@ namespace EditorIcons
 		const ImU32 Bg = ImGui::GetColorU32(bHovered ? ImGuiCol_HeaderHovered : ImGuiCol_PopupBg);
 		const float MidY = Min.y + H * 0.5f;
 		const float IconSize = 14.0f * S;
-		if (bChecked)
+		if (bRadio)
+			DL->AddCircleFilled(ImVec2(Min.x + CheckX, MidY), 3.5f * S,
+				bChecked ? TextCol : ImGui::GetColorU32(ImGuiCol_WindowBg));
+		else if (bChecked)
 			Draw(DL, EEditorIcon::Check, ImVec2(Min.x + CheckX, MidY), 12.0f * S, TextCol, Bg);
 		if (Icon != EEditorIcon::None)
 			Draw(DL, Icon, ImVec2(Min.x + IconX, MidY), IconSize, ImGui::GetColorU32(ImGuiCol_Text, 0.8f), Bg);
 		DL->AddText(ImVec2(Min.x + TextX, MidY - ImGui::GetFontSize() * 0.5f), TextCol, Label);
+		if (Shortcut)
+		{
+			const float RowMaxX = ImGui::GetItemRectMax().x;
+			DL->AddText(ImVec2(RowMaxX - 10.0f * S - ImGui::CalcTextSize(Shortcut).x, MidY - ImGui::GetFontSize() * 0.5f),
+				ImGui::GetColorU32(ImGuiCol_TextDisabled), Shortcut);
+		}
 
 		ImGui::EndDisabled();
 		ImGui::PopID();
