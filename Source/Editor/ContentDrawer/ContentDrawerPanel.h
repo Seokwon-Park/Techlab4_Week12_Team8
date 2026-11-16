@@ -18,6 +18,13 @@ public:
 	const char* GetPanelName() const override { return "Content Drawer"; }
 	void RenderFolderTree(const fs::path& Path, fs::path& SelectedPath);
 
+	// UE5처럼 상태 표시줄 위로 올라오는 드로어로 쓴다. "Dock in Layout"을 누르면 일반 도킹 창이 된다.
+	void ToggleDrawer();
+	bool IsDrawerOpen() const { return bDrawerOpen; }
+	bool IsDocked() const { return bDocked; }
+	// 드로어가 덮을 영역 (레벨 에디터 탭이 매 프레임 넘긴다).
+	void SetDrawerRect(const ImVec2& Pos, const ImVec2& Size, ImGuiID ViewportId);
+
 	// .widget 파일을 더블클릭하면 불린다 (UI 에디터가 연다).
 	void SetOpenWidgetCallback(std::function<void(const FString&)> InCallback) { OnOpenWidget = std::move(InCallback); }
 	void SetCreateWidgetCallback(std::function<void(const FString&)> InCallback) { OnCreateWidget = std::move(InCallback); }
@@ -34,6 +41,18 @@ public:
     }
 
 private:
+	bool BeginWindow();
+	void DrawHeader();
+	void RenderContents();
+
+	bool bDocked = false;
+	bool bDrawerOpen = false;
+	bool bJustOpened = false;
+	bool bPendingDock = false;
+	ImVec2 DrawerPos = ImVec2(0.0f, 0.0f);
+	ImVec2 DrawerSize = ImVec2(0.0f, 0.0f);
+	ImGuiID DrawerViewportId = 0;
+
 	std::function<void(const FString&)> OnOpenWidget;
 	std::function<void(const FString&)> OnCreateWidget;
 	std::function<void(const FString&)> OnOpenMesh;

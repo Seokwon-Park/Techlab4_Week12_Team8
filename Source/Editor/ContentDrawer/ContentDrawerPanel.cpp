@@ -19,9 +19,108 @@ void FContentDrawerPanel::Tick(float DeltaTime)
 {
 }
 
+void FContentDrawerPanel::ToggleDrawer()
+{
+	if (bDocked)
+	{
+		// 레이아웃에 붙어 있으면 그 창으로 포커스만 옮긴다.
+		ImGui::SetWindowFocus("Content Drawer");
+		return;
+	}
+	bDrawerOpen = !bDrawerOpen;
+	bJustOpened = bDrawerOpen;
+}
+
+void FContentDrawerPanel::SetDrawerRect(const ImVec2& Pos, const ImVec2& Size, ImGuiID ViewportId)
+{
+	DrawerPos = Pos;
+	DrawerSize = Size;
+	DrawerViewportId = ViewportId;
+}
+
 void FContentDrawerPanel::OnRender()
 {
-	ImGui::Begin("Content Drawer");
+	if (!BeginWindow())
+		return;
+
+	DrawHeader();
+	RenderContents();
+	ImGui::End();
+}
+
+// 드로어 모드면 상태 표시줄 바로 위에 덮어 그리고, 포커스를 잃거나 Esc를 누르면 닫는다.
+bool FContentDrawerPanel::BeginWindow()
+{
+	if (bDocked)
+	{
+		if (bPendingDock)
+		{
+			// 처음 레이아웃에 붙일 때는 Output Log가 있는 아래쪽 노드로 보낸다.
+			if (ImGuiWindow* LogWindow = ImGui::FindWindowByName("Output Log"); LogWindow && LogWindow->DockId != 0)
+				ImGui::SetNextWindowDockID(LogWindow->DockId, ImGuiCond_Always);
+			bPendingDock = false;
+		}
+		ImGui::Begin("Content Drawer");
+		return true;
+	}
+
+	if (!bDrawerOpen || DrawerSize.x <= 0.0f || DrawerSize.y <= 0.0f)
+		return false;
+
+	ImGui::SetNextWindowPos(DrawerPos);
+	ImGui::SetNextWindowSize(DrawerSize);
+	if (DrawerViewportId != 0)
+		ImGui::SetNextWindowViewport(DrawerViewportId);
+	if (bJustOpened)
+		ImGui::SetNextWindowFocus();
+
+	const ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDocking
+		| ImGuiWindowFlags_NoTitleBar
+		| ImGuiWindowFlags_NoMove
+		| ImGuiWindowFlags_NoResize
+		| ImGuiWindowFlags_NoCollapse
+		| ImGuiWindowFlags_NoSavedSettings;
+
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::GetStyleColorVec4(ImGuiCol_PopupBg));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
+	ImGui::Begin("Content Drawer###ContentDrawerOverlay", nullptr, Flags);
+	ImGui::PopStyleVar();
+	ImGui::PopStyleColor();
+
+	if (!bJustOpened)
+	{
+		const bool bFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+		const bool bPopupOpen = ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel);
+		const bool bDragging = ImGui::GetDragDropPayload() != nullptr;
+		// 이번 프레임은 그대로 그리고 다음 프레임부터 닫힌다.
+		if ((!bFocused && !bPopupOpen && !bDragging) || (bFocused && ImGui::IsKeyPressed(ImGuiKey_Escape)))
+			bDrawerOpen = false;
+	}
+	bJustOpened = false;
+	return true;
+}
+
+void FContentDrawerPanel::DrawHeader()
+{
+	ImGui::AlignTextToFramePadding();
+	ImGui::TextDisabled("%s", CurrentPath.generic_string().c_str());
+
+	const char* Label = bDocked ? "Undock to Drawer" : "Dock in Layout";
+	const float ButtonWidth = ImGui::CalcTextSize(Label).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+	ImGui::SameLine();
+	ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImMax(0.0f, ImGui::GetContentRegionAvail().x - ButtonWidth));
+	if (ImGui::Button(Label))
+	{
+		bDocked = !bDocked;
+		bPendingDock = bDocked;
+		bDrawerOpen = !bDocked;
+		bJustOpened = bDrawerOpen;
+	}
+	ImGui::Separator();
+}
+
+void FContentDrawerPanel::RenderContents()
+{
 	std::error_code Error;
 
 	if (!fs::is_directory(CurrentPath, Error))
@@ -34,7 +133,6 @@ void FContentDrawerPanel::OnRender()
 	if (!fs::is_directory(AssetRootPath, Error))
 	{
 		ImGui::TextUnformatted("Asset folder is unavailable.");
-		ImGui::End();
 		return;
 	}
 
@@ -243,7 +341,6 @@ void FContentDrawerPanel::OnRender()
     AnimBlueprintCreator.ProcessCreateRequest();
 
 	ImGui::EndChild();
-	ImGui::End();
 }
 
 void FContentDrawerPanel::RenderFolderTree(const fs::path& Path, fs::path& SelectedPath)

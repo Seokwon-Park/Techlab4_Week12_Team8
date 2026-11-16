@@ -219,6 +219,7 @@ void UEditorEngine::InitPanels()
 	EditorControlsPanel = LevelEditorTab->AddPanel<FEditorControlsPanel>();
 	ViewportsPanel = LevelEditorTab->AddPanel<FViewportsPanel>();
 	ContentDrawerPanel = LevelEditorTab->AddPanel<FContentDrawerPanel>();
+	LevelEditorTab->SetStatusBarPanels(ContentDrawerPanel, OutputLogPanel);
 
 	SettingsPanel = LevelEditorTab->AddPanel<FSettingsPanel>();
 	SequencerPanel = LevelEditorTab->AddPanel<FSequencerPanel>();
