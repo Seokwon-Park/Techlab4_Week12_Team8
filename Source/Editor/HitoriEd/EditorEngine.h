@@ -199,8 +199,7 @@ private:
 	FSequencerPanel* SequencerPanel = nullptr;
 	FViewportsPanel* ViewportsPanel = nullptr;
 	FSplitRatio ViewportSplitRatio{0.5f, 0.5f};
-	ELayoutMode ViewportLayoutMode = ELayoutMode::QuadSplit;
-	int32 SingleViewportIndex = 0;
+	FViewportLayoutState ViewportLayout;
 	TArray<FEditorViewportClient*> AllViewportClients;
 	FOutlinerPanel* OutlinerPanel = nullptr;
 	FContentDrawerPanel* ContentDrawerPanel = nullptr;

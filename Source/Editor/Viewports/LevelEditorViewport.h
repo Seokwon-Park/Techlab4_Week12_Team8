@@ -36,6 +36,11 @@ private:
 	// UUID 글자를 그리는 도구와 글꼴
 	FTextRenderer TextRenderer;
 	UFont* SystemFont = nullptr;
+
+	// 에디터 설정 창의 쇼 플래그 값을 지난 프레임에 본 그대로 기억한다.
+	// 설정 값이 바뀐 플래그만 이 뷰포트에 옮겨서, 뷰포트 툴바 Show 메뉴로 바꾼 값이 매 프레임 덮이지 않게 한다.
+	FEngineShowFlags LastSettingsShowFlags;
+	bool bSettingsShowFlagsSynced = false;
 };
 
 // 지금 편집 중인(활성) 레벨 뷰포트. 선택 외곽선과 기즈모는 이 뷰포트에만 그린다.

@@ -41,6 +41,12 @@ enum class EEditorIcon : uint8
 	LayoutQuad,     // 2x2 칸
 	LayoutSingle,   // 한 칸
 	Select,         // 화살표 커서 (Select 도구)
+	ViewTop,        // 직교 뷰 방향: 사각형에서 보는 쪽 면을 채운다
+	ViewBottom,
+	ViewLeft,
+	ViewRight,
+	ViewFront,      // 겹친 두 사각형 중 앞쪽을 채운다
+	ViewBack,       // 겹친 두 사각형 중 뒤쪽을 채운다
 
 	Count
 };
