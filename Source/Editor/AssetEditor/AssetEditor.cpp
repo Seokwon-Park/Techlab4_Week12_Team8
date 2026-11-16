@@ -135,6 +135,10 @@ bool FAssetEditor::InitializeResources()
 	ViewportClient = MakeUnique<FAssetEditorViewportClient>(*this, PreviewScene);
 	ViewportClient->SetViewRotation(FRotator(30.0f, 210.0f, 0.0f));
 
+	// 뷰포트를 만들어 클라이언트와 서로 연결한다. 크기는 미리보기 패널이 보일 때 정해진다.
+	Viewport = MakeUnique<FViewport>(ViewportClient.get());
+	ViewportClient->Viewport = Viewport.get();
+
 	// Scene 세팅
 	PreviewScene.Setup();
 
@@ -148,6 +152,7 @@ TUniquePtr<IEditorTab> FAssetEditor::CreateTab()
 
 void FAssetEditor::ShutdownResources()
 {
+	Viewport.reset();
 	ViewportClient.reset();
 	PreviewScene.Release();
 }
@@ -157,11 +162,11 @@ FAssetEditorViewportClient::FAssetEditorViewportClient(FAssetEditor& InAssetEdit
 	, AssetEditor(InAssetEditor)
 {
 	// 미리보기 화면의 표시 설정. 한 번 정하면 바뀌지 않으므로 생성할 때 채운다.
-	EngineShowFlags.bEnableFog = false;
-	EngineShowFlags.bEnableFXAA = true;
-	EngineShowFlags.bShowVignette = false;
-	EngineShowFlags.bShowCameraOverlay = false;
-	EngineShowFlags.RenderingPath = ERenderingPath::Forward;   // 웨이트 히트맵은 Forward 패스에만 있다
+	EngineShowFlags.Fog = false;
+	EngineShowFlags.AntiAliasing = true;
+	EngineShowFlags.Vignette = false;
+	EngineShowFlags.CameraOverlay = false;
+	RenderOptions.RenderingPath = ERenderingPath::Forward;   // 웨이트 히트맵은 Forward 패스에만 있다
 }
 
 // 미리보기 씬 위에 에디터가 주는 선과 기즈모를 올린다. 씬은 기반 클래스의 Draw가 그린다.

@@ -11,7 +11,6 @@ class UActorComponent;
 class UPrimitiveComponent;
 class USceneComponent;
 
-using SelectionCallback = std::function<void(USceneComponent*)>;
 using DeleteActorCallback = std::function<void(AActor*)>;
 
 class FOutlinerPanel : public IEditorPanel
@@ -20,7 +19,6 @@ public:
     FOutlinerPanel() = default;
     ~FOutlinerPanel() = default;
 
-    void SetSelectionCallback(SelectionCallback InCallback) { Callback = InCallback; }
     void SetDeleteActorCallback(DeleteActorCallback InCallback) { DeleteCallback = InCallback;}
 
 public:
@@ -33,16 +31,11 @@ public:
 
     void DrawActors(ULevel* Level);
     void DrawActorNode(AActor* Actor);
-    void SelectActor(AActor* Actor);
-
-    AActor* GetSelectedActor() const;
-
 
 private:
+    // 무엇이 선택됐는지는 패널이 기억하지 않는다. 그릴 때 GEditor->GetSelectedActors()에서 읽는다.
     UWorld* World = nullptr;
-    UObject* SelectedObject = nullptr;
 
-    SelectionCallback Callback;
     DeleteActorCallback DeleteCallback;
     AActor* PendingDeleteActor = nullptr;
 };

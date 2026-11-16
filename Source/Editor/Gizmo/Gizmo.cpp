@@ -1,10 +1,21 @@
 #include "EnginePCH.h"
 #include "Editor/Gizmo/Gizmo.h"
 #include "Editor/Gizmo/GizmoRenderer.h"
+#include "Editor/EditorModeManager.h"
 #include "Render/SceneView.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Actor/LightActorBase.h"
+
+UE::Widget::EWidgetMode FGizmo::GetWidgetMode() const
+{
+	return ModeTools ? ModeTools->GetWidgetMode() : UE::Widget::WM_Translate;
+}
+
+ECoordSystem FGizmo::GetWidgetCoordSystemSpace() const
+{
+	return ModeTools ? ModeTools->GetCoordSystem() : COORD_Local;
+}
 
 static const FVector AxisDirs[3] = {
 	FVector(1, 0, 0),
@@ -21,7 +32,8 @@ static const float AxisLength = 1.5f;
 static const float HitPixels = 12.0f;
 
 // 그리는 도구를 만들고 축 메시, 셰이더, 상수 버퍼를 준비한다. FGizmoRenderer::Init의 렌더러 인자는 쓰이지 않는다.
-FGizmo::FGizmo()
+FGizmo::FGizmo(FEditorModeTools* InModeTools)
+	: ModeTools(InModeTools)
 {
 	Renderer = MakeUnique<FGizmoRenderer>();
 	Renderer->Init(nullptr);
@@ -68,7 +80,7 @@ void FGizmo::Update(const FRay& MouseRay, const FVector2& MousePos, const FMatri
 // 모드에 따라 선형 축 또는 회전 링 피킹을 선택한다.
 int FGizmo::PickAxis(const FVector2& MousePos, const FMatrix& ViewProj, int ScreenW, int ScreenH)
 {
-	if (Mode == EGizmoMode::Rotation)
+	if (GetWidgetMode() == UE::Widget::WM_Rotate)
 		return PickRotationAxis(MousePos, ViewProj, ScreenW, ScreenH);
 
 	return PickLinearAxis(MousePos, ViewProj, ScreenW, ScreenH);
@@ -201,7 +213,7 @@ void FGizmo::BeginDrag(int Axis, const FRay& MouseRay, const FVector2& MousePos)
 {
 	// 부모의 변환 행렬에 Scale이 0이 포함되면 역행렬이 존재하지 않아서 드래그를 진행할 수 없음
 	// 따라서, 부모의 WorldMatrix의 행렬식이 0이라면 드래그 종료
-	if (Mode == EGizmoMode::Location && Target->GetAttachParent() &&
+	if (GetWidgetMode() == UE::Widget::WM_Translate && Target->GetAttachParent() &&
 		fabsf(Target->GetAttachParent()->GetWorldMatrix().Determinant()) < 1e-12f)
 	{
 		EndDrag();
@@ -212,7 +224,7 @@ void FGizmo::BeginDrag(int Axis, const FRay& MouseRay, const FVector2& MousePos)
 	DraggingAxis = Axis;
 	DragStartLocation = Target->GetWorldLocation();
 	DragStartRenderLocation = GetRenderLocation();    
-	if (Mode == EGizmoMode::Location)
+	if (GetWidgetMode() == UE::Widget::WM_Translate)
 	{
 		// 이동량은 모든 에디터에서 실제 대상 위치를 지나는 평면으로 계산합니다.
 		DragStartRenderLocation = Target->GetWorldLocation();
@@ -230,7 +242,7 @@ void FGizmo::BeginDrag(int Axis, const FRay& MouseRay, const FVector2& MousePos)
 
 	if (Axis == AXIS_SCREEN)
 	{
-		if (Mode == EGizmoMode::Rotation)
+		if (GetWidgetMode() == UE::Widget::WM_Rotate)
 		{
 			DragAxisDirection = (GetRenderLocation() - GetCameraLocation()).Normalized();
 			DragPlaneNormal = DragAxisDirection;
@@ -240,7 +252,7 @@ void FGizmo::BeginDrag(int Axis, const FRay& MouseRay, const FVector2& MousePos)
 			DragPlaneNormal = -MouseRay.Direction;
 		}
 	}
-	else if (Mode == EGizmoMode::Rotation)
+	else if (GetWidgetMode() == UE::Widget::WM_Rotate)
 	{
 		FVector ToCamera = (GetCameraLocation() - GetRenderLocation()).Normalized();
 		if (DragAxisDirection.Dot(ToCamera) < 0.0f)
@@ -261,7 +273,7 @@ void FGizmo::BeginDrag(int Axis, const FRay& MouseRay, const FVector2& MousePos)
 	else
 		DragStartPoint = DragStartRenderLocation;
 
-	if (Mode == EGizmoMode::Rotation)
+	if (GetWidgetMode() == UE::Widget::WM_Rotate)
 		DragStartAngle = ComputeAngleOnPlane(DragStartPoint, Axis);
 }
 
@@ -274,9 +286,9 @@ void FGizmo::UpdateDrag(const FRay& MouseRay, const FVector2& MousePos)
 
 	FVector current = MouseRay.Origin + MouseRay.Direction * t;
 
-	if (DraggingAxis == AXIS_SCREEN && Mode != EGizmoMode::Rotation)
+	if (DraggingAxis == AXIS_SCREEN && GetWidgetMode() != UE::Widget::WM_Rotate)
 	{
-		if (Mode == EGizmoMode::Location)
+		if (GetWidgetMode() == UE::Widget::WM_Translate)
 			Target->SetWorldLocation(DragStartLocation + (current - DragStartPoint), false);
 		else
 		{
@@ -293,7 +305,7 @@ void FGizmo::UpdateDrag(const FRay& MouseRay, const FVector2& MousePos)
 		return;
 	}
 
-	if (Mode == EGizmoMode::Rotation)
+	if (GetWidgetMode() == UE::Widget::WM_Rotate)
 	{
 		float currentAngle = ComputeAngleOnPlane(current, DraggingAxis);
 		float deltaAngle = currentAngle - DragStartAngle;
@@ -310,7 +322,7 @@ void FGizmo::UpdateDrag(const FRay& MouseRay, const FVector2& MousePos)
 	FVector delta = current - DragStartPoint;
 	float amount = delta.Dot(DragAxisDirection);
 
-	if (Mode == EGizmoMode::Location)
+	if (GetWidgetMode() == UE::Widget::WM_Translate)
 		Target->SetWorldLocation(DragStartLocation + DragAxisDirection * amount, false);
 	else   // Scale
 	{
@@ -366,14 +378,14 @@ float FGizmo::ComputeAngleOnPlane(const FVector& Point, int Axis) const
 FRotator FGizmo::GetAxisRotation() const
 {
 	// 이동 Ray와 평면은 월드 공간이므로 부모 회전까지 포함한 축을 사용합니다.
-	return Mode == EGizmoMode::Location && Target ? Target->GetWorldRotation() : GetRotation();
+	return GetWidgetMode() == UE::Widget::WM_Translate && Target ? Target->GetWorldRotation() : GetRotation();
 }
 
 // 월드 축 또는 로컬 회전으로 변환한 정규화 축을 반환한다.
 FVector FGizmo::GetAxisDirection(int Axis) const
 {
 	if (Axis < 0 || Axis > 2) return FVector(0, 0, 0);
-	bool bUseLocal = (Space == EGizmoSpace::Local) || (Mode == EGizmoMode::Scale);
+	bool bUseLocal = (GetWidgetCoordSystemSpace() == COORD_Local) || (GetWidgetMode() == UE::Widget::WM_Scale);
 
 	if (bUseLocal && Target)
 	{
