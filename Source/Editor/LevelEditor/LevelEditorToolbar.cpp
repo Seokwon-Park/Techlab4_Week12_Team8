@@ -2,6 +2,7 @@
 #include "LevelEditorToolbar.h"
 
 #include "Asset/AssetManager.h"
+#include "Editor/EditorModeManager.h"
 
 namespace
 {
@@ -54,6 +55,11 @@ void FLevelEditorToolbar::Draw()
 		ImGui::SetCursorPosY((BarHeight - ButtonHeight) * 0.5f);   // 세로 가운데 정렬
 
 		DrawFileGroup();
+		if (ModeTools)
+		{
+			GroupGap();
+			DrawSelectionModeMenu();
+		}
 		if (!CreateMenus.IsEmpty())
 		{
 			GroupGap();
@@ -93,6 +99,57 @@ void FLevelEditorToolbar::DrawFileGroup()
 		if (bPressed)
 			BrowseToLevel();
 	}
+}
+
+// UE5 "Selection Mode ▾": 어두운 알약 안에 현재 편집 모드를 보여 주고, 누르면 모드와 기즈모 설정 메뉴를 연다.
+void FLevelEditorToolbar::DrawSelectionModeMenu()
+{
+	const float S = EditorIcons::GetScale();
+	const ImVec2 Min = ImGui::GetCursorScreenPos();
+
+	BeginToolbarGroup();
+	const bool bPopupOpen = ImGui::IsPopupOpen("##SelectionModeMenu");
+	const bool bClicked = EditorIcons::Button("##SelectionMode", EEditorIcon::SelectMode,
+		ImGui::GetColorU32(ImGuiCol_Text, 0.9f), "Selection Mode", true, bPopupOpen);
+	EndToolbarGroup();
+	ImGui::SetItemTooltip("Change the editor mode and transform tool settings");
+	if (bClicked)
+		ImGui::OpenPopup("##SelectionModeMenu");
+
+	ImGui::SetNextWindowPos(ImVec2(Min.x, Min.y + 30.0f * S), ImGuiCond_Appearing);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f * S, 6.0f * S));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f * S, 1.0f * S));
+	if (ImGui::BeginPopup("##SelectionModeMenu"))
+	{
+		EditorIcons::MenuSection("Modes");
+		if (EditorIcons::MenuRow("Selection", EEditorIcon::SelectMode, ModeTools->IsModeActive(EEditorModeID::Selection)))
+			ModeTools->ActivateMode(EEditorModeID::Selection);
+
+		ImGui::Spacing();
+		EditorIcons::MenuSection("Transform");
+		const UE::Widget::EWidgetMode WidgetMode = ModeTools->GetWidgetMode();
+		if (EditorIcons::MenuRow("Translate", EEditorIcon::Translate, WidgetMode == UE::Widget::WM_Translate))
+			ModeTools->SetWidgetMode(UE::Widget::WM_Translate);
+		if (EditorIcons::MenuRow("Rotate", EEditorIcon::Rotate, WidgetMode == UE::Widget::WM_Rotate))
+			ModeTools->SetWidgetMode(UE::Widget::WM_Rotate);
+		if (EditorIcons::MenuRow("Scale", EEditorIcon::Scale, WidgetMode == UE::Widget::WM_Scale))
+			ModeTools->SetWidgetMode(UE::Widget::WM_Scale);
+
+		ImGui::Spacing();
+		EditorIcons::MenuSection("Coordinate Space");
+		const ECoordSystem Coord = ModeTools->GetCoordSystem();
+		if (EditorIcons::MenuRow("World", EEditorIcon::World, Coord == COORD_World))
+			ModeTools->SetCoordSystem(COORD_World);
+		if (EditorIcons::MenuRow("Local", EEditorIcon::Local, Coord == COORD_Local))
+			ModeTools->SetCoordSystem(COORD_Local);
+
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+		EditorIcons::MenuNote("Press Space in the viewport to cycle Translate, Rotate and Scale.");
+		ImGui::EndPopup();
+	}
+	ImGui::PopStyleVar(2);
 }
 
 void FLevelEditorToolbar::DrawCreateGroup()
@@ -167,11 +224,9 @@ void FLevelEditorToolbar::DrawPlayModeMenu()
 		ImGui::Spacing();
 		ImGui::Separator();
 		ImGui::Spacing();
-		ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 250.0f * S);
-		ImGui::TextDisabled(bCanChange
+		EditorIcons::MenuNote(bCanChange
 			? "The mode you pick here becomes the default for the toolbar Play button."
 			: "Stop the current play session to change the play mode.");
-		ImGui::PopTextWrapPos();
 		ImGui::EndPopup();
 	}
 	ImGui::PopStyleVar(2);

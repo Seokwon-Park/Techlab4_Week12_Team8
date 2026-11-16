@@ -57,6 +57,36 @@ namespace
 		}
 	};
 
+	// 면마다 밝기가 다른 등각 큐브. (X, Y)가 중심, R은 꼭짓점까지 거리.
+	void DrawCube(const FPen& Pen, float X, float Y, float R, ImU32 Col)
+	{
+		auto At = [&](float U, float V) { return Pen.P(X + U * R, Y + V * R); };
+		const ImVec2 Top = At(0.0f, -1.0f), UR = At(0.866f, -0.5f), LR = At(0.866f, 0.5f);
+		const ImVec2 Bottom = At(0.0f, 1.0f), LL = At(-0.866f, 0.5f), UL = At(-0.866f, -0.5f), Mid = At(0.0f, 0.0f);
+		Pen.Quad(Top, UR, Mid, UL, Col);
+		Pen.Quad(UL, Mid, Bottom, LL, Shade(Col, 0.78f));
+		Pen.Quad(Mid, UR, LR, Bottom, Shade(Col, 0.58f));
+	}
+
+	// 원호 + 화살촉. 원호는 AMin에서 AMax로(화면 좌표, 시계 방향) 그린다.
+	// bHeadAtMin이면 AMin 끝에, 아니면 AMax 끝에 원호 바깥쪽을 향한 화살촉을 단다.
+	void DrawArcArrow(const FPen& Pen, float Radius, float AMin, float AMax, bool bHeadAtMin, ImU32 Col, float Thick)
+	{
+		Pen.DL->PathArcTo(Pen.Center, Radius * Pen.S, AMin, AMax, 24);
+		Pen.DL->PathStroke(Col, ImDrawFlags_None, ImMax(1.5f, Thick * Pen.S));
+
+		const float A = bHeadAtMin ? AMin : AMax;
+		const ImVec2 Normal(std::cos(A), std::sin(A));
+		// 각도가 줄어드는 쪽(Min 끝) 또는 늘어나는 쪽(Max 끝)의 접선
+		const ImVec2 Tangent = bHeadAtMin ? ImVec2(Normal.y, -Normal.x) : ImVec2(-Normal.y, Normal.x);
+		const ImVec2 Base(Pen.Center.x + Normal.x * Radius * Pen.S, Pen.Center.y + Normal.y * Radius * Pen.S);
+		const float Head = 0.17f * Pen.S;
+		Pen.DL->AddTriangleFilled(
+			ImVec2(Base.x + Tangent.x * Head, Base.y + Tangent.y * Head),
+			ImVec2(Base.x + Normal.x * Head * 0.8f, Base.y + Normal.y * Head * 0.8f),
+			ImVec2(Base.x - Normal.x * Head * 0.8f, Base.y - Normal.y * Head * 0.8f), Col);
+	}
+
 	void DrawFolder(const FPen& Pen, ImU32 Col, float Right)
 	{
 		Pen.Rect(-0.46f, -0.38f, -0.08f, -0.22f, Col, 0.04f);   // 탭
@@ -181,10 +211,144 @@ namespace EditorIcons
 		case EEditorIcon::Check:
 			Pen.Polyline({ ImVec2(-0.34f, 0.0f), ImVec2(-0.10f, 0.26f), ImVec2(0.36f, -0.26f) }, C, 0.13f);
 			break;
+		case EEditorIcon::SelectMode:
+		{
+			// 큐브 + 오른쪽 아래 마우스 커서 (바탕색으로 테두리를 둘러 큐브와 떨어뜨린다)
+			DrawCube(Pen, -0.12f, -0.10f, 0.34f, C);
+			const ImVec2 Tip = Pen.P(0.04f, -0.04f), Left = Pen.P(0.04f, 0.42f), Right = Pen.P(0.38f, 0.26f);
+			DrawList->AddTriangle(Tip, Left, Right, Bg, 0.12f * Size);
+			DrawList->AddTriangleFilled(Tip, Left, Right, C);
+			Pen.Line(0.17f, 0.30f, 0.28f, 0.48f, Bg, 0.20f);
+			Pen.Line(0.17f, 0.30f, 0.27f, 0.46f, C, 0.09f);
+			break;
+		}
+		case EEditorIcon::Eye:
+		case EEditorIcon::EyeClosed:
+		{
+			constexpr int32 Steps = 12;
+			ImVec2 Points[Steps * 2 + 2];
+			int32 Count = 0;
+			for (int32 I = 0; I <= Steps; ++I)
+			{
+				const float T = static_cast<float>(I) / Steps;
+				Points[Count++] = Pen.P(-0.46f + 0.92f * T, -0.28f * std::sin(IM_PI * T));
+			}
+			if (Icon == EEditorIcon::Eye)
+			{
+				for (int32 I = Steps - 1; I >= 1; --I)
+				{
+					const float T = static_cast<float>(I) / Steps;
+					Points[Count++] = Pen.P(-0.46f + 0.92f * T, 0.28f * std::sin(IM_PI * T));
+				}
+				DrawList->AddConvexPolyFilled(Points, Count, C);
+				Pen.Circle(0.0f, 0.0f, 0.17f, Bg);
+				Pen.Circle(0.0f, 0.0f, 0.09f, C);
+			}
+			else
+			{
+				// 감은 눈: 아래로 휜 선 + 속눈썹
+				for (int32 I = 0; I <= Steps; ++I)
+					Points[I].y = Pen.P(0.0f, 0.18f * std::sin(IM_PI * I / Steps) - 0.05f).y;
+				DrawList->AddPolyline(Points, Steps + 1, C, ImDrawFlags_None, ImMax(1.5f, 0.09f * Size));
+				Pen.Line(-0.24f, 0.08f, -0.32f, 0.26f, C, 0.08f);
+				Pen.Line(0.0f, 0.13f, 0.0f, 0.33f, C, 0.08f);
+				Pen.Line(0.24f, 0.08f, 0.32f, 0.26f, C, 0.08f);
+			}
+			break;
+		}
+		case EEditorIcon::Translate:
+		{
+			Pen.Line(-0.34f, 0.0f, 0.34f, 0.0f, C, 0.08f);
+			Pen.Line(0.0f, -0.34f, 0.0f, 0.34f, C, 0.08f);
+			Pen.Tri(-0.48f, 0.0f, -0.30f, -0.13f, -0.30f, 0.13f, C);
+			Pen.Tri(0.48f, 0.0f, 0.30f, -0.13f, 0.30f, 0.13f, C);
+			Pen.Tri(0.0f, -0.48f, -0.13f, -0.30f, 0.13f, -0.30f, C);
+			Pen.Tri(0.0f, 0.48f, -0.13f, 0.30f, 0.13f, 0.30f, C);
+			break;
+		}
+		case EEditorIcon::Rotate:
+			DrawArcArrow(Pen, 0.33f, -0.40f * IM_PI, 0.85f * IM_PI, true, C, 0.10f);
+			break;
+		case EEditorIcon::Reset:
+			DrawArcArrow(Pen, 0.30f, -0.15f * IM_PI, 1.10f * IM_PI, false, C, 0.10f);
+			break;
+		case EEditorIcon::Scale:
+		{
+			DrawList->AddRect(Pen.P(-0.42f, -0.10f), Pen.P(0.10f, 0.42f), C, 0.0f, 0, ImMax(1.0f, 0.08f * Size));
+			Pen.Rect(0.14f, -0.42f, 0.42f, -0.14f, C, 0.02f);
+			Pen.Line(-0.10f, 0.10f, 0.20f, -0.20f, C, 0.08f);
+			break;
+		}
+		case EEditorIcon::World:
+		{
+			const float Thick = ImMax(1.0f, 0.07f * Size);
+			Pen.Ring(0.0f, 0.0f, 0.42f, C, 0.07f);
+			DrawList->AddEllipse(Pen.Center, ImVec2(0.18f * Size, 0.42f * Size), C, 0.0f, 0, Thick);
+			Pen.Line(-0.42f, 0.0f, 0.42f, 0.0f, C, 0.07f);
+			Pen.Line(-0.36f, -0.21f, 0.36f, -0.21f, C, 0.06f);
+			Pen.Line(-0.36f, 0.21f, 0.36f, 0.21f, C, 0.06f);
+			break;
+		}
+		case EEditorIcon::Local:
+			DrawCube(Pen, 0.0f, 0.0f, 0.44f, C);
+			break;
+		case EEditorIcon::Search:
+			Pen.Ring(-0.08f, -0.08f, 0.26f, C, 0.10f);
+			Pen.Line(0.12f, 0.12f, 0.40f, 0.40f, C, 0.13f);
+			break;
 		case EEditorIcon::None:
 		default:
 			break;
 		}
+	}
+
+	void MenuNote(const char* Text, float WrapWidth)
+	{
+		ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + WrapWidth * GetScale());
+		ImGui::TextDisabled("%s", Text);
+		ImGui::PopTextWrapPos();
+	}
+
+	bool SearchBox(const char* Id, char* Buffer, size_t BufferSize, const char* Hint)
+	{
+		const float S = GetScale();
+		const float IconSize = 12.0f * S;
+		const float IconPad = IconSize + 10.0f * S;
+
+		// 왼쪽 여백만 넓혀 돋보기 자리를 만든다.
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(IconPad, ImGui::GetStyle().FramePadding.y + 1.0f * S));
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f * S);
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		const bool bChanged = ImGui::InputTextWithHint(Id, Hint, Buffer, BufferSize);
+		ImGui::PopStyleVar(2);
+
+		const ImVec2 Min = ImGui::GetItemRectMin();
+		const ImVec2 Max = ImGui::GetItemRectMax();
+		Draw(ImGui::GetWindowDrawList(), EEditorIcon::Search,
+			ImVec2(Min.x + 6.0f * S + IconSize * 0.5f, (Min.y + Max.y) * 0.5f), IconSize,
+			ImGui::GetColorU32(ImGuiCol_TextDisabled), ImGui::GetColorU32(ImGuiCol_FrameBg));
+		return bChanged;
+	}
+
+	bool MatchesFilter(const char* Text, const char* Filter)
+	{
+		if (!Filter || !Filter[0])
+			return true;
+		if (!Text)
+			return false;
+		for (const char* Start = Text; *Start; ++Start)
+		{
+			const char* T = Start;
+			const char* F = Filter;
+			while (*T && *F && std::tolower(static_cast<unsigned char>(*T)) == std::tolower(static_cast<unsigned char>(*F)))
+			{
+				++T;
+				++F;
+			}
+			if (!*F)
+				return true;
+		}
+		return false;
 	}
 
 	float CalcButtonWidth(bool bHasIcon, const char* Label, bool bDropdown, float Height)

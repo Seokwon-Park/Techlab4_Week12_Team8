@@ -21,6 +21,16 @@ enum class EEditorIcon : uint8
 	Folder,
 	NewWindow,
 	Check,
+	SelectMode,     // 큐브 위 마우스 커서 (Selection Mode)
+	Eye,
+	EyeClosed,
+	Translate,
+	Rotate,
+	Scale,
+	World,          // 지구본 (월드 좌표계)
+	Local,          // 큐브 (로컬 좌표계)
+	Search,
+	Reset,          // 되돌리기 화살표
 };
 
 namespace EditorIcons
@@ -45,4 +55,11 @@ namespace EditorIcons
 	void MenuSection(const char* Title);
 	// 체크 칸 + 아이콘 + 라벨 한 줄. 눌리면 true.
 	bool MenuRow(const char* Label, EEditorIcon Icon, bool bChecked = false, bool bEnabled = true);
+	// 메뉴 맨 아래 흐린 설명 문단.
+	void MenuNote(const char* Text, float WrapWidth = 250.0f);
+
+	// 왼쪽에 돋보기가 있는 검색 칸 (가로를 꽉 채운다). 글자가 바뀌면 true.
+	bool SearchBox(const char* Id, char* Buffer, size_t BufferSize, const char* Hint = "Search...");
+	// 대소문자 구분 없이 Text 안에 Filter가 있으면 true. Filter가 비어 있으면 항상 true.
+	bool MatchesFilter(const char* Text, const char* Filter);
 }
