@@ -14,7 +14,7 @@ void FStaticMeshSettingsPanel::DrawContent()
 		bool bWireframe = Client->IsWireframe();
 		if (ImGui::Checkbox("Wireframe", &bWireframe))
 		{
-			Client->SetViewportMode(bWireframe ? EViewportMode::Wireframe : EViewportMode::Solid);
+			Client->SetViewMode(bWireframe ? VMI_Wireframe : VMI_Lit);
 		}
 	}
 }

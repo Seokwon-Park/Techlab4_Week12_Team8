@@ -16,7 +16,7 @@ public:
 	FLevelEditorViewportClient();
 	~FLevelEditorViewportClient() override;
 
-	void Draw(FRenderer* Renderer) override;
+	void Draw(FViewport* InViewport, FUIRenderer* Canvas) override;
 	void Draw(const FSceneView* View, FScenePassCallbacks& Callbacks) override;
 
 	// 이 뷰포트의 그리드와 월드 축을 그리는 도구. 뷰포트마다 하나씩 갖는다.

@@ -2,6 +2,7 @@
 
 #include "Engine.h"
 #include "Engine/GameSettings.h"
+#include "Engine/Viewport.h"
 
 #include "UI/UIRenderer.h"
 #include "UI/UIDrawList.h"
@@ -29,10 +30,12 @@ public:
 private:
 	void DispatchInput(FGameViewportClient& Viewport, float DeltaTime);
 	// 게임 뷰포트를 다시 그린다. UE의 UGameEngine::RedrawViewports에 해당한다.
-	void RedrawViewports(FGameViewportClient& Viewport);
+	void RedrawViewports(FGameViewportClient& GameViewport);
 
 	// GetConfig(클래스 기본 객체에서 const로 불린다)와 Init이 각각 읽는다.
 	mutable FGameSettings Settings;
 
-	TUniquePtr<FUIRenderer> UIRenderer;
+	// 게임 창 전체를 덮는 뷰포트. 그릴 대상(텍스처)과 크기를 갖고, 그리는 일은 게임 뷰포트 클라이언트에게 맡긴다.
+	// UE의 UGameEngine::SceneViewport와 같은 자리다. UE의 타입은 FViewport를 상속한 FSceneViewport다.
+	TUniquePtr<FViewport> SceneViewport;
 };

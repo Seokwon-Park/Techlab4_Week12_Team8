@@ -2,6 +2,13 @@
 #include "Editor/EditorUI/EditorTabContainer.h"
 #include "Editor/EditorUI/EditorTitleBar.h"
 
+namespace
+{
+	// 맨 위 에디터 탭 줄의 세로 여백. 탭 줄 높이 = 글자 크기 + 2 * 이 값.
+	// 왼쪽 위 로고는 제목 표시줄 + 탭 줄 높이의 정사각형이라 이 값을 키우면 로고도 같이 커진다.
+	constexpr float TabRowFramePaddingY = 15.0f;
+}
+
 void FEditorTabContainer::AddTab(IEditorTab* Tab)
 {
 	if (!Tab)
@@ -154,11 +161,13 @@ void FEditorTabContainer::DrawTabs()
 	const float DockSpaceMinX = ImGui::GetCursorScreenPos().x;
 	const float TabBarInset = ImMax(0.0f, EditorTitleBar::GetLogoColumnMaxX() - DockSpaceMinX);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, TabBarInset);
+	// 탭 줄 높이는 DockSpace와 탭 창 Begin 둘 다에서 FramePadding으로 계산되므로 같은 값을 넣는다.
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, TabRowFramePaddingY));
 	ImGui::DockSpace(DockSpaceId, ImVec2(0.0f, 0.0f),
 		ImGuiDockNodeFlags_NoDockingSplit |
 		ImGuiDockNodeFlags_NoWindowMenuButton |
 		ImGuiDockNodeFlags_NoCloseButton, &TabClass);
-	ImGui::PopStyleVar();
+	ImGui::PopStyleVar(2);
 
 	// 로고 아래 끝을 탭 줄 아래 끝에 맞춘다. 탭 바가 아직 없으면 탭 줄 높이로 어림한다.
 	if (const ImGuiDockNode* Node = ImGui::DockBuilderGetNode(DockSpaceId))
@@ -198,7 +207,7 @@ void FEditorTabContainer::DrawTabs()
 
 		
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 10.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, TabRowFramePaddingY));
 		const bool bActivate = PendingActivation == Tab;
 		if (bActivate)
 		{

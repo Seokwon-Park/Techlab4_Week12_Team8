@@ -17,6 +17,9 @@
 #include "Render/SkinningStats.h"
 #include "Render/SkeletalMeshObject.h"
 #include "Components/SkinnedMeshComponent.h"
+#include "Editor/EditorUI/EditorIcons.h"
+#include "Editor/EditorModeManager.h"
+#include "Input/InputSystem.h"
 
 
 namespace {
@@ -39,7 +42,11 @@ bool FViewportsPanel::Init() {
 	for (int32 i = 0; i < 4; ++i) {
 		ViewportClients[i] = MakeUnique<FLevelEditorViewportClient>();
 		ViewportClients[i]->SetViewIndex(i);
-		ViewportClients[i]->Resize(1, 1);
+
+		// 뷰포트를 만들어 클라이언트와 서로 연결하고, 타깃을 최소 크기로 만들어 둔다.
+		Viewports[i] = MakeUnique<FViewport>(ViewportClients[i].get());
+		ViewportClients[i]->Viewport = Viewports[i].get();
+		Viewports[i]->UpdateViewportRHI(false, 1, 1);
 	}
 
 	// 초기 시점 설정
@@ -52,7 +59,20 @@ bool FViewportsPanel::Init() {
 }
 
 // 패널의 프레임 갱신 인터페이스이며 별도 계산은 하지 않는다.
-void FViewportsPanel::Tick(float DeltaTime) { (void)DeltaTime; }
+// UE5처럼 뷰포트 위에서 Q/W/E/R로 Select/Translate/Rotate/Scale 도구를 고른다.
+// 오른쪽 버튼으로 카메라를 움직이는 중(W/E/Q가 이동 키)이거나 글자 입력 중, 뷰포트에서 게임 중이면 받지 않는다.
+void FViewportsPanel::Tick(float DeltaTime) {
+	(void)DeltaTime;
+	if (!IsHovered() || ImGui::GetIO().WantTextInput || GameViewportClient ||
+		FInputSystem::IsMouseDown(EMouseButton::Right))
+		return;
+
+	FEditorModeTools& ModeTools = GLevelEditorModeTools();
+	if (FInputSystem::IsKeyPressed(EKeyCode::Q)) ModeTools.SetWidgetMode(UE::Widget::WM_None);
+	else if (FInputSystem::IsKeyPressed(EKeyCode::W)) ModeTools.SetWidgetMode(UE::Widget::WM_Translate);
+	else if (FInputSystem::IsKeyPressed(EKeyCode::E)) ModeTools.SetWidgetMode(UE::Widget::WM_Rotate);
+	else if (FInputSystem::IsKeyPressed(EKeyCode::R)) ModeTools.SetWidgetMode(UE::Widget::WM_Scale);
+}
 
 // Core Rect에 맞춰 View 활성 상태와 타깃 크기를 갱신한다.
 void FViewportsPanel::SetView(const int32 ViewIndex, const FRect &Rect,
@@ -68,10 +88,10 @@ void FViewportsPanel::SetView(const int32 ViewIndex, const FRect &Rect,
 	if (!bSlotActive)
 		return;
 
+	// 크기가 같으면 뷰포트가 아무것도 하지 않는다. 바뀌면 타깃을 다시 만들고 클라이언트에 알린다.
 	const uint32 Width = static_cast<uint32>(std::max(1.0f, Rect.Width));
 	const uint32 Height = static_cast<uint32>(std::max(1.0f, Rect.Height));
-	if (Width != Client->GetWidth() || Height != Client->GetHeight())
-		Client->Resize(Width, Height);
+	Viewports[ViewIndex]->UpdateViewportRHI(false, Width, Height);
 }
 
 // 마우스 위치에서 패널 원점을 빼 로컬 좌표로 바꾼다.
@@ -86,6 +106,9 @@ FVector2 FViewportsPanel::GetLocalMousePosition() const {
 // 엔진 입력 처리는 ImGui NewFrame보다 먼저 실행되므로 현재 OS 커서로 버튼
 // 영역을 검사한다.
 bool FViewportsPanel::IsHovered() const {
+	// 뷰포트 툴바 위에 있거나 툴바 메뉴가 열려 있으면 뷰포트를 누른 것으로 보지 않는다.
+	if (bToolbarHovered)
+		return false;
 	if (bStatResetButtonVisible && FStatOverlay::IsAnyEnabled()) {
 		POINT Cursor{};
 		if (::GetCursorPos(&Cursor) && Cursor.x >= StatResetButtonMin.x &&
@@ -130,7 +153,7 @@ bool FViewportsPanel::ConsumeLayoutRequest(ELayoutMode &OutMode,
 // View Texture와 Splitter·Layout·Preset UI를 그리고 요청을 기록한다.
 void FViewportsPanel::OnRender() {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0.0f, 0.0f});
-	ImGui::Begin("Viewports", nullptr,
+	EditorPanelUI::BeginPanel("Viewports", nullptr,
 			ImGuiWindowFlags_NoScrollbar |
 			ImGuiWindowFlags_NoScrollWithMouse |
 			ImGuiWindowFlags_NoTitleBar);
@@ -189,8 +212,8 @@ void FViewportsPanel::OnRender() {
 		}
 
 		FTexture2D* DisplayTarget = bGameViewport
-			? GameViewportClient->GetColorTarget()
-			: Client->GetColorTarget();
+			? (GameViewportClient->Viewport ? GameViewportClient->Viewport->GetRenderTargetTexture() : nullptr)
+			: Viewports[ViewIndex]->GetRenderTargetTexture();
 		if (!DisplayTarget || !DisplayTarget->GetSRV())
 			continue;
 
@@ -274,57 +297,19 @@ void FViewportsPanel::OnRender() {
 		bDraggingHorizontalSplitter = false;
 	}
 
+	// 뷰마다 위쪽에 UE5식 뷰포트 툴바를 그린다.
+	bToolbarHovered = false;
 	for (int32 ViewIndex = 0; ViewIndex < 4; ++ViewIndex) {
 		FEditorViewportClient *Client = ViewportClients[ViewIndex].get();
 		if (!Client || !Client->IsActive())
 			continue;
 		const FRect &Rect = Client->GetRect();
-		ImGui::SetCursorScreenPos(
-				{ContentOrigin.x + Rect.X + 8.0f,
-				 ContentOrigin.y + Rect.Y + 8.0f});
-		ImGui::PushID(100 + ViewIndex);
-		int SelectedType = static_cast<int>(Client->GetViewportType());
-		ImGui::SetNextItemWidth(120.0f);
-		if (ImGui::Combo("##ViewportType", &SelectedType, ViewportTypeLabels,
-			IM_ARRAYSIZE(ViewportTypeLabels))) {
-			Client->SetViewportType(static_cast<ELevelViewportType>(SelectedType));
-		}
-		ImGui::SameLine();
-		// 장면 채우기 모드 설정
-		int Mode = static_cast<int>(Client->GetViewportMode());
-		const char *Labels[] = {"Solid", "Wireframe", "Scene Depth", "World Normal", "Light Culling", "Cascade", "Shadow Mask"};
-		ImGui::SetNextItemWidth(120.0f);
-		if (ImGui::Combo("##FillMode", &Mode, Labels, IM_ARRAYSIZE(Labels))) {
-			Client->SetViewportMode(static_cast<EViewportMode>(Mode));
-		}
-		ImGui::SameLine();
-		if (CurrentLayoutMode == ELayoutMode::QuadSplit) {
-			if (ImGui::SmallButton("Single")) {
-				RequestedLayoutMode = ELayoutMode::Single;
-				RequestedSingleViewIndex = ViewIndex;
-				bHasLayoutRequest = true;
-			}
-		} else if (ViewIndex == CurrentSingleViewIndex &&
-			ImGui::SmallButton("Quad")) {
-			RequestedLayoutMode = ELayoutMode::QuadSplit;
-			RequestedSingleViewIndex = ViewIndex;
-			bHasLayoutRequest = true;
-		}
-		if (ViewIndex == ActiveViewIndex && !Client->IsLightCulling() &&
-				FStatOverlay::IsAnyEnabled() &&
-				(FStatOverlay::IsEnabled(EStatFlags::Profile) ||
-				 FStatRegistry::Find(EditorStats::STAT_PickingTime))) {
-			ImGui::SameLine();
-			if (ImGui::SmallButton("Reset Stats"))
-				FStatRegistry::Reset();
-			StatResetButtonMin = ImGui::GetItemRectMin();
-			StatResetButtonMax = ImGui::GetItemRectMax();
-			bStatResetButtonVisible = true;
-		}
-		ImGui::PopID();
+		const ImVec2 ViewMin{ContentOrigin.x + Rect.X, ContentOrigin.y + Rect.Y};
+		DrawViewportToolbar(ViewIndex, Client, ViewMin, {ViewMin.x + Rect.Width, ViewMin.y + Rect.Height});
 	}
-
-
+	// 툴바 메뉴가 열려 있으면 뷰포트 클릭(피킹)을 막는다.
+	if (ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
+		bToolbarHovered = true;
 
 	// 마지막으로 선택된 뷰포트만 오버레이
 	for (int32 ViewIndex = 0; ViewIndex < 4; ++ViewIndex) {
@@ -333,7 +318,7 @@ void FViewportsPanel::OnRender() {
 		FEditorViewportClient *Client = ViewportClients[ViewIndex].get();
 		if (!Client || !Client->IsActive() || Client->IsLightCulling())
 			continue;
-		DrawStatOverlay(DrawList, { ContentOrigin.x + Client->GetRect().X, ContentOrigin.y + Client->GetRect().Y }, Client);
+		DrawStatOverlay(DrawList, { ContentOrigin.x + Client->GetRect().X, ContentOrigin.y + Client->GetRect().Y + GetToolbarHeight() }, Client);
 	}
 
 	ImGui::End();
@@ -610,4 +595,266 @@ const FRenderStats& Stats = RenderData.RenderStats;
 			Text.c_str());
 		}
 	}
+}
+
+// UE5 뷰포트 위쪽 툴바. 왼쪽은 기즈모 도구, 오른쪽은 이 뷰의 카메라·보기 설정이다.
+// [이동 회전 크기][좌표계]  ...........  [카메라 Perspective ▾][속도 ▾][Lit ▾][눈 ▾][레이아웃]
+void FViewportsPanel::DrawViewportToolbar(int32 ViewIndex, FEditorViewportClient* Client, const ImVec2& ViewMin, const ImVec2& ViewMax)
+{
+	const float S = EditorIcons::GetScale();
+	const float BarHeight = GetToolbarHeight();
+	const float ButtonHeight = BarHeight - 6.0f * S;
+	const float Pad = 6.0f * S;
+	const ImVec2 BarMax(ViewMax.x, ViewMin.y + BarHeight);
+
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	DrawList->AddRectFilled(ViewMin, BarMax, ImGui::GetColorU32(ImGuiCol_TitleBg, 0.94f));
+	// 4분할일 때 활성 뷰는 툴바 아래쪽에 강조선을 긋는다.
+	if (ViewIndex == ActiveViewIndex && CurrentLayoutMode == ELayoutMode::QuadSplit)
+		DrawList->AddLine(ImVec2(ViewMin.x, BarMax.y - 1.0f), ImVec2(BarMax.x, BarMax.y - 1.0f), ImGui::GetColorU32(ImGuiCol_SliderGrab), 2.0f * S);
+	if (ImGui::IsMouseHoveringRect(ViewMin, BarMax))
+		bToolbarHovered = true;
+
+	const ImU32 IconColor = ImGui::GetColorU32(ImGuiCol_Text, 0.8f);
+	const ImU32 ActiveColor = ImGui::GetColorU32(ImGuiCol_SliderGrab);
+	FEditorModeTools& ModeTools = GLevelEditorModeTools();
+
+	// 알약 모양 묶음 배경 (UE5 툴바 그룹)
+	auto BeginPill = [DrawList]() { DrawList->ChannelsSplit(2); DrawList->ChannelsSetCurrent(1); ImGui::BeginGroup(); };
+	auto EndPill = [DrawList, S]()
+	{
+		ImGui::EndGroup();
+		DrawList->ChannelsSetCurrent(0);
+		DrawList->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImGuiCol_FrameBg), 4.0f * S);
+		DrawList->ChannelsMerge();
+	};
+	// 메뉴 팝업은 방금 그린 버튼 바로 아래에 연다. 오른쪽 메뉴는 버튼 오른쪽 끝에 맞춘다.
+	auto OpenBelow = [S](const char* PopupId, bool bAlignRight)
+	{
+		const ImVec2 Min = ImGui::GetItemRectMin();
+		const ImVec2 Max = ImGui::GetItemRectMax();
+		ImGui::SetNextWindowPos(ImVec2(bAlignRight ? Max.x : Min.x, Max.y + 2.0f * S), ImGuiCond_Appearing,
+			ImVec2(bAlignRight ? 1.0f : 0.0f, 0.0f));
+		ImGui::OpenPopup(PopupId);
+	};
+
+	ImGui::PushID(1000 + ViewIndex);
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(2.0f * S, 0.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f * S, 6.0f * S));
+
+	// ---------------- 왼쪽: 기즈모 도구 ----------------
+	const float ButtonY = ViewMin.y + (BarHeight - ButtonHeight) * 0.5f;
+	ImGui::SetCursorScreenPos(ImVec2(ViewMin.x + Pad, ButtonY));
+
+	// Transform Tools 메뉴 (UE5 뷰포트 툴바 맨 왼쪽 ▾): 도구와 좌표계를 고르고 단축키를 보여 준다.
+	const UE::Widget::EWidgetMode WidgetMode = ModeTools.GetWidgetMode();
+	const bool bWorld = ModeTools.GetCoordSystem() == COORD_World;
+	struct FToolEntry { const char* Id; const char* Label; EEditorIcon Icon; UE::Widget::EWidgetMode Mode; const char* Key; };
+	const FToolEntry Tools[] = {
+		{ "##Select",    "Select Mode",    EEditorIcon::Select,    UE::Widget::WM_None,      "Q" },
+		{ "##Translate", "Translate Mode", EEditorIcon::Translate, UE::Widget::WM_Translate, "W" },
+		{ "##Rotate",    "Rotate Mode",    EEditorIcon::Rotate,    UE::Widget::WM_Rotate,    "E" },
+		{ "##Scale",     "Scale Mode",     EEditorIcon::Scale,     UE::Widget::WM_Scale,     "R" },
+	};
+
+	BeginPill();
+	if (EditorIcons::Button("##TransformTools", EEditorIcon::SelectMode, IconColor, nullptr, true,
+		ImGui::IsPopupOpen("##TransformToolsMenu"), ButtonHeight))
+		OpenBelow("##TransformToolsMenu", false);
+	EndPill();
+	ImGui::SetItemTooltip("Transform Tools");
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f * S, 1.0f * S));
+	if (ImGui::BeginPopup("##TransformToolsMenu"))
+	{
+		EditorIcons::MenuSection("Transform Tools");
+		for (const FToolEntry& Tool : Tools)
+		{
+			if (EditorIcons::MenuRow(Tool.Label, Tool.Icon, WidgetMode == Tool.Mode, true, false, Tool.Key, true))
+				ModeTools.SetWidgetMode(Tool.Mode);
+		}
+		ImGui::Spacing();
+		EditorIcons::MenuSection("Coordinate Space");
+		if (EditorIcons::MenuRow("World", EEditorIcon::World, bWorld, true, false, nullptr, true))
+			ModeTools.SetCoordSystem(COORD_World);
+		if (EditorIcons::MenuRow("Local", EEditorIcon::Local, !bWorld, true, false, nullptr, true))
+			ModeTools.SetCoordSystem(COORD_Local);
+		ImGui::EndPopup();
+	}
+	ImGui::PopStyleVar();
+
+	// 도구 버튼 4개 (지금 도구는 강조색)
+	ImGui::SameLine(0.0f, 4.0f * S);
+	for (int32 I = 0; I < IM_ARRAYSIZE(Tools); ++I)
+	{
+		if (I > 0) ImGui::SameLine();
+		const bool bActive = WidgetMode == Tools[I].Mode;
+		if (EditorIcons::Button(Tools[I].Id, Tools[I].Icon, bActive ? ActiveColor : IconColor, nullptr, false, false, ButtonHeight))
+			ModeTools.SetWidgetMode(Tools[I].Mode);
+		ImGui::SetItemTooltip("%s (%s)", Tools[I].Label, Tools[I].Key);
+	}
+
+	// 좌표계: 누르면 World/Local을 바꾼다.
+	ImGui::SameLine(0.0f, 6.0f * S);
+	BeginPill();
+	if (EditorIcons::Button("##CoordSpace", bWorld ? EEditorIcon::World : EEditorIcon::Local, IconColor, nullptr, false, false, ButtonHeight))
+		ModeTools.SetCoordSystem(bWorld ? COORD_Local : COORD_World);
+	ImGui::SetItemTooltip(bWorld ? "World space (click for Local)" : "Local space (click for World)");
+	EndPill();
+
+	// 통계 리셋 (통계 오버레이가 켜진 활성 뷰에서만)
+	if (ViewIndex == ActiveViewIndex && !Client->IsLightCulling() &&
+		FStatOverlay::IsAnyEnabled() &&
+		(FStatOverlay::IsEnabled(EStatFlags::Profile) || FStatRegistry::Find(EditorStats::STAT_PickingTime)))
+	{
+		ImGui::SameLine(0.0f, 6.0f * S);
+		if (EditorIcons::Button("##ResetStats", EEditorIcon::Reset, IconColor, "Stats", false, false, ButtonHeight))
+			FStatRegistry::Reset();
+		ImGui::SetItemTooltip("Reset Stats");
+		StatResetButtonMin = ImGui::GetItemRectMin();
+		StatResetButtonMax = ImGui::GetItemRectMax();
+		bStatResetButtonVisible = true;
+	}
+	const float LeftEndX = ImGui::GetItemRectMax().x;
+
+	// ---------------- 오른쪽: 이 뷰의 보기 설정 ----------------
+	static constexpr const char* ViewModeLabels[] = { "Lit", "Wireframe", "Scene Depth", "World Normal", "Light Culling", "Cascade", "Shadow Mask" };
+	const int32 TypeIndex = static_cast<int32>(Client->GetViewportType());
+	const int32 ModeIndex = static_cast<int32>(Client->GetViewMode());
+	const char* TypeLabel = ViewportTypeLabels[TypeIndex];
+	const char* ModeLabel = (ModeIndex >= 0 && ModeIndex < IM_ARRAYSIZE(ViewModeLabels)) ? ViewModeLabels[ModeIndex] : "View";
+	char SpeedLabel[16];
+	std::snprintf(SpeedLabel, sizeof(SpeedLabel), "%.2f", CameraSpeed ? *CameraSpeed : 1.0f);
+
+	// 뷰가 좁아 글자까지 넣으면 왼쪽과 겹칠 때는 아이콘만 그린다.
+	auto RightWidth = [&](bool bWithLabels)
+	{
+		const float Gap = 4.0f * S;
+		return EditorIcons::CalcButtonWidth(true, bWithLabels ? TypeLabel : nullptr, true, ButtonHeight) + Gap
+			+ EditorIcons::CalcButtonWidth(true, (bWithLabels && CameraSpeed) ? SpeedLabel : nullptr, true, ButtonHeight) + Gap
+			+ EditorIcons::CalcButtonWidth(true, bWithLabels ? ModeLabel : nullptr, true, ButtonHeight) + Gap
+			+ EditorIcons::CalcButtonWidth(true, nullptr, true, ButtonHeight) + Gap
+			+ EditorIcons::CalcButtonWidth(true, nullptr, false, ButtonHeight);
+	};
+	const bool bLabels = ViewMax.x - Pad - RightWidth(true) > LeftEndX + 12.0f * S;
+	const float RightStartX = ImMax(LeftEndX + 12.0f * S, ViewMax.x - Pad - RightWidth(bLabels));
+
+	ImGui::SetCursorScreenPos(ImVec2(RightStartX, ButtonY));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f * S, 0.0f));
+
+	// 뷰 종류
+	if (EditorIcons::Button("##ViewType", EEditorIcon::Camera, IconColor, bLabels ? TypeLabel : nullptr, true,
+		ImGui::IsPopupOpen("##ViewTypeMenu"), ButtonHeight))
+		OpenBelow("##ViewTypeMenu", true);
+	ImGui::SetItemTooltip("Viewport Type: %s", TypeLabel);
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f * S, 1.0f * S));
+	if (ImGui::BeginPopup("##ViewTypeMenu"))
+	{
+		EditorIcons::MenuSection("Perspective");
+		if (EditorIcons::MenuRow("Perspective", EEditorIcon::Camera, TypeIndex == 0))
+			Client->SetViewportType(ELevelViewportType::Perspective);
+		ImGui::Spacing();
+		EditorIcons::MenuSection("Orthographic");
+		for (int32 Type = 1; Type < IM_ARRAYSIZE(ViewportTypeLabels); ++Type)
+		{
+			if (EditorIcons::MenuRow(ViewportTypeLabels[Type], EEditorIcon::LayoutSingle, TypeIndex == Type))
+				Client->SetViewportType(static_cast<ELevelViewportType>(Type));
+		}
+		ImGui::EndPopup();
+	}
+	ImGui::PopStyleVar();
+
+	// 카메라 속도와 시야각
+	ImGui::SameLine();
+	if (EditorIcons::Button("##CameraSpeed", EEditorIcon::CameraSpeed, IconColor, (bLabels && CameraSpeed) ? SpeedLabel : nullptr, true,
+		ImGui::IsPopupOpen("##CameraMenu"), ButtonHeight))
+		OpenBelow("##CameraMenu", true);
+	ImGui::SetItemTooltip("Camera Speed and Field of View");
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f * S, 4.0f * S));
+	if (ImGui::BeginPopup("##CameraMenu"))
+	{
+		if (CameraSpeed)
+		{
+			EditorIcons::MenuSection("Camera Speed");
+			ImGui::SetNextItemWidth(200.0f * S);
+			ImGui::SliderFloat("##Speed", CameraSpeed, 0.1f, 10.0f, "%.2f");
+		}
+		if (Client->IsPerspective())
+		{
+			EditorIcons::MenuSection("Field of View");
+			float Fov = Client->GetViewFOV();
+			ImGui::SetNextItemWidth(200.0f * S);
+			if (ImGui::SliderFloat("##Fov", &Fov, 30.0f, 120.0f, "%.0f"))
+				Client->SetViewFOV(Fov);
+		}
+		ImGui::EndPopup();
+	}
+	ImGui::PopStyleVar();
+
+	// 뷰 모드
+	ImGui::SameLine();
+	if (EditorIcons::Button("##ViewMode", EEditorIcon::Lit, IconColor, bLabels ? ModeLabel : nullptr, true,
+		ImGui::IsPopupOpen("##ViewModeMenu"), ButtonHeight))
+		OpenBelow("##ViewModeMenu", true);
+	ImGui::SetItemTooltip("View Mode: %s", ModeLabel);
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f * S, 1.0f * S));
+	if (ImGui::BeginPopup("##ViewModeMenu"))
+	{
+		EditorIcons::MenuSection("View Mode");
+		for (int32 Mode = 0; Mode < IM_ARRAYSIZE(ViewModeLabels); ++Mode)
+		{
+			if (Mode == 2)
+			{
+				ImGui::Spacing();
+				EditorIcons::MenuSection("Buffer Visualization");
+			}
+			if (EditorIcons::MenuRow(ViewModeLabels[Mode], Mode == 0 ? EEditorIcon::Lit : EEditorIcon::None, ModeIndex == Mode))
+				Client->SetViewMode(static_cast<EViewModeIndex>(Mode));
+		}
+		ImGui::EndPopup();
+	}
+	ImGui::PopStyleVar();
+
+	// 쇼 플래그
+	ImGui::SameLine();
+	if (EditorIcons::Button("##ShowFlags", EEditorIcon::Eye, IconColor, nullptr, true,
+		ImGui::IsPopupOpen("##ShowMenu"), ButtonHeight))
+		OpenBelow("##ShowMenu", true);
+	ImGui::SetItemTooltip("Show");
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f * S, 1.0f * S));
+	if (ImGui::BeginPopup("##ShowMenu"))
+	{
+		FEngineShowFlags& Flags = Client->GetEngineShowFlags();
+		struct FFlagRow { const char* Label; bool* Value; };
+		const FFlagRow Rows[] = {
+			{ "Rendering", &Flags.Rendering },
+			{ "Skeletal Meshes", &Flags.SkeletalMeshes },
+			{ "Decals", &Flags.Decals },
+			{ "Fog", &Flags.Fog },
+			{ "Anti-aliasing", &Flags.AntiAliasing },
+			{ "Vignette", &Flags.Vignette },
+			{ "Camera Overlay", &Flags.CameraOverlay },
+		};
+		EditorIcons::MenuSection("Show Flags");
+		for (const FFlagRow& Row : Rows)
+		{
+			if (EditorIcons::MenuRow(Row.Label, EEditorIcon::None, *Row.Value, true, true))
+				*Row.Value = !*Row.Value;
+		}
+		ImGui::EndPopup();
+	}
+	ImGui::PopStyleVar();
+
+	// 레이아웃: 4분할이면 이 뷰만 크게, 한 칸이면 다시 4분할
+	ImGui::SameLine();
+	const bool bQuad = CurrentLayoutMode == ELayoutMode::QuadSplit;
+	if (EditorIcons::Button("##Layout", bQuad ? EEditorIcon::LayoutSingle : EEditorIcon::LayoutQuad, IconColor, nullptr, false, false, ButtonHeight))
+	{
+		RequestedLayoutMode = bQuad ? ELayoutMode::Single : ELayoutMode::QuadSplit;
+		RequestedSingleViewIndex = ViewIndex;
+		bHasLayoutRequest = true;
+	}
+	ImGui::SetItemTooltip(bQuad ? "Maximize this viewport" : "Restore four viewports");
+
+	ImGui::PopStyleVar(3);
+	ImGui::PopID();
 }

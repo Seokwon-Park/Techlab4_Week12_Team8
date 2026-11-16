@@ -9,6 +9,7 @@
 #include "EngineTypes.h"
 
 #include "Asset/AssetManager.h"
+#include "UI/UIRenderer.h"
 #include "Engine.generated.h"
 
 class UGameInstance;
@@ -109,12 +110,19 @@ public:
 	// 창, 스왑체인, 렌더러를 가진 엔진 루프. UE에서는 전역 GEngineLoop로 어디서나 접근한다.
 	FEngineLoop& GetEngineLoop() const { return *EngineLoop; }
 
+	// 씬 위에 2D(게임 UI)를 그리는 도구. FViewport::Draw가 뷰포트 클라이언트에 넘긴다. 초기화 전에는 nullptr이다.
+	// UE에는 없는 이 엔진 고유의 함수다. UE는 FViewport::Draw가 그릴 때마다 FCanvas를 새로 만든다.
+	FUIRenderer* GetUIRenderer() const { return UIRenderer.get(); }
+
 protected:
 	// 맵 교체 직전·직후 알림. 에디터는 PIE 월드 포인터와 패널을 여기서 갱신한다.
 	virtual void PreLoadMap(FWorldContext& Context) {}
 	virtual void PostLoadMap(FWorldContext& Context) {}
 
 	FAudioDevice* MainAudioDevice = nullptr;
+
+	// 게임 엔진과 에디터 엔진이 각자 Init에서 만든다.
+	TUniquePtr<FUIRenderer> UIRenderer;
 
 	TIndirectArray<FWorldContext> WorldContextlist;
 	//UWorld* World = nullptr;
