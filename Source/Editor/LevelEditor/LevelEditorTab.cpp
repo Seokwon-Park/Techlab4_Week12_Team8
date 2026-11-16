@@ -4,18 +4,17 @@
 #include "Asset/FbxImporter/FbxMeshBake.h"
 #include "Editor/ContentDrawer/ContentDrawerPanel.h"
 #include "Editor/OutputLog/OutputLogPanel.h"
+#include "Editor/EditorUI/EditorIcons.h"
 #include <filesystem>
 
 namespace
 {
-	// 켜져 있으면 선택 행 색으로 칠하고, 꺼져 있으면 배경 없이 글자만 보이는 상태 표시줄 버튼.
+	// 켜져 있으면 선택 행 색으로 칠하고, 꺼져 있으면 배경 없이 아이콘+글자만 보이는 상태 표시줄 버튼.
 	// 마우스를 누르는 순간 반응해야 드로어의 "포커스 잃으면 닫기"와 엇갈리지 않는다.
-	bool StatusBarToggle(const char* Label, bool bActive)
+	bool StatusBarToggle(const char* Id, EEditorIcon Icon, const char* Label, bool bActive)
 	{
-		ImGui::PushStyleColor(ImGuiCol_Button, bActive ? ImGui::GetStyleColorVec4(ImGuiCol_Header) : ImVec4(0, 0, 0, 0));
-		const bool bPressed = ImGui::ButtonEx(Label, ImVec2(0, 0), ImGuiButtonFlags_PressedOnClick);
-		ImGui::PopStyleColor();
-		return bPressed;
+		return EditorIcons::Button(Id, Icon, ImGui::GetColorU32(ImGuiCol_Text, 0.8f), Label, false, bActive,
+			ImGui::GetFrameHeight(), ImGuiButtonFlags_PressedOnClick);
 	}
 }
 
@@ -126,7 +125,10 @@ void FLevelEditorTab::OnRender(bool bActive)
 		if (!bActive)
 			Flags |= ImGuiDockNodeFlags_KeepAliveOnly;
 
+		// 패널 탭 높이를 패널 Begin과 같은 값으로 맞춘다 (EditorPanelUI).
+		EditorPanelUI::PushTabPadding();
 		ImGui::DockSpace(DockSpaceId, ImVec2(0.0f, -StatusBarHeight), Flags);
+		EditorPanelUI::PopTabPadding();
 	}
 
 	if (bActive)
@@ -181,6 +183,34 @@ void FLevelEditorTab::BuildDefaultLayout(ImGuiID DockSpaceId, const ImVec2& Size
 	ImGui::DockBuilderFinish(DockSpaceId);
 }
 
+void FLevelEditorTab::SetStatusBarPanels(FContentDrawerPanel* InContentDrawer, FOutputLogPanel* InOutputLog)
+{
+	ContentDrawer = InContentDrawer;
+	OutputLog = InOutputLog;
+
+	// UE5 "Browse to Level": 저장된 레벨 파일이 있을 때만 켜진다.
+	Toolbar.SetBrowseToLevelAction(
+		[this]()
+		{
+			if (ContentDrawer)
+				ContentDrawer->BrowseToFile(FEditorFileUtils::CurrentScenePath);
+		},
+		[this]()
+		{
+			std::error_code Error;
+			return ContentDrawer && !FEditorFileUtils::CurrentScenePath.empty()
+				&& std::filesystem::is_regular_file(FEditorFileUtils::CurrentScenePath, Error);
+		});
+}
+
+void FLevelEditorTab::ToggleContentDrawer()
+{
+	if (!ContentDrawer)
+		return;
+	ContentDrawer->SetOpen(true);
+	ContentDrawer->ToggleDrawer();
+}
+
 float FLevelEditorTab::GetStatusBarHeight() const
 {
 	return ImGui::GetFrameHeight() + 6.0f;
@@ -188,11 +218,8 @@ float FLevelEditorTab::GetStatusBarHeight() const
 
 void FLevelEditorTab::DrawStatusBar()
 {
-	if (ContentDrawer && ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Space, ImGuiInputFlags_RouteGlobal))
-	{
-		ContentDrawer->SetOpen(true);
-		ContentDrawer->ToggleDrawer();
-	}
+	if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Space, ImGuiInputFlags_RouteGlobal))
+		ToggleContentDrawer();
 
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_TitleBg));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f, 3.0f));
@@ -205,10 +232,9 @@ void FLevelEditorTab::DrawStatusBar()
 		if (ContentDrawer)
 		{
 			const bool bActive = ContentDrawer->IsDrawerOpen() || ContentDrawer->IsDocked();
-			if (StatusBarToggle("Content Drawer", bActive))
+			if (StatusBarToggle("##StatusContentDrawer", EEditorIcon::Folder, "Content Drawer", bActive))
 			{
-				ContentDrawer->SetOpen(true);
-				ContentDrawer->ToggleDrawer();
+				ToggleContentDrawer();
 			}
 			ImGui::SetItemTooltip("Ctrl+Space");
 			ImGui::SameLine();
@@ -216,7 +242,7 @@ void FLevelEditorTab::DrawStatusBar()
 
 		if (OutputLog)
 		{
-			if (StatusBarToggle("Output Log", OutputLog->IsOpen()))
+			if (StatusBarToggle("##StatusOutputLog", EEditorIcon::None, "Output Log", OutputLog->IsOpen()))
 				OutputLog->SetOpen(!OutputLog->IsOpen());
 			ImGui::SameLine();
 

@@ -1435,7 +1435,7 @@ void FDetailsPanel::OnRender()
 {
 	ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
 
-	ImGui::Begin("Details");
+	EditorPanelUI::BeginPanel("Details");
 
 	if (TargetActor)
 	{

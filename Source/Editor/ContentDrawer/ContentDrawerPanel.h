@@ -20,6 +20,8 @@ public:
 
 	// UE5처럼 상태 표시줄 위로 올라오는 드로어로 쓴다. "Dock in Layout"을 누르면 일반 도킹 창이 된다.
 	void ToggleDrawer();
+	// 드로어를 열고 파일이 있는 폴더로 이동해 그 파일을 선택 표시한다. 파일이 없으면 false.
+	bool BrowseToFile(const fs::path& FilePath);
 	bool IsDrawerOpen() const { return bDrawerOpen; }
 	bool IsDocked() const { return bDocked; }
 	// 드로어가 덮을 영역 (레벨 에디터 탭이 매 프레임 넘긴다).
@@ -60,7 +62,11 @@ private:
 	bool bOpenCreateWidget = false;
 
 	fs::path AssetRootPath = "Assets";
+	fs::path SceneRootPath = "Scenes";
 	fs::path CurrentPath = "Assets";
+	// 선택(테두리) 표시할 파일. 그리드 항목 경로와 같은 형식("Scenes/A.scene").
+	FString HighlightPath;
+	bool bScrollToHighlight = false;
 
 	const FString FolderIconPath = "Engine/Icons/Folder.png";
 	const FString FileIconPath = "Engine/Icons/File.png";

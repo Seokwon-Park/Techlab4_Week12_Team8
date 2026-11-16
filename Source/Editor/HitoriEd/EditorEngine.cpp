@@ -37,6 +37,7 @@
 
 #include "Render/RenderCommand.h"
 #include "Editor/Outliner/OutlinerPanel.h"
+#include "Editor/EditorUI/EditorIcons.h"
 #include "Editor/HitoriEd/EditorFileUtils.h"
 #include "Editor/Viewports/EditorViewportClient.h"
 #include "UObject/UObjectIterator.h"
@@ -396,8 +397,79 @@ void UEditorEngine::InitCommands()
 	Stop.CanExecute = [this]()->bool {return PlayWorld; };
 	Stop.Execute = [this]() { RequestEndPlayMap(); };
 
+	// 툴바 아이콘은 도형으로 그린다 (EditorIcons).
+	const ImVec4 StopRed = { 0.95f, 0.42f, 0.48f, 1.0f };
+	Save.IconId = EEditorIcon::Save;
+	Play.IconId = EEditorIcon::Play;
+	Pause.IconId = EEditorIcon::Pause;
+	Resume.IconId = EEditorIcon::Play;
+	Resume.IconTint = Green;
+	StepFrame.IconId = EEditorIcon::Step;
+	Stop.IconId = EEditorIcon::Stop;
+	Stop.IconTint = StopRed;
+
+	// UE5처럼 Play 자리에는 Play / Pause / Resume 중 지금 쓸 수 있는 하나만 보인다.
+	Play.IsVisible = [this]() { return !PlayWorld; };
+	Pause.IsVisible = [this]() { return PlayWorld && !bIsPaused; };
+	Resume.IsVisible = [this]() { return PlayWorld && bIsPaused; };
+
+	// UE5 "Quickly add to the project" 메뉴. PIE 중에는 에디터 월드를 건드리지 않는다.
+	auto SpawnEntry = [this](const char* Category, const char* Label, UClass* Class) -> FToolbarMenuEntry
+	{
+		FToolbarMenuEntry Entry;
+		Entry.Category = Category;
+		Entry.Label = Label;
+		Entry.CanExecute = [this]() { return !PlayWorld && EditorWorld; };
+		Entry.Execute = [this, Class]() { if (EditorWorld) EditorWorld->SpawnActor(Class); };
+		return Entry;
+	};
+	// 패널을 켜고 앞으로 가져온다.
+	auto FocusPanelEntry = [](const char* Category, const char* Label, IEditorPanel* Panel,
+		EEditorIcon Icon = EEditorIcon::None) -> FToolbarMenuEntry
+	{
+		FToolbarMenuEntry Entry;
+		Entry.Category = Category;
+		Entry.Label = Label;
+		Entry.Icon = Icon;
+		Entry.Execute = [Panel]()
+		{
+			if (!Panel) return;
+			Panel->SetOpen(true);
+			ImGui::SetWindowFocus(Panel->GetPanelName());
+		};
+		return Entry;
+	};
+
+	FToolbarMenu AddMenu;
+	AddMenu.Icon = EEditorIcon::AddActor;
+	AddMenu.Label = "Add";
+	AddMenu.Tooltip = "Quickly add actors to the level";
+	AddMenu.Entries = {
+		SpawnEntry("Basic", "Static Mesh Actor", AStaticMeshActor::StaticClass()),
+		SpawnEntry("Basic", "Text Render Actor", ATextRenderActor::StaticClass()),
+		SpawnEntry("Basic", "Character", ACharacter::StaticClass()),
+		SpawnEntry("Lights", "Directional Light", ADirectionalLightActor::StaticClass()),
+		SpawnEntry("Lights", "Point Light", APointLightActor::StaticClass()),
+		SpawnEntry("Lights", "Spot Light", ASpotLightActor::StaticClass()),
+		SpawnEntry("Lights", "Rect Light", ARectLightActor::StaticClass()),
+		SpawnEntry("Lights", "Sky Light", ASkyLightActor::StaticClass()),
+		SpawnEntry("Visual Effects", "Particle Actor", AParticleActor::StaticClass()),
+		SpawnEntry("Visual Effects", "Exponential Height Fog", AExponentialHeightFogActor::StaticClass()),
+		SpawnEntry("Visual Effects", "Decal", ADecalActor::StaticClass()),
+	};
+
+	FToolbarMenu CinematicsMenu;
+	CinematicsMenu.Icon = EEditorIcon::Cinematics;
+	CinematicsMenu.Label = "Cinematics";
+	CinematicsMenu.Entries = {
+		SpawnEntry("Level Sequence", "Add Level Sequence Actor", ALevelSequenceActor::StaticClass()),
+		FocusPanelEntry("Level Sequence", "Open Sequencer", SequencerPanel, EEditorIcon::Cinematics),
+	};
+
 	FLevelEditorToolbar& LevelEditorToolbar = *LevelEditorTab->GetToolbar();
-	LevelEditorToolbar.SetCommands({ Play, Pause, Resume, StepFrame, Stop });
+	LevelEditorToolbar.SetSaveCommand(Save);
+	LevelEditorToolbar.SetCreateMenus({ AddMenu, CinematicsMenu });
+	LevelEditorToolbar.SetCommands({ Play, Resume, Pause, StepFrame, Stop });
 	LevelEditorToolbar.SetPlayModeBinding(
 		[this]() { return PlayMode; },
 		[this](EPlayModeType Mode) { PlayMode = Mode; },

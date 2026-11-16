@@ -49,11 +49,10 @@ public:
 	void UpdateTabName(std::string_view InPath);
 
 	// 하단 상태 표시줄의 Content Drawer / Output Log / Cmd가 쓰는 패널.
-	void SetStatusBarPanels(FContentDrawerPanel* InContentDrawer, FOutputLogPanel* InOutputLog)
-	{
-		ContentDrawer = InContentDrawer;
-		OutputLog = InOutputLog;
-	}
+	// 툴바의 Browse to Level 버튼도 같은 Content Drawer에 연결한다.
+	void SetStatusBarPanels(FContentDrawerPanel* InContentDrawer, FOutputLogPanel* InOutputLog);
+
+	void ToggleContentDrawer();
 
 	void RequestResetLayout() { bResetLayoutRequested = true; }
 

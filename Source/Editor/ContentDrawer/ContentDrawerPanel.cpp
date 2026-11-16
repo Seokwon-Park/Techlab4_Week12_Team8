@@ -31,6 +31,35 @@ void FContentDrawerPanel::ToggleDrawer()
 	bJustOpened = bDrawerOpen;
 }
 
+bool FContentDrawerPanel::BrowseToFile(const fs::path& FilePath)
+{
+	std::error_code Error;
+	if (FilePath.empty() || !fs::is_regular_file(FilePath, Error))
+		return false;
+
+	// 드로어는 작업 폴더 기준 상대 경로("Scenes/A.scene")로 다루므로 프로젝트 안이면 상대 경로로 바꾼다.
+	fs::path Target = FilePath;
+	const fs::path Relative = fs::relative(FilePath, fs::current_path(Error), Error);
+	if (!Error && !Relative.empty() && *Relative.begin() != "..")
+		Target = Relative;
+
+	CurrentPath = Target.parent_path();
+	HighlightPath = Target.generic_string();
+	bScrollToHighlight = true;
+
+	SetOpen(true);
+	if (bDocked)
+	{
+		ImGui::SetWindowFocus("Content Drawer");
+	}
+	else
+	{
+		bDrawerOpen = true;
+		bJustOpened = true;
+	}
+	return true;
+}
+
 void FContentDrawerPanel::SetDrawerRect(const ImVec2& Pos, const ImVec2& Size, ImGuiID ViewportId)
 {
 	DrawerPos = Pos;
@@ -60,7 +89,7 @@ bool FContentDrawerPanel::BeginWindow()
 				ImGui::SetNextWindowDockID(LogWindow->DockId, ImGuiCond_Always);
 			bPendingDock = false;
 		}
-		ImGui::Begin("Content Drawer");
+		EditorPanelUI::BeginPanel("Content Drawer");
 		return true;
 	}
 
@@ -139,17 +168,25 @@ void FContentDrawerPanel::RenderContents()
 	float treeViewWidth = 200.0f;
 	ImGui::BeginChild("FolderTreeView", ImVec2(treeViewWidth, 0));
 	{
-		// 루트 노드
-		if (ImGui::TreeNodeEx(AssetRootPath.string().c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth |
-			(AssetRootPath == CurrentPath ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_DrawLinesToNodes))
+		// 루트 노드. Assets 아래에 씬(레벨) 폴더도 따로 보여 준다 (UE5 Content 아래 Maps처럼).
+		auto RenderRoot = [this](const fs::path& Root)
 		{
-			if (ImGui::IsItemClicked())
+			std::error_code RootError;
+			if (!fs::is_directory(Root, RootError))
+				return;
+			if (ImGui::TreeNodeEx(Root.string().c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth |
+				(Root == CurrentPath ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_DrawLinesToNodes))
 			{
-				CurrentPath = AssetRootPath;
+				if (ImGui::IsItemClicked())
+				{
+					CurrentPath = Root;
+				}
+				RenderFolderTree(Root, CurrentPath);
+				ImGui::TreePop();
 			}
-			RenderFolderTree(AssetRootPath, CurrentPath);
-			ImGui::TreePop();
-		}
+		};
+		RenderRoot(AssetRootPath);
+		RenderRoot(SceneRootPath);
 	}
 	ImGui::EndChild();
 
@@ -269,6 +306,20 @@ void FContentDrawerPanel::RenderContents()
 				if (Thumbnail)
 				{
 					ImGui::ImageButton(PathString.c_str(), (ImTextureID)Thumbnail->GetResource()->GetSRV(), { thumbnailSize, thumbnailSize });
+				if (ImGui::IsItemClicked())
+					HighlightPath = PathString;
+
+				// 선택된 항목 (Browse to Level로 찾아온 파일 포함) 테두리
+				if (PathString == HighlightPath)
+				{
+					ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(),
+						ImGui::GetColorU32(ImGuiCol_SeparatorActive), 3.0f, 0, 2.0f);
+					if (bScrollToHighlight)
+					{
+						ImGui::SetScrollHereY(0.5f);
+						bScrollToHighlight = false;
+					}
+				}
 
 					if (!bIsDirectory)
 					{
