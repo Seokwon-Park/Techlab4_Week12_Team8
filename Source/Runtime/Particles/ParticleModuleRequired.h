@@ -50,4 +50,12 @@ public:
 	/** The sorting mode to use for this emitter. EParticleSortMode */
 	UPROPERTY(EditAnywhere)
 	int32 SortMode = PSORTMODE_None;
+
+	// 루프 한번의 길이 (초). 0이면 루프하지 않고 EmitterTime이 계속 늘어남.
+	UPROPERTY(EditAnywhere)
+	float EmitterDuration = 1.0f;
+
+	// Emitter를 반복할 횟수. 0이면 무한 반복
+	UPROPERTY(EditAnywhere)
+	int32 EmitterLoops = 0;
 };
