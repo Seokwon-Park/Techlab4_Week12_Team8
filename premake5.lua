@@ -10,6 +10,8 @@ workspace "Hitori"
 		"ObjViewer",
 		"Benchmark",
 		"Benchmark_Debug",
+		"DebugPublishSymbols",
+		"ReleasePublishSymbols",
 	}
 
 
@@ -104,6 +106,16 @@ function CommonSettings()
 		optimize "speed"
 		symbols  "on"
 
+	filter "configurations:DebugPublishSymbols"
+		defines { "ENGINE_DEBUG", "_DEBUG" }
+		runtime "Debug"
+		symbols "on"
+
+	filter "configurations:ReleasePublishSymbols"
+		defines { "ENGINE_RELEASE", "NDEBUG" }
+		runtime "Release"
+		optimize "on"
+		symbols "on"
 
 	filter {}
 end
@@ -235,12 +247,18 @@ project "HitoriEditor"
 	defines { "FBXSDK_SHARED" }
 	links { "libfbxsdk.lib" }
 
-	for _, Config in ipairs({ "Debug", "Release", "Shipping", "ObjViewer", "Benchmark", "Benchmark_Debug" }) do
-		local SdkConfig = (Config == "Debug" or Config == "Benchmark_Debug") and "debug" or "release"
+	for _, Config in ipairs({ "Debug", "Release", "Shipping", "ObjViewer", "Benchmark", "Benchmark_Debug", "DebugPublishSymbols", "ReleasePublishSymbols"}) do
+		local SdkConfig = (Config == "Debug" or Config == "Benchmark_Debug" or Config == "DebugPublishSymbols") and "debug" or "release"
 		local SdkLibDir = path.join(FbxSdkRoot, "lib/x64", SdkConfig)
+		local Commands = { '{COPYFILE} "' .. path.join(SdkLibDir, "libfbxsdk.dll") .. '" "%{cfg.targetdir}"' }
+
+		if Config == "DebugPublishSymbols" or Config == "ReleasePublishSymbols" then
+			table.insert(Commands, 'call "$(SolutionDir)PublishSymbols.bat" "$(Configuration)" "Post-build" --no-pause')
+		end
+
 		filter ("configurations:" .. Config)
 			libdirs { SdkLibDir }
-			postbuildcommands { '{COPYFILE} "' .. path.join(SdkLibDir, "libfbxsdk.dll") .. '" "%{cfg.targetdir}"' }
+			postbuildcommands (Commands)
 	end
 	filter {}
 
