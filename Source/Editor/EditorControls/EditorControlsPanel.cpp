@@ -45,7 +45,7 @@ void FEditorControlsPanel::AddActor(uint32 Index)
 void FEditorControlsPanel::OnRender()
 {
 	ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
-	ImGui::Begin("Editor Controls");
+	EditorPanelUI::BeginPanel("Editor Controls");
 	ImGui::Spacing();
 
 	char FpsText[64];

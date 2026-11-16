@@ -36,7 +36,7 @@ void FSettingsPanel::Tick(float DeltaTime)
 void FSettingsPanel::OnRender()
 {
 	ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
-	ImGui::Begin("Settings");
+	EditorPanelUI::BeginPanel("Settings");
 
 	//////////////////////////////////////////////////////////
 

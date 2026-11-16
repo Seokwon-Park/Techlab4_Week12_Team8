@@ -130,7 +130,7 @@ bool FViewportsPanel::ConsumeLayoutRequest(ELayoutMode &OutMode,
 // View Texture와 Splitter·Layout·Preset UI를 그리고 요청을 기록한다.
 void FViewportsPanel::OnRender() {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0.0f, 0.0f});
-	ImGui::Begin("Viewports", nullptr,
+	EditorPanelUI::BeginPanel("Viewports", nullptr,
 			ImGuiWindowFlags_NoScrollbar |
 			ImGuiWindowFlags_NoScrollWithMouse |
 			ImGuiWindowFlags_NoTitleBar);

@@ -55,7 +55,11 @@ namespace EditorCommandUI
 		ImGui::BeginDisabled(!bEnabled);
 
 		bool bClicked = false;
-		if (Command.Icon)
+		if (Command.IconId != EEditorIcon::None)
+		{
+			bClicked = EditorIcons::Button(Id, Command.IconId, ImGui::ColorConvertFloat4ToU32(Command.IconTint));
+		}
+		else if (Command.Icon)
 		{
 			// 비활성일 때는 BeginDisabled가 알파를 낮춰 준다.
 			bClicked = ImGui::ImageButton(Id, (ImTextureID)Command.Icon->GetResource()->GetSRV(),

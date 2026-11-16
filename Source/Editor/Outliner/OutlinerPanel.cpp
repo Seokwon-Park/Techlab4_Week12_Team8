@@ -28,7 +28,7 @@ void FOutlinerPanel::OnRender()
         return;
 
     // Level의 Actor 목록 Tree 출력
-    ImGui::Begin("Outliner");
+    EditorPanelUI::BeginPanel("Outliner");
 
     DrawActors(Level);
 
