@@ -182,14 +182,13 @@ void FLevelEditorToolbar::DrawPlayModeMenu()
 		ImGui::OpenPopup("PlayModePopup");
 	const bool bHovered = ImGui::IsItemHovered();
 	ImDrawList* DL = ImGui::GetWindowDrawList();
-	ImU32 Bg = ImGui::GetColorU32(ImGuiCol_FrameBg);
 	if (bHovered || ImGui::IsItemActive())
 	{
-		Bg = ImGui::GetColorU32(ImGui::IsItemActive() ? ImGuiCol_ButtonActive : ImGuiCol_ButtonHovered);
+		const ImU32 Bg = ImGui::GetColorU32(ImGui::IsItemActive() ? ImGuiCol_ButtonActive : ImGuiCol_ButtonHovered);
 		DL->AddRectFilled(Min, ImVec2(Min.x + Width, Min.y + 28.0f * S), Bg, 3.0f * S);
 	}
 	EditorIcons::Draw(DL, EEditorIcon::MoreVertical, ImVec2(Min.x + Width * 0.5f, Min.y + 14.0f * S), 16.0f * S,
-		ImGui::GetColorU32(ImGuiCol_Text, 0.85f), Bg);
+		ImGui::GetColorU32(ImGuiCol_Text, 0.85f));
 	ImGui::SetItemTooltip("Change Play Mode and Play Settings");
 
 	ImGui::SetNextWindowPos(ImVec2(Min.x, Min.y + 30.0f * S), ImGuiCond_Appearing);

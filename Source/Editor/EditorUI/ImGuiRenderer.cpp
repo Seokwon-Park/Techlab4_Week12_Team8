@@ -1,5 +1,6 @@
 #include "EnginePCH.h"
 #include "Editor/EditorUI/ImGuiRenderer.h"
+#include "Editor/EditorUI/EditorIcons.h"
 
 #include "Core/Window.h"
 #include "Input/InputSystem.h"
@@ -219,6 +220,7 @@ bool FImGuiRenderer::Init(HWND WindowHandle, ID3D11Device* Device, ID3D11DeviceC
 
 	ImGui_ImplWin32_Init(WindowHandle);
 	ImGui_ImplDX11_Init(Device, DeviceContext);
+	EditorIcons::Initialize(Device, DeviceContext);
 
 	// 분리된 ImGui 창의 스왑체인을 메인 창(FSwapchain)과 같은 플립 모델로 맞춘다.
 	// 백엔드 기본값(DISCARD, 버퍼 1개)을 플립 모델 메인 창과 섞어 Present하면 Present가 끝나지 않고 에디터가 멈췄다.
@@ -356,6 +358,7 @@ void FImGuiRenderer::Shutdown()
 	ShadowPreviewSampler.Reset();
 	ShadowPreviewCB.Reset();
 	ShadowPreviewPS.Reset();
+	EditorIcons::Shutdown();
 	ImGui_ImplDX11_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 }
