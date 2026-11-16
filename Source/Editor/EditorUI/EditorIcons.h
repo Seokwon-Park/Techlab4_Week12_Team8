@@ -2,8 +2,12 @@
 
 #include <imgui.h>
 
-// 에디터 아이콘을 ImDrawList 도형으로 직접 그린다.
-// 폰트/텍스처 없이 어떤 크기·DPI에서도 선명하고, 속이 채워진 굵은 모양이라 UE5 툴바 느낌에 가깝다.
+struct ID3D11Device;
+struct ID3D11DeviceContext;
+
+// 에디터 아이콘. UE5 Slate처럼 EngineContent/Editor/Icons/<이름>.svg 파일을 쓴다.
+// 그리는 크기(픽셀)마다 SVG를 래스터화해 아틀라스 텍스처에 굽고, 정점 색으로 칠한다.
+// SVG는 흰색으로 그리고, 색을 그대로 남길 부분(AddActor의 초록 + 등)만 색을 넣는다.
 enum class EEditorIcon : uint8
 {
 	None,
@@ -37,6 +41,14 @@ enum class EEditorIcon : uint8
 	LayoutQuad,     // 2x2 칸
 	LayoutSingle,   // 한 칸
 	Select,         // 화살표 커서 (Select 도구)
+	ViewTop,        // 직교 뷰 방향: 사각형에서 보는 쪽 면을 채운다
+	ViewBottom,
+	ViewLeft,
+	ViewRight,
+	ViewFront,      // 겹친 두 사각형 중 앞쪽을 채운다
+	ViewBack,       // 겹친 두 사각형 중 뒤쪽을 채운다
+
+	Count
 };
 
 namespace EditorIcons
@@ -44,11 +56,15 @@ namespace EditorIcons
 	// UE5 Play 버튼 초록
 	inline constexpr ImU32 PlayGreen = IM_COL32(84, 191, 74, 255);
 
+	// SVG를 읽고 아틀라스 텍스처를 만든다. ImGui DX11 백엔드를 초기화한 뒤 부른다.
+	bool Initialize(ID3D11Device* Device, ID3D11DeviceContext* Context);
+	void Shutdown();
+
 	// 기본 폰트(13px) 대비 현재 배율. DPI 배율이 들어가 있다.
 	float GetScale();
 
-	// Center를 중심으로 Size 크기 정사각형 안에 그린다. Bg는 아이콘 안쪽을 파낼 때 쓰는 바탕색.
-	void Draw(ImDrawList* DrawList, EEditorIcon Icon, const ImVec2& Center, float Size, ImU32 Color, ImU32 Bg);
+	// Center를 중심으로 Size 픽셀 정사각형 안에 그린다. Color를 아이콘의 흰 부분에 곱한다.
+	void Draw(ImDrawList* DrawList, EEditorIcon Icon, const ImVec2& Center, float Size, ImU32 Color);
 
 	// 아이콘 버튼. 평소엔 배경이 없고 hover/누름/선택일 때만 칠한다.
 	// Label이 있으면 아이콘 오른쪽에 글자를, bDropdown이면 맨 오른쪽에 작은 ▾를 붙인다.

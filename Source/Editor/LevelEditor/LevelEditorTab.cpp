@@ -122,6 +122,8 @@ void FLevelEditorTab::OnRender(bool bActive)
 
 		ImGuiDockNodeFlags Flags = bPassthruCentralNode
 			? ImGuiDockNodeFlags_PassthruCentralNode : ImGuiDockNodeFlags_None;
+		// UE5처럼 탭마다 닫기(X)만 두고, 탭 줄 왼쪽의 창 메뉴(Hide tab bar)와 노드 오른쪽 끝의 닫기는 없앤다.
+		Flags |= ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoCloseButton;
 		if (!bActive)
 			Flags |= ImGuiDockNodeFlags_KeepAliveOnly;
 

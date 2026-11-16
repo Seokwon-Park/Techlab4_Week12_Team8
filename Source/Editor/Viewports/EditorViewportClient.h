@@ -27,8 +27,13 @@ enum class ELevelViewportType
 {
 	Perspective,
 	Top,
-	Front,
+	Bottom,
+	Left,
 	Right,
+	Front,
+	Back,
+
+	Count
 };
 
 // 에디터 뷰포트 클라이언트

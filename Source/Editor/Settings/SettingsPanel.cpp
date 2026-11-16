@@ -36,7 +36,7 @@ void FSettingsPanel::Tick(float DeltaTime)
 void FSettingsPanel::OnRender()
 {
 	ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
-	EditorPanelUI::BeginPanel("Settings");
+	EditorPanelUI::BeginPanel("Settings", GetOpenFlag());
 
 	//////////////////////////////////////////////////////////
 
@@ -249,6 +249,9 @@ bool FSettingsPanel::SaveSettings() const
 	File << "[MultipleViewports]\n";
 	File << "Horizontal=" << Snapshot.MultipleViewportsHorizontal << "\n";
 	File << "Vertical=" << Snapshot.MultipleViewportsVertical << "\n";
+	File << "Third0=" << Snapshot.MultipleViewportsThird0 << "\n";
+	File << "Third1=" << Snapshot.MultipleViewportsThird1 << "\n";
+	File << "Arrangement=" << ViewportLayoutNames[static_cast<int32>(Snapshot.ViewportLayout)] << "\n";
 	File << "Layout=" << (Snapshot.bMultipleViewportsSingle ? "Single" : "Quad") << "\n";
 	File << "SingleViewIndex=" << Snapshot.MultipleViewportsSingleViewIndex << "\n";
 
@@ -420,6 +423,9 @@ bool FSettingsPanel::LoadSettings()
 				else if (Key == "GridSpacing") Settings.GridSpacing = std::stoi(ValueStr);
 				else if (Key == "Horizontal") Settings.MultipleViewportsHorizontal = std::stof(ValueStr);
 				else if (Key == "Vertical") Settings.MultipleViewportsVertical = std::stof(ValueStr);
+				else if (Key == "Third0") Settings.MultipleViewportsThird0 = std::stof(ValueStr);
+				else if (Key == "Third1") Settings.MultipleViewportsThird1 = std::stof(ValueStr);
+				else if (Key == "Arrangement") Settings.ViewportLayout = ViewportLayoutFromName(ValueStr.c_str());
 				else if (Key == "Layout") Settings.bMultipleViewportsSingle = ValueStr == "Single";
 				else if (Key == "SingleViewIndex")
 				{

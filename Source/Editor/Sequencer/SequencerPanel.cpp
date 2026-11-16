@@ -237,7 +237,7 @@ void FSequencerPanel::Tick(float DeltaTime)
 
 void FSequencerPanel::OnRender()
 {
-	if (!EditorPanelUI::BeginPanel("Sequencer"))
+	if (!EditorPanelUI::BeginPanel("Sequencer", GetOpenFlag()))
 	{
 		ImGui::End();
 		return;

@@ -53,7 +53,7 @@ void FOutlinerPanel::OnRender()
     if (!Level)
         return;
 
-    EditorPanelUI::BeginPanel("Outliner");
+    EditorPanelUI::BeginPanel("Outliner", GetOpenFlag());
 
     EditorIcons::SearchBox("##OutlinerSearch", SearchBuffer, sizeof(SearchBuffer));
     DrawActors(Level);

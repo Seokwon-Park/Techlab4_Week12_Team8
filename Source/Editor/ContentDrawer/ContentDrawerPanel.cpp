@@ -89,7 +89,14 @@ bool FContentDrawerPanel::BeginWindow()
 				ImGui::SetNextWindowDockID(LogWindow->DockId, ImGuiCond_Always);
 			bPendingDock = false;
 		}
-		EditorPanelUI::BeginPanel("Content Drawer");
+		// 도킹된 탭의 X를 누르면 패널을 없애지 않고 닫힌 드로어로 돌아간다 (상태 표시줄 버튼으로 다시 연다).
+		bool bStayDocked = true;
+		EditorPanelUI::BeginPanel("Content Drawer", &bStayDocked);
+		if (!bStayDocked)
+		{
+			bDocked = false;
+			bDrawerOpen = false;
+		}
 		return true;
 	}
 

@@ -88,7 +88,7 @@ void FEditorControlsPanel::Tick(float InDeltaTime)
 void FEditorControlsPanel::OnRender()
 {
 	ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
-	EditorPanelUI::BeginPanel("Editor Controls");
+	EditorPanelUI::BeginPanel("Editor Controls", GetOpenFlag());
 	ImGui::Spacing();
 
 	// 오른쪽 위에 FPS와 프레임 시간을 적는다.
