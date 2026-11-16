@@ -7,6 +7,8 @@
 #include "Editor/EditorUI/EditorIcons.h"
 #include "Editor/HitoriEd/PlayInEditorDataTypes.h"
 
+class FEditorModeTools;
+
 // 툴바 드롭다운 메뉴 한 줄. Category가 바뀌는 곳마다 대문자 섹션 제목을 넣는다.
 struct FToolbarMenuEntry
 {
@@ -28,7 +30,7 @@ struct FToolbarMenu
 };
 
 // UE5 레벨 에디터 툴바 순서:
-// [Save][Browse]   [Add ▾][Cinematics ▾]   ( ▶ |▶ ■ ⋮ ) ............ [⚙ Settings ▾]
+// [Save][Browse]   [Selection Mode ▾]   [Add ▾][Cinematics ▾]   ( ▶ |▶ ■ ⋮ )
 class FLevelEditorToolbar
 {
 public:
@@ -43,6 +45,8 @@ public:
 		CanBrowseToLevel = std::move(InCanBrowse);
 	}
 	void SetCommands(const TArray<FEditorCommand>& InCommands) { Commands = InCommands; }
+	// Selection Mode 드롭다운이 읽고 바꾸는 모드 툴 (레벨 에디터면 GLevelEditorModeTools()).
+	void SetModeTools(FEditorModeTools* InModeTools) { ModeTools = InModeTools; }
 	// Save 오른쪽, Play 그룹 왼쪽에 놓이는 메뉴.
 	void SetCreateMenus(const TArray<FToolbarMenu>& InMenus) { CreateMenus = InMenus; }
 	// 툴바 오른쪽 끝에 붙는 메뉴.
@@ -61,6 +65,7 @@ public:
 
 private:
 	void DrawFileGroup();
+	void DrawSelectionModeMenu();
 	void DrawCreateGroup();
 	void DrawPlayGroup();
 	void DrawPlayModeMenu();
@@ -71,6 +76,7 @@ private:
 
 	FEditorCommand SaveCommand{};
 	bool bHasSaveCommand = false;
+	FEditorModeTools* ModeTools = nullptr;
 	std::function<void()> BrowseToLevel;
 	std::function<bool()> CanBrowseToLevel;
 	TArray<FEditorCommand> Commands;

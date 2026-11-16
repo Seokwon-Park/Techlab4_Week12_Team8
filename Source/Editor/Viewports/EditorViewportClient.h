@@ -138,6 +138,8 @@ public:
 	bool IsShadowMask() const { return ViewModeIndex == VMI_ShadowMask; }
 	// 이 뷰포트의 뷰 모드. UE의 FEditorViewportClient::GetViewMode, SetViewMode와 같다.
 	EViewModeIndex GetViewMode() const { return ViewModeIndex; }
+	// 이 뷰포트의 쇼 플래그. 뷰포트 툴바의 Show 메뉴가 켜고 끈다. UE의 FEditorViewportClient::EngineShowFlags와 같다.
+	FEngineShowFlags& GetEngineShowFlags() { return EngineShowFlags; }
 	void SetViewMode(const EViewModeIndex InViewModeIndex) { ViewModeIndex = InViewModeIndex; }
 	float GetMaxRange() const { return MaxRange; }
 	void SetMaxRange(float InMaxRange) { MaxRange = InMaxRange; }

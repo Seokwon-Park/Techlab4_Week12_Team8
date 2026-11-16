@@ -66,6 +66,9 @@ private:
 	bool bFocusNameEdit = false;
 	bool bIsEditingName = false;
 
+	// 프로퍼티 검색 칸 내용
+	char PropertySearch[128] = {};
+
 	USceneComponent* PendingDroppedComponent = nullptr;
 	USceneComponent* PendingDragComponent = nullptr;
 };

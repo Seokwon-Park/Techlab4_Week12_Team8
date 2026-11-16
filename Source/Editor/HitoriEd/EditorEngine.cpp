@@ -70,6 +70,17 @@ namespace
 #include "Core/Misc/Paths.h"
 #include "Editor/EditorUI/EditorTitleBar.h"
 
+// 툴바 Add / Cinematics 메뉴로 만드는 액터들
+#include "GameFramework/Actor/ParticleActor.h"
+#include "GameFramework/Actor/StaticMeshActor.h"
+#include "GameFramework/Actor/DirectionalLightActor.h"
+#include "GameFramework/Actor/SkyLightActor.h"
+#include "GameFramework/Actor/DecalActor.h"
+#include "GameFramework/Actor/TextRenderActor.h"
+#include "GameFramework/Actor/ExponentialHeightFogActor.h"
+#include "GameFramework/Character.h"
+#include "LevelSequence/LevelSequenceActor.h"
+
 // 에디터 엔진을 가리키는 전역 포인터. UE의 GEditor와 같다. Init에서 채우고 PreExit에서 비운다.
 UEditorEngine* GEditor = nullptr;
 
@@ -231,6 +242,7 @@ void UEditorEngine::InitPanels()
 	SettingsPanel = LevelEditorTab->AddPanel<FSettingsPanel>();
 	SequencerPanel = LevelEditorTab->AddPanel<FSequencerPanel>();
 	OutputLogPanel->SetEditorSettings(&SettingsPanel->GetMutableSettings());
+	ViewportsPanel->SetCameraSpeedTarget(&SettingsPanel->GetMutableSettings().CameraSpeed);
 
 	// 위젯 에셋은 다른 에셋처럼 EditorManager가 여는 탭에서 편집한다.
 	// 새로 만들 때는 디스크에 바로 만들어 콘텐츠 드로어에 곧장 보이도록 한 뒤 연다.
@@ -452,6 +464,7 @@ void UEditorEngine::InitCommands()
 
 	FLevelEditorToolbar& LevelEditorToolbar = *LevelEditorTab->GetToolbar();
 	LevelEditorToolbar.SetSaveCommand(Save);
+	LevelEditorToolbar.SetModeTools(&GLevelEditorModeTools());
 	LevelEditorToolbar.SetCreateMenus({ AddMenu, CinematicsMenu });
 	LevelEditorToolbar.SetCommands({ Play, Resume, Pause, StepFrame, Stop });
 	LevelEditorToolbar.SetPlayModeBinding(

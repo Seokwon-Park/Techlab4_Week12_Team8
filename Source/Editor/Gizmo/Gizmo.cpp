@@ -53,8 +53,18 @@ void FGizmo::Update(const FRay& MouseRay, const FVector2& MousePos, const FMatri
 	ViewCameraLocation = CameraLocation;
 	bViewCameraOrthographic = bCameraOrthographic;
 
-	if (!Target) // 만약 현재 타겟이 없다면 
+	if (!Target) // 만약 현재 타겟이 없다면
 	{
+		HoveredAxis = -1;
+		DraggingAxis = -1;
+		return;
+	}
+
+	// Select 모드(WM_None)는 기즈모를 그리지도 잡지도 않고 선택만 한다 (UE5 Select Mode, 단축키 Q).
+	if (GetWidgetMode() == UE::Widget::WM_None)
+	{
+		if (DraggingAxis >= 0)
+			EndDrag();
 		HoveredAxis = -1;
 		DraggingAxis = -1;
 		return;

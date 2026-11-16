@@ -38,4 +38,8 @@ private:
 
     DeleteActorCallback DeleteCallback;
     AActor* PendingDeleteActor = nullptr;
+
+    // 검색 칸 내용과, 검색어에 맞아 이번 프레임 표에 보이는 액터의 인덱스.
+    char SearchBuffer[128] = {};
+    TArray<int32> VisibleIndices;
 };

@@ -2,6 +2,7 @@
 #include "LevelEditorToolbar.h"
 
 #include "Asset/AssetManager.h"
+#include "Editor/EditorModeManager.h"
 
 namespace
 {
@@ -54,6 +55,11 @@ void FLevelEditorToolbar::Draw()
 		ImGui::SetCursorPosY((BarHeight - ButtonHeight) * 0.5f);   // 세로 가운데 정렬
 
 		DrawFileGroup();
+		if (ModeTools)
+		{
+			GroupGap();
+			DrawSelectionModeMenu();
+		}
 		if (!CreateMenus.IsEmpty())
 		{
 			GroupGap();
@@ -93,6 +99,39 @@ void FLevelEditorToolbar::DrawFileGroup()
 		if (bPressed)
 			BrowseToLevel();
 	}
+}
+
+// UE5 "Selection Mode ▾": 어두운 알약 안에 현재 편집 모드를 보여 주고, 누르면 모드와 기즈모 설정 메뉴를 연다.
+void FLevelEditorToolbar::DrawSelectionModeMenu()
+{
+	const float S = EditorIcons::GetScale();
+	const ImVec2 Min = ImGui::GetCursorScreenPos();
+
+	BeginToolbarGroup();
+	const bool bPopupOpen = ImGui::IsPopupOpen("##SelectionModeMenu");
+	const bool bClicked = EditorIcons::Button("##SelectionMode", EEditorIcon::SelectMode,
+		ImGui::GetColorU32(ImGuiCol_Text, 0.9f), "Selection Mode", true, bPopupOpen);
+	EndToolbarGroup();
+	ImGui::SetItemTooltip("Change the editor mode");
+	if (bClicked)
+		ImGui::OpenPopup("##SelectionModeMenu");
+
+	ImGui::SetNextWindowPos(ImVec2(Min.x, Min.y + 30.0f * S), ImGuiCond_Appearing);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f * S, 6.0f * S));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f * S, 1.0f * S));
+	if (ImGui::BeginPopup("##SelectionModeMenu"))
+	{
+		EditorIcons::MenuSection("Modes");
+		if (EditorIcons::MenuRow("Selection", EEditorIcon::SelectMode, ModeTools->IsModeActive(EEditorModeID::Selection)))
+			ModeTools->ActivateMode(EEditorModeID::Selection);
+
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+		EditorIcons::MenuNote("Transform tools and coordinate space are in each viewport toolbar.");
+		ImGui::EndPopup();
+	}
+	ImGui::PopStyleVar(2);
 }
 
 void FLevelEditorToolbar::DrawCreateGroup()
@@ -167,11 +206,9 @@ void FLevelEditorToolbar::DrawPlayModeMenu()
 		ImGui::Spacing();
 		ImGui::Separator();
 		ImGui::Spacing();
-		ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 250.0f * S);
-		ImGui::TextDisabled(bCanChange
+		EditorIcons::MenuNote(bCanChange
 			? "The mode you pick here becomes the default for the toolbar Play button."
 			: "Stop the current play session to change the play mode.");
-		ImGui::PopTextWrapPos();
 		ImGui::EndPopup();
 	}
 	ImGui::PopStyleVar(2);
