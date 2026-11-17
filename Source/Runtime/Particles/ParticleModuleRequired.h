@@ -7,7 +7,10 @@
 
 #include "Particles/ParticleModule.h"
 #include "Render/MaterialInterface.h"
+#include "Render/Texture2D.h"
 #include "ParticleModuleRequired.generated.h"
+
+class UMaterial;
 
 enum EParticleSortMode : int
 {

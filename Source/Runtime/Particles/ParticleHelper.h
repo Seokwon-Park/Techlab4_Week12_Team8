@@ -470,6 +470,8 @@ struct FDynamicMeshEmitterReplayData
 	}
 };
 
+FMatrix BuildMeshParticleTransform(const FBaseParticle& Particle, const FVector& Scale);
+
 /** Dynamic emitter data for Mesh emitters */
 struct FDynamicMeshEmitterData : public FDynamicSpriteEmitterDataBase
 {
@@ -479,7 +481,7 @@ struct FDynamicMeshEmitterData : public FDynamicSpriteEmitterDataBase
 	{
 	}
 
-	/** Initialize this emitter's dynamic rendering data, called after source data has been filled in. 구현은 렌더러 담당 */
+	/** Initialize the dynamic rendering data after Source has been filled in. */
 	void Init(	bool bInSelected,
 				const FParticleMeshEmitterInstance* InEmitterInstance,
 				UStaticMesh* InStaticMesh);

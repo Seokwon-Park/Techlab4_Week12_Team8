@@ -5,6 +5,7 @@
 #include "Particles/ParticleLODLevel.h"
 #include "Particles/ParticleModuleRequired.h"
 #include "Particles/TypeData/ParticleModuleTypeDataBase.h"
+#include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
 #include "Asset/AssetManager.h"
 #include <algorithm>
 #include <cmath>
@@ -291,14 +292,31 @@ FBox UParticleSystemComponent::CalcLocalBounds() const
 			continue;
 		}
 		const bool bLocalSpace = Instance->CurrentLODLevel->RequiredModule->bUseLocalSpace;
+		const auto* MeshTypeData = Cast<UParticleModuleTypeDataMesh>(Instance->CurrentLODLevel->TypeDataModule);
+		const UStaticMesh* Mesh = MeshTypeData ? MeshTypeData->StaticMesh : nullptr;
+		if (MeshTypeData && (!MeshTypeData->bEnabled || !Mesh))
+		{
+			continue;
+		}
+
 		for (int32 Index = 0; Index < Instance->ActiveParticles; ++Index)
 		{
 			DECLARE_PARTICLE_CONST(Particle, Instance->ParticleData + Instance->ParticleIndices[Index] * Instance->ParticleStride);
-			const FVector Center = bLocalSpace ? LocalToWorld.TransformPosition(Particle.Location) : Particle.Location;
-			// 빌보드는 월드 공간에서 펼쳐지므로 어느 카메라 방향과 회전에서도 쿼드를 포함한다.
-			const float Radius = 0.7071068f * std::max(std::abs(Particle.Size.X), std::abs(Particle.Size.Y));
-			const FVector Extent(Radius);
-			const FBox ParticleBounds = FBox{ Center - Extent, Center + Extent }.GetWorldAABB(WorldToLocal);
+			FBox ParticleBounds;
+			if (Mesh)
+			{
+				const FMatrix ParticleTransform = BuildMeshParticleTransform(Particle, FVector::OneVector);
+				const FMatrix MeshToLocal = bLocalSpace ? ParticleTransform : ParticleTransform * WorldToLocal;
+				ParticleBounds = Mesh->GetMeshData().AABB.GetWorldAABB(MeshToLocal);
+			}
+			else
+			{
+				const FVector Center = bLocalSpace ? LocalToWorld.TransformPosition(Particle.Location) : Particle.Location;
+				// 빌보드는 월드 공간에서 펼쳐지므로 어느 카메라 방향과 회전에서도 쿼드를 포함한다.
+				const float Radius = 0.7071068f * std::max(std::abs(Particle.Size.X), std::abs(Particle.Size.Y));
+				const FVector Extent(Radius);
+				ParticleBounds = FBox{ Center - Extent, Center + Extent }.GetWorldAABB(WorldToLocal);
+			}
 			if (bHasBounds)
 			{
 				Bounds.Expand(ParticleBounds);
