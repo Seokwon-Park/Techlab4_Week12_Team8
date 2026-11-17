@@ -23,6 +23,7 @@ class FLineBatcher;
 class UBillboardComponent;
 class APawn;
 class APlayerController;
+class AParticleEventManager;
 
 struct FViewContext;
 
@@ -41,6 +42,10 @@ public:
 	// UE의 UWorld::LineBatcher와 같은 자리이고 UE에서도 public 멤버다.
 	// UE는 선을 쌓아 두면 씬과 함께 그려지지만, 이 엔진은 쓰는 쪽이 BeginFrame, Add..., OnRender 순서로 직접 그린다.
 	TUniquePtr<FLineBatcher> LineBatcher;
+
+	// 파티클 이벤트를 받아 게임 코드에 전달하는 액터
+	AParticleEventManager* MyParticleEventManager = nullptr;
+
 	/*UPrimitiveComponent* SpawnPrimitive(FClass* Class);*/
 	AActor* SpawnActor(UClass* Class, FName InName = NAME_None, const FTransform* Transform = nullptr);
 	

@@ -3,6 +3,8 @@
 #include "Particles/ParticleEmitterInstances.h"
 #include "Components/ParticleSystemComponent.h"
 #include "Engine/World.h"
+#include "Particles/ParticleLODLevel.h"
+#include "Particles/Event/ParticleModuleEventGenerator.h"
 
 namespace
 {
@@ -39,6 +41,21 @@ void UParticleModuleCollision::Update(FParticleEmitterInstance* Owner, int32 Off
 {
 	assert(Offset != 0 && "Collision payload has no offset. Re-Init the emitter instance after changing modules.");
 
+	// 해당 Emitter에 EventGenerator가 있으면 충돌을 알림
+	const UParticleModuleEventGenerator* EventGenerator = nullptr;
+	if (Owner->CurrentLODLevel)
+	{
+		for (UParticleModule* Module : Owner->CurrentLODLevel->Modules)
+		{
+			const UParticleModuleEventGenerator* Generator = Cast<UParticleModuleEventGenerator>(Module);
+			if (Generator && Generator->bEnabled)
+			{
+				EventGenerator = Generator;
+				break;
+			}
+		}
+	}
+
 	if (const UParticleSystemComponent* Component = Owner->Component)
 	{
 		if (UWorld* World = Component->GetWorld())
@@ -74,6 +91,13 @@ void UParticleModuleCollision::Update(FParticleEmitterInstance* Owner, int32 Off
 			if (bBlocked)
 			{
 				--CollisionPayload.UsedCollisions;
+
+				if (EventGenerator)
+				{
+					EventGenerator->HandleParticleCollision(Owner, CollisionPayload, Result, Particle, Direction);
+				}
+
+				Particle.Flags |= STATE_Particle_CollisionHasOccurred;
 
 				if (CollisionPayload.UsedCollisions > 0)
 				{
