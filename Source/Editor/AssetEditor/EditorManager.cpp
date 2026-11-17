@@ -15,6 +15,8 @@
 #include "Animation/AnimBlueprintFile.h"
 #include "Core/Misc/Paths.h"
 #include "Editor/AnimBlueprintEditor/AnimBlueprintEditor.h"
+#include "Editor/ParticleEditor/ParticleSystemEditor.h"
+#include "Particles/ParticleSystemFile.h"
 
 #include <filesystem>
 
@@ -125,6 +127,25 @@ void FEditorManager::CreateEditor(const FString& AssetPath)
 		{
 			Editor->Shutdown();
 			HTR_LOG(Warning, "BlendSpace editor initialization failed: {}", AssetPath);
+			return;
+		}
+		Editors.Add(std::move(Editor));
+		return;
+	}
+
+	if (ParticleSystemFile::IsParticleSystemPath(AssetPath))
+	{
+		UParticleSystem* System = UAssetManager::LoadParticleSystem(AssetPath);
+		if (!System)
+		{
+			return;     // 경고는 LoadParticleSystem이 남긴다
+		}
+
+		TUniquePtr<FAssetEditor> Editor = MakeUnique<FParticleSystemEditor>(EditorEngine, *this, AssetPath, System);
+		if (!Editor->Initialize())
+		{
+			Editor->Shutdown();
+			HTR_LOG(Warning, "Particle editor initialization failed: {}", AssetPath);
 			return;
 		}
 		Editors.Add(std::move(Editor));

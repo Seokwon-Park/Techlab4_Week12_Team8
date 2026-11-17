@@ -6,6 +6,8 @@
 #include "Particles/ParticleModuleRequired.h"
 #include "Particles/TypeData/ParticleModuleTypeDataBase.h"
 #include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
+#include "Particles/ParticleEventManager.h"
+#include "Engine/World.h"
 #include "Asset/AssetManager.h"
 #include <algorithm>
 #include <cmath>
@@ -211,6 +213,7 @@ void UParticleSystemComponent::BeginPlay()
 void UParticleSystemComponent::TickComponent(float DeltaTime)
 {
 	Super::TickComponent(DeltaTime);
+	CollisionEvents.Reset();
 	if (!std::isfinite(DeltaTime) || DeltaTime <= 0.0f)
 	{
 		return;
@@ -256,6 +259,15 @@ void UParticleSystemComponent::TickComponent(float DeltaTime)
 			{
 				Instance->bEmitterIsDone = true;
 			}
+		}
+	}
+
+	if (!CollisionEvents.IsEmpty())
+	{
+		UWorld* World = GetWorld();
+		if (World && World->MyParticleEventManager)
+		{
+			World->MyParticleEventManager->HandleParticleCollisionEvents(this, CollisionEvents);
 		}
 	}
 
@@ -413,4 +425,27 @@ void UParticleSystemComponent::UpdateCompletion()
 		Super::Deactivate();
 		SetComponentTickEnabled(false);
 	}
+}
+
+void UParticleSystemComponent::ReportEventCollision(
+	const FString& InEventName,
+	float InEmitterTime,
+	const FVector& InLocation,
+	const FVector& InDirection,
+	const FVector& InVelocity,
+	float InParticleTime,
+	const FVector& InNormal,
+	float InTime
+)
+{
+	FParticleEventCollideData Data;
+	Data.EventName = InEventName;
+	Data.EmitterTime = InEmitterTime;
+	Data.Location = InLocation;
+	Data.Velocity = InVelocity;
+	Data.ParticleTime = InParticleTime;
+	Data.Direction = InDirection;
+	Data.Normal = InNormal;
+	Data.Time = InTime;
+	CollisionEvents.Add(Data);
 }

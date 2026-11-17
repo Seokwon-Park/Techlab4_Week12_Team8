@@ -14,6 +14,7 @@ public:
 	explicit FLevelEditorTab();
 
 	const char* GetTabName() const override { return TabName.c_str(); }
+	bool GetTabIcon(EEditorIcon& OutIcon, ImU32& OutColor) const override;
 	bool CanDetach() const override { return false; }
 	void DrawMenuBar() override;
 

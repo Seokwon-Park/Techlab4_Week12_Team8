@@ -131,6 +131,7 @@ bool ParticleSystemFile::CreateDefault(const std::filesystem::path& Path, FStrin
 	UParticleSystem* System = NewObject<UParticleSystem>();
 	System->Emitters.Add(CreateDefaultEmitter());
 	const bool bOk = Write(Path, *System, OutError);
+	System->DeleteEmitters();   // 소멸자는 자식을 지우지 않는다
 	delete System;   // 파일만 만든다. 여는 쪽이 LoadParticleSystem으로 다시 읽는다
 	return bOk;
 }

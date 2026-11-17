@@ -71,6 +71,24 @@ namespace
 		"ViewRight",
 		"ViewFront",
 		"ViewBack",
+		"Plus",
+		"Import",
+		"ArrowLeft",
+		"ArrowRight",
+		"ChevronRight",
+		"Filter",
+		"Sort",
+		"Dock",
+		"Texture",
+		"SkeletalMesh",
+		"Animation",
+		"Particle",
+		"Level",
+		"Font",
+		"Sound",
+		"Script",
+		"File",
+		"Widget",
 	};
 	static_assert(IM_ARRAYSIZE(IconFileNames) == static_cast<int>(EEditorIcon::Count), "아이콘 파일 이름 표를 enum과 맞춰야 한다");
 
@@ -274,7 +292,7 @@ namespace EditorIcons
 		ImGui::PopTextWrapPos();
 	}
 
-	bool SearchBox(const char* Id, char* Buffer, size_t BufferSize, const char* Hint)
+	bool SearchBox(const char* Id, char* Buffer, size_t BufferSize, const char* Hint, float Width)
 	{
 		const float S = GetScale();
 		const float IconSize = 12.0f * S;
@@ -283,7 +301,7 @@ namespace EditorIcons
 		// 왼쪽 여백만 넓혀 돋보기 자리를 만든다.
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(IconPad, ImGui::GetStyle().FramePadding.y + 1.0f * S));
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f * S);
-		ImGui::SetNextItemWidth(-FLT_MIN);
+		ImGui::SetNextItemWidth(Width > 0.0f ? Width : -FLT_MIN);
 		const bool bChanged = ImGui::InputTextWithHint(Id, Hint, Buffer, BufferSize);
 		ImGui::PopStyleVar(2);
 

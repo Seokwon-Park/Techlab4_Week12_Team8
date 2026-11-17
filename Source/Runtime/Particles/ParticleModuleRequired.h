@@ -70,6 +70,9 @@ public:
 	// 렌더러가 쓸 머티리얼. Material이 없으면 SubUVMaterial을 복제해 파티클 PSO로 만든다 (저장 안 함)
 	UMaterialInterface* GetRenderMaterial();
 
+	// GetRenderMaterial이 만든 머티리얼을 지운다. UParticleSystem::DestroyModule이 부른다
+	void ReleaseRenderMaterial();
+
 	// 루프 한번의 길이 (초). 0이면 루프하지 않고 EmitterTime이 계속 늘어남.
 	UPROPERTY(EditAnywhere)
 	float EmitterDuration = 1.0f;
