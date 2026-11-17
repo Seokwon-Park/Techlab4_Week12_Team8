@@ -1,5 +1,6 @@
 #include "EnginePCH.h"
 #include "ParticleSystemEditor.h"
+#include "Editor/EditorUI/EditorTab.h"
 
 FParticleSystemEditor::FParticleSystemEditor(UEditorEngine& InEditorEngine, FEditorManager& InEditorManager,
 	const FString& InAssetPath, UParticleSystem* InSystem)
@@ -13,3 +14,17 @@ void FParticleSystemEditor::Tick(float DeltaTime) { FAssetEditor::Tick(DeltaTime
 void FParticleSystemEditor::OnRenderPreview() {}
 bool FParticleSystemEditor::ConfirmClose() { return true; }
 void FParticleSystemEditor::OnRenderLine(FLineBatcher&) {}
+
+TUniquePtr<IEditorTab> FParticleSystemEditor::CreateTab()
+{
+	return nullptr;
+}
+
+bool FParticleSystemEditor::InitializeResources()
+{
+	return false;
+}
+
+void FParticleSystemEditor::ShutdownResources()
+{
+}
