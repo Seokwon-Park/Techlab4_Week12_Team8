@@ -21,8 +21,6 @@ public:
 	// ── 데이터 ──
 	UPROPERTY(EditAnywhere)
 	UParticleSystem* Template = nullptr;     // 에셋
-	UPROPERTY(EditAnywhere)
-	bool bAutoActivate = true;
 	TArray<FParticleEmitterInstance*> EmitterInstances;              // 코어 소유
 	TArray<FDynamicEmitterDataBase*>  EmitterRenderData;             // 렌더러가 읽는 스냅샷
 	bool bWasCompleted = false;
@@ -32,8 +30,8 @@ public:
 	void InitializeSystem();                          // InitParticles + 초기 상태
 	void InitParticles();                             // 이미터마다 TypeData->CreateInstance() 또는 Sprite 인스턴스 생성 → InitParameters → Init
 	void ResetParticles();                            // 인스턴스와 RenderData 모두 delete
-	void Activate(bool bReset = false);
-	void Deactivate();
+	virtual void Activate(bool bReset = false) override;
+	virtual void Deactivate() override;
 
 	// ── 엔진 훅 (override) ──
 	virtual void BeginPlay() override;                // bAutoActivate면 Activate
@@ -61,4 +59,7 @@ public:
 	float RenderTestTime = 0.0f;
 
 	////////////////////파티클 테스팅 용 코드(지워도 됨)
+
+private:
+	void UpdateCompletion();
 };

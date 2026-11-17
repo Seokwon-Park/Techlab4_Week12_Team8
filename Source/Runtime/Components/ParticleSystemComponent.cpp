@@ -1,8 +1,13 @@
 #include "EnginePCH.h"
 #include "ParticleSystemComponent.h"
 #include "Engine/ParticleSystemSceneProxy.h"
+#include "Particles/ParticleEmitter.h"
+#include "Particles/ParticleLODLevel.h"
 #include "Particles/ParticleModuleRequired.h"
+#include "Particles/TypeData/ParticleModuleTypeDataBase.h"
 #include "Asset/AssetManager.h"
+#include <algorithm>
+#include <cmath>
 
 namespace
 {
@@ -44,82 +49,226 @@ namespace
 UParticleSystemComponent::UParticleSystemComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	SetComponentTickEnabled(false);
 	bCastShadow = false;
 }
 
 UParticleSystemComponent::~UParticleSystemComponent()
 {
 	ResetParticles();
-	ClearDynamicData();
 }
 
 void UParticleSystemComponent::SetTemplate(UParticleSystem* NewTemplate)
 {
+	if (Template == NewTemplate)
+	{
+		return;
+	}
+
+	const bool bShouldActivate = IsActive() || IsAutoActivate();
+	Template = NewTemplate;
+	InitializeSystem();
+	if (bShouldActivate)
+	{
+		Activate();
+	}
 }
 
 void UParticleSystemComponent::InitializeSystem()
 {
+	InitParticles();
+	bWasCompleted = false;
+	if (!Template || EmitterInstances.IsEmpty())
+	{
+		Super::Deactivate();
+	}
+	SetComponentTickEnabled(IsActive());
+	UpdateDynamicData();
+	OnTransformDirty();
 }
 
 void UParticleSystemComponent::InitParticles()
 {
+	ResetParticles();
+	if (!Template)
+	{
+		return;
+	}
+
+	EmitterInstances.Reserve(Template->Emitters.Num());
+	for (UParticleEmitter* Emitter : Template->Emitters)
+	{
+		UParticleLODLevel* LOD = Emitter ? Emitter->GetLODLevel(0) : nullptr;
+		FParticleEmitterInstance* Instance = nullptr;
+		if (LOD && LOD->RequiredModule)
+		{
+			if (LOD->TypeDataModule)
+			{
+				Instance = LOD->TypeDataModule->CreateInstance(Emitter, this);
+			}
+			if (!Instance)
+			{
+				Instance = new FParticleSpriteEmitterInstance();
+			}
+			Instance->InitParameters(Emitter, this);
+			Instance->Init();
+			Instance->EmitterDuration = std::max(0.0f, LOD->RequiredModule->EmitterDuration);
+			Instance->bHaltSpawning = !IsActive();
+		}
+		// 템플릿과 같은 인덱스를 유지해 렌더 데이터의 이미터 번호가 바뀌지 않게 한다.
+		EmitterInstances.Add(Instance);
+	}
 }
 
 void UParticleSystemComponent::ResetParticles()
 {
+	ClearDynamicData();
+	for (FParticleEmitterInstance* Instance : EmitterInstances)
+	{
+		delete Instance;
+	}
+	EmitterInstances.Reset();
+	bWasCompleted = false;
+	SetComponentTickEnabled(false);
+	OnTransformDirty();
 }
 
 void UParticleSystemComponent::Activate(bool bReset)
 {
+	if (!Template)
+	{
+		ResetParticles();
+		Super::Deactivate();
+		return;
+	}
+	if (!bReset && IsActive() && !bWasCompleted && !EmitterInstances.IsEmpty())
+	{
+		return;
+	}
+	if (bReset || bWasCompleted || EmitterInstances.IsEmpty())
+	{
+		InitializeSystem();
+	}
+
+	bool bHasEnabledEmitter = false;
+	for (FParticleEmitterInstance* Instance : EmitterInstances)
+	{
+		if (Instance && Instance->bEnabled && Instance->CurrentLODLevel && Instance->CurrentLODLevel->bEnabled)
+		{
+			Instance->bHaltSpawning = false;
+			Instance->bEmitterIsDone = false;
+			bHasEnabledEmitter = true;
+		}
+	}
+	if (!bHasEnabledEmitter)
+	{
+		bWasCompleted = true;
+		Super::Deactivate();
+		SetComponentTickEnabled(false);
+		return;
+	}
+
+	bWasCompleted = false;
+	Super::Activate(true);
 }
 
 void UParticleSystemComponent::Deactivate()
 {
+	Super::Deactivate();
+	for (FParticleEmitterInstance* Instance : EmitterInstances)
+	{
+		if (Instance)
+		{
+			Instance->bHaltSpawning = true;
+			if (Instance->bKillOnDeactivate)
+			{
+				Instance->ActiveParticles = 0;
+			}
+			Instance->bEmitterIsDone = Instance->ActiveParticles == 0;
+		}
+	}
+	UpdateCompletion();
+	// 생성은 멈추되 이미 살아 있는 파티클은 수명이 끝날 때까지 Tick한다.
+	SetComponentTickEnabled(!bWasCompleted);
+	UpdateDynamicData();
+	OnTransformDirty();
 }
 
 void UParticleSystemComponent::BeginPlay()
 {
-
 	Super::BeginPlay();
+	if (IsAutoActivate())
+	{
+		Activate();
+	}
+	else
+	{
+		Deactivate();
+	}
 }
 
 void UParticleSystemComponent::TickComponent(float DeltaTime)
 {
 	Super::TickComponent(DeltaTime);
-
-	////////////////////파티클 테스팅 용 코드(지워도 됨)
-	if (bUseRenderTestData)
+	if (!std::isfinite(DeltaTime) || DeltaTime <= 0.0f)
 	{
-		if (!RenderTestMaterial)
-		{
-			// SubUVMaterial을 복제한다. 텍스처는 그 에셋의 StarParticle.png를 그대로 쓴다
-			UMaterial* Base = UAssetManager::GetAssetByPath<UMaterial>("SubUVMaterial");
-			RenderTestMaterial = UMaterial::CreateInstance(Base);
-			if (RenderTestMaterial)
-			{
-				RenderTestMaterial->PSOType = EPSOType::ParticleSprite_Additive;   // AlphaBlend로 바꿔 가며 비교
-				RenderTestMaterial->SamplerState = ESamplerState::LinearClamp;
-			}
-		}
-		RenderTestTime += DeltaTime;
-		ClearDynamicData();
-		if (RenderTestMaterial)
-		{
-			FDynamicSpriteEmitterData* Data = MakeTestSpriteData(RenderTestMaterial, 32, RenderTestTime);
-			Data->EmitterIndex = 0;
-			EmitterRenderData.Add(Data);
-		}
 		return;
 	}
-	////////////////////파티클 테스팅 용 코드(지워도 됨)
+	// 에디터 월드는 BeginPlay 없이 직접 TickComponent를 호출한다.
+	if (!HasBegunPlay() && !bWasCompleted && EmitterInstances.IsEmpty() && IsAutoActivate() && Template)
+	{
+		Activate();
+	}
+	if (bWasCompleted || (!IsActive() && !IsComponentTickEnabled()))
+	{
+		return;
+	}
 
+	for (FParticleEmitterInstance* Instance : EmitterInstances)
+	{
+		if (Instance)
+		{
+			float RemainingDeltaTime = DeltaTime;
+			bool bFinishedSpawning = false;
+			UParticleModuleRequired* Required = Instance->CurrentLODLevel ? Instance->CurrentLODLevel->RequiredModule : nullptr;
+			if (!Instance->bHaltSpawning && Required && Instance->EmitterDuration > 0.0f && Required->EmitterLoops > 0)
+			{
+				const double TimeUntilCompletion = (static_cast<double>(Required->EmitterLoops) - Instance->LoopCount) *
+					Instance->EmitterDuration - Instance->EmitterTime;
+				if (TimeUntilCompletion <= DeltaTime)
+				{
+					// 마지막 루프 경계를 넘는 프레임은 방출 구간과 잔여 수명 갱신 구간으로 나눈다.
+					const float SpawningDeltaTime = std::clamp(static_cast<float>(TimeUntilCompletion), 0.0f, DeltaTime);
+					if (SpawningDeltaTime > 0.0f)
+					{
+						Instance->Tick(SpawningDeltaTime, !IsActive());
+					}
+					bFinishedSpawning = true;
+					RemainingDeltaTime -= SpawningDeltaTime;
+				}
+			}
+			if (RemainingDeltaTime > 0.0f)
+			{
+				Instance->Tick(RemainingDeltaTime, bFinishedSpawning || !IsActive());
+			}
+			if ((bFinishedSpawning || Instance->bHaltSpawning) && Instance->ActiveParticles == 0)
+			{
+				Instance->bEmitterIsDone = true;
+			}
+		}
+	}
+
+	UpdateCompletion();
 	UpdateDynamicData();
+
+	// 컴포넌트가 이동하지 않아도 시뮬레이션 후 컬링 경계를 다시 갱신한다.
+	OnTransformDirty();
 }
 
 void UParticleSystemComponent::OnUnregister()
 {
+	Super::Deactivate();
 	ResetParticles();
-	ClearDynamicData();
 	Super::OnUnregister();
 }
 
@@ -130,14 +279,57 @@ FPrimitiveSceneProxy* UParticleSystemComponent::CreateSceneProxy()
 
 FBox UParticleSystemComponent::CalcLocalBounds() const
 {
-	// 지금은 FBox() (크기 0) → BVH 컬링으로 항상 사라진다.
-	// 1번이 파티클 위치로 계산하기 전까지는 넉넉한 고정 상자를 쓴다.
-	return FBox{ FVector(-10.0f, -10.0f, -10.0f), FVector(10.0f, 10.0f, 10.0f) };
+	FBox Bounds{ FVector(0.0f), FVector(0.0f) };
+	bool bHasBounds = false;
+	const FMatrix LocalToWorld = GetWorldMatrix();
+	const FMatrix WorldToLocal = LocalToWorld.Inverse();
+	for (const FParticleEmitterInstance* Instance : EmitterInstances)
+	{
+		if (!Instance || !Instance->bEnabled || !Instance->CurrentLODLevel || !Instance->CurrentLODLevel->bEnabled ||
+			!Instance->CurrentLODLevel->RequiredModule || !Instance->ParticleData || !Instance->ParticleIndices)
+		{
+			continue;
+		}
+		const bool bLocalSpace = Instance->CurrentLODLevel->RequiredModule->bUseLocalSpace;
+		for (int32 Index = 0; Index < Instance->ActiveParticles; ++Index)
+		{
+			DECLARE_PARTICLE_CONST(Particle, Instance->ParticleData + Instance->ParticleIndices[Index] * Instance->ParticleStride);
+			const FVector Center = bLocalSpace ? LocalToWorld.TransformPosition(Particle.Location) : Particle.Location;
+			// 빌보드는 월드 공간에서 펼쳐지므로 어느 카메라 방향과 회전에서도 쿼드를 포함한다.
+			const float Radius = 0.7071068f * std::max(std::abs(Particle.Size.X), std::abs(Particle.Size.Y));
+			const FVector Extent(Radius);
+			const FBox ParticleBounds = FBox{ Center - Extent, Center + Extent }.GetWorldAABB(WorldToLocal);
+			if (bHasBounds)
+			{
+				Bounds.Expand(ParticleBounds);
+			}
+			else
+			{
+				Bounds = ParticleBounds;
+				bHasBounds = true;
+			}
+		}
+	}
+	return Bounds;
 }
 
 void UParticleSystemComponent::PostEditChangeProperty(const FProperty& Property)
 {
 	Super::PostEditChangeProperty(Property);   // 빠지면 bCastShadow 등을 바꿔도 MarkRenderStateDirty가 안 불린다
+	if (Property.Name == "Template")
+	{
+		const bool bShouldActivate = IsActive() || IsAutoActivate();
+		InitializeSystem();
+		if (bShouldActivate)
+		{
+			Activate();
+		}
+	}
+	else if (Property.Name == "bAutoActivate")
+	{
+		if (IsAutoActivate()) Activate();
+		else Deactivate();
+	}
 }
 
 void UParticleSystemComponent::UpdateDynamicData()
@@ -167,5 +359,40 @@ void UParticleSystemComponent::ClearDynamicData()
 
 int32 UParticleSystemComponent::GetNumActiveParticles() const
 {
-	return int32();
+	int32 Count = 0;
+	for (const FParticleEmitterInstance* Instance : EmitterInstances)
+	{
+		if (Instance)
+		{
+			Count += Instance->ActiveParticles;
+		}
+	}
+	return Count;
+}
+
+void UParticleSystemComponent::UpdateCompletion()
+{
+	bWasCompleted = true;
+	for (FParticleEmitterInstance*& Instance : EmitterInstances)
+	{
+		if (!Instance || !Instance->bEnabled || !Instance->CurrentLODLevel || !Instance->CurrentLODLevel->bEnabled)
+		{
+			continue;
+		}
+		if (!Instance->bEmitterIsDone)
+		{
+			bWasCompleted = false;
+			continue;
+		}
+		if (Instance->bKillOnCompleted)
+		{
+			delete Instance;
+			Instance = nullptr;
+		}
+	}
+	if (bWasCompleted)
+	{
+		Super::Deactivate();
+		SetComponentTickEnabled(false);
+	}
 }
