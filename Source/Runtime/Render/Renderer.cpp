@@ -3,6 +3,8 @@
 #include "Render/RenderCommand.h"
 #include <algorithm>
 #include <chrono>
+#include <cstring>
+#include <limits>
 #include <unordered_map>
 
 #include "Render/SkyboxRenderer.h"
@@ -83,6 +85,7 @@ void FRenderer::BindObject(const FMeshDrawBatch& Batch, const FMeshDrawBatch::FI
 void FRenderer::DrawMeshes(std::span<const FMeshDrawBatch> Batches)
 {
 	uint32 PreviousTextureCount = 0;
+	const FMeshParticleInstanceVertex* UploadedInstances = nullptr;
 	for (const FMeshDrawBatch& Batch : Batches)
 	{
 		BindBatch(Batch);
@@ -92,8 +95,70 @@ void FRenderer::DrawMeshes(std::span<const FMeshDrawBatch> Batches)
 				EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 		
 		PreviousTextureCount = static_cast<uint32>(Batch.Textures.Num());
+		if (!Batch.MeshParticleInstances.empty())
+		{
+			const auto Instances = Batch.MeshParticleInstances;
+			if (UploadedInstances != Instances.data())
+			{
+				UploadedInstances = UploadMeshParticleInstances(Instances) ? Instances.data() : nullptr;
+			}
+			if (!UploadedInstances)
+			{
+				DrawMeshParticleFallback(Batch);
+				continue;
+			}
+
+			RenderCommand::BindVertexBuffer(MeshParticleInstanceBuffer.get(), 1);
+			for (const FMeshDrawBatch::FItem& Item : Batch.Items)
+			{
+				BindObject(Batch, Item);
+				RenderCommand::DrawIndexedInstanced(Item.IndexCount, static_cast<uint32>(Instances.size()), Item.StartIndex);
+			}
+			RenderCommand::BindVertexBuffer(nullptr, 1);
+			continue;
+		}
 		for (const FMeshDrawBatch::FItem& Item : Batch.Items)
 		{
+			BindObject(Batch, Item);
+			RenderCommand::DrawIndexed(Item.IndexCount, Item.StartIndex);
+		}
+	}
+}
+
+bool FRenderer::UploadMeshParticleInstances(std::span<const FMeshParticleInstanceVertex> Instances)
+{
+	constexpr uint32 Stride = sizeof(FMeshParticleInstanceVertex);
+	if (Instances.size() > std::numeric_limits<uint32>::max() / Stride) return false;
+	const uint32 RequiredBytes = static_cast<uint32>(Instances.size_bytes());
+	if (!MeshParticleInstanceBuffer || MeshParticleInstanceBuffer->GetBufferSize() < RequiredBytes)
+	{
+		auto Buffer = RenderCommand::CreateDynamicVertexBuffer(RequiredBytes, Stride);
+		if (!Buffer || !Buffer->GetBuffer()) return false;
+		MeshParticleInstanceBuffer = std::move(Buffer);
+	}
+
+	void* Destination = RenderCommand::MapWriteDiscard(MeshParticleInstanceBuffer.get());
+	if (!Destination) return false;
+	std::memcpy(Destination, Instances.data(), RequiredBytes);
+	RenderCommand::Unmap(MeshParticleInstanceBuffer.get());
+	return true;
+}
+
+void FRenderer::DrawMeshParticleFallback(const FMeshDrawBatch& Batch)
+{
+	FShaderProgram Program(Batch.MeshParticleFallbackVS, Batch.Pipeline.Shader->PixelShader);
+	RenderCommand::BindShaderProgram(&Program);
+	for (const FMeshDrawBatch::FItem& Template : Batch.Items)
+	{
+		FMeshDrawBatch::FItem Item = Template;
+		const size_t NormalOffset = Batch.bBindViewConstants
+			? offsetof(FPerObjectConstants, NormalMatrix) : offsetof(FForwardObjectConstants, NormalMatrix);
+		for (const FMeshParticleInstanceVertex& Instance : Batch.MeshParticleInstances)
+		{
+			const FMatrix World = Instance.GetWorldMatrix();
+			const FMatrix Normal = World.Inverse().GetTransposed();
+			std::memcpy(Item.ObjectData.data(), &World, sizeof(World));
+			std::memcpy(Item.ObjectData.data() + NormalOffset, &Normal, sizeof(Normal));
 			BindObject(Batch, Item);
 			RenderCommand::DrawIndexed(Item.IndexCount, Item.StartIndex);
 		}

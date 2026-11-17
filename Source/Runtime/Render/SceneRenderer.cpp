@@ -683,11 +683,13 @@ bool FSceneRenderer::RenderPrePass(FRenderGraphBuilder& Graph, FRenderer* Render
 			// 실제 메시 패스와 같은 VS를 사용해 깊이 계산을 일치시킨다.
 			FShaderProgram DepthProgram(nullptr, DepthPipeline->Shader->PixelShader);
 			FShaderProgram SkinnedDepthProgram(nullptr, DepthPipeline->Shader->PixelShader);
+			FShaderProgram MeshParticleDepthProgram(nullptr, DepthPipeline->Shader->PixelShader);
 			TArray<FMeshDrawBatch> DepthBatches = ForwardBatches;
 			for (FMeshDrawBatch& Batch : DepthBatches)
 			{
-				// GPU 스킨 배치는 VS가 달라서 프로그램을 나눈다
-				FShaderProgram& Program = Batch.BoneBuffer ? SkinnedDepthProgram : DepthProgram;
+				// 스킨과 파티클 인스턴싱은 각각 다른 VS와 입력 레이아웃을 사용한다.
+				FShaderProgram& Program = !Batch.MeshParticleInstances.empty() ? MeshParticleDepthProgram
+					: Batch.BoneBuffer ? SkinnedDepthProgram : DepthProgram;
 				Program.VertexShader = Batch.Pipeline.Shader->VertexShader;
 				Batch.Pipeline = *DepthPipeline;
 				Batch.Pipeline.Shader = &Program;
@@ -897,6 +899,11 @@ bool FSceneRenderer::RenderDecals(FRenderGraphBuilder& Graph, FRenderer* Rendere
 				for (uint32 BatchIndex : TouchedBatches) {
 					FMeshDrawBatch& Header = DecalHeaders[BatchIndex];
 					Header.Pipeline = Decal->IsAdditive() ? *DecalAdditivePipeline : *DecalPipeline;
+					if (!Header.MeshParticleInstances.empty())
+					{
+						Header.MeshParticleFallbackVS = Header.Pipeline.Shader->VertexShader;
+						Header.Pipeline.Shader = FRenderResourceManager::FindMeshParticleShader(*Header.Pipeline.Shader);
+					}
 					Header.Textures = { { Decal->GetDecalTexture(), EShaderBindFlagBits::Pixel } };
 					ReceiverItems += Header.Items.Num();
 					DecalBatches.Add(std::move(Header));

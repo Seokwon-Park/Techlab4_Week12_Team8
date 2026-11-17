@@ -13,6 +13,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	UStaticMesh* StaticMesh = nullptr;
 
+	UPROPERTY(EditAnywhere)
+	bool bUseGPUInstancing = true;
+
 	FParticleEmitterInstance* CreateInstance(UParticleEmitter* InEmitterParent,
 		UParticleSystemComponent* InComponent) override;
 	bool IsAMeshEmitter() const override { return true; }

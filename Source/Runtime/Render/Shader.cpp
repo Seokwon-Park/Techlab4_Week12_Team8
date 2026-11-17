@@ -1,6 +1,7 @@
 #include "EnginePCH.h"
 #include "Shader.h"
 #include "Render/Renderer.h"
+#include <cstring>
 
 namespace
 {
@@ -141,6 +142,15 @@ void FVertexShader::InputLayoutReflection(ID3D11Device* Device, const FShaderByt
 		ElementDesc.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
 		ElementDesc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 		ElementDesc.InstanceDataStepRate = 0;
+
+		if (std::strcmp(ParamDesc.SemanticName, "INSTANCE_TRANSFORM") == 0)
+		{
+			ElementDesc.InputSlot = 1;
+			ElementDesc.AlignedByteOffset = static_cast<uint32>(
+				offsetof(FMeshParticleInstanceVertex, Transform) + ParamDesc.SemanticIndex * sizeof(FVector4));
+			ElementDesc.InputSlotClass = D3D11_INPUT_PER_INSTANCE_DATA;
+			ElementDesc.InstanceDataStepRate = 1;
+		}
 
 		InputLayoutDesc.Add(ElementDesc);
 	}

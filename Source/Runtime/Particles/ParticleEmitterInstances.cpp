@@ -612,6 +612,8 @@ bool FParticleMeshEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBase&
 	auto& Data = static_cast<FDynamicMeshEmitterReplayData&>(OutData);
 	Data.eEmitterType = DET_Mesh;
 	Data.bUseLocalSpace = LOD->RequiredModule->bUseLocalSpace;
+	const auto* TypeData = Cast<UParticleModuleTypeDataMesh>(LOD->TypeDataModule);
+	Data.bUseGPUInstancing = TypeData && TypeData->bUseGPUInstancing;
 	Data.MaxDrawCount = ActiveParticles;
 	return true;
 }

@@ -174,8 +174,34 @@ void FParticleSystemSceneProxy::DrawMeshEmitter(const FDynamicMeshEmitterData& D
 	const auto& Src = Data.Source;
 	const auto& MeshData = Mesh->GetMeshData();
 	const int32 Count = FMath::Min(Src.ActiveParticleCount, Src.MaxDrawCount);
+	if (Count <= 0) return;
+
 	const FMatrix EmitterToWorld = Src.bUseLocalSpace ? GetLocalToWorld() : FMatrix::Identity;
 	const FVector MeshCenter = (MeshData.AABB.Min + MeshData.AABB.Max) * 0.5f;
+
+	TArray<FRenderPacket> InstancedSections;
+	TArray<FRenderPacket> IndividualSections;
+	for (const FStaticMeshSection& Section : MeshData.Sections)
+	{
+		UMaterial* Material = Mesh->GetMaterial(Section.MaterialSlotIndex);
+		if (!Material || Section.IndexCount == 0) continue;
+
+		// Transparent particles participate individually in the view's back-to-front sort.
+		const bool bInstanceSection = Src.bUseGPUInstancing && Material->PSOType == EPSOType::StaticMesh_Opaque;
+		FRenderPacket& Packet = (bInstanceSection ? InstancedSections : IndividualSections).AddDefaulted_GetRef();
+		Packet.Mesh = Mesh;
+		Packet.Material = Material;
+		Packet.StartIndex = Section.StartIndex;
+		Packet.IndexCount = Section.IndexCount;
+	}
+	if (InstancedSections.IsEmpty() && IndividualSections.IsEmpty()) return;
+
+	TArray<FMeshParticleInstanceVertex>* Instances = nullptr;
+	if (!InstancedSections.IsEmpty())
+	{
+		Instances = &Queue.AllocateMeshParticleInstances();
+		Instances->Reserve(Count);
+	}
 
 	for (int32 Index = 0; Index < Count; ++Index)
 	{
@@ -183,22 +209,31 @@ void FParticleSystemSceneProxy::DrawMeshEmitter(const FDynamicMeshEmitterData& D
 		DECLARE_PARTICLE_CONST(Particle, Src.DataContainer.ParticleData + ParticleIndex * Src.ParticleStride);
 
 		const FMatrix World = BuildMeshParticleTransform(Particle, Src.Scale) * EmitterToWorld;
+		if (Instances)
+		{
+			FMeshParticleInstanceVertex Instance{Particle.Color};
+			for (int32 Column = 0; Column < 3; ++Column)
+				Instance.Transform[Column] = World.GetColumn(Column);
+			Instances->Add(Instance);
+		}
+
+		if (IndividualSections.IsEmpty()) continue;
 		const FMatrix* Model = Queue.StoreWorldMatrix(World);
 		const FVector Delta = World.TransformPosition(MeshCenter) - View.CameraPosition;
 		const float DistanceSquared = Delta.Dot(Delta);
 
-		for (const FStaticMeshSection& Section : MeshData.Sections)
+		for (const FRenderPacket& Section : IndividualSections)
 		{
-			UMaterial* Material = Mesh->GetMaterial(Section.MaterialSlotIndex);
-			if (!Material || Section.IndexCount == 0) continue;
-
-			FRenderPacket& Packet = Queue.AddDefaulted_GetRef();
+			Queue.Add(Section);
+			FRenderPacket& Packet = Queue.Last();
 			Packet.Model = Model;
-			Packet.Mesh = Mesh;
-			Packet.Material = Material;
-			Packet.StartIndex = Section.StartIndex;
-			Packet.IndexCount = Section.IndexCount;
 			Packet.CameraToParticleDistance = DistanceSquared;
 		}
+	}
+
+	for (FRenderPacket& Section : InstancedSections)
+	{
+		Section.MeshParticleInstances = { Instances->GetData(), static_cast<size_t>(Instances->Num()) };
+		Queue.Add(std::move(Section));
 	}
 }

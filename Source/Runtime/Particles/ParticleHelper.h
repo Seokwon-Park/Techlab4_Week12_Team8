@@ -210,6 +210,14 @@ struct FMeshParticleInstanceVertex
 	float SubUVLerp;
 	/** The relative time of the particle. */
 	float RelativeTime;
+
+	FMatrix GetWorldMatrix() const
+	{
+		FMatrix World = FMatrix::Identity;
+		for (int32 Column = 0; Column < 3; ++Column)
+			World.SetColumn(Column, Transform[Column]);
+		return World;
+	}
 };
 
 // SortSpriteParticles()의 결과 한 칸
@@ -454,6 +462,7 @@ struct FDynamicSpriteEmitterData : public FDynamicSpriteEmitterDataBase
 struct FDynamicMeshEmitterReplayData
 	: public FDynamicSpriteEmitterReplayDataBase
 {
+	bool	bUseGPUInstancing = false;
 	bool	bScaleUV;
 	int32	MeshRotationOffset;
 	uint8	MeshAlignment;
