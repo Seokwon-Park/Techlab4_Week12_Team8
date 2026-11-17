@@ -10,6 +10,8 @@
 #include "Animation/BlendSpaceFile.h"
 #include "Animation/AnimBlueprintFile.h"
 
+#include "Particles/ParticleSystemFile.h"
+
 bool FContentDrawerPanel::Init()
 {
 	return false;
@@ -209,9 +211,15 @@ void FContentDrawerPanel::RenderContents()
 				strcpy_s(NewAssetName, "NewWidget");
 				bOpenCreateWidget = true;   // 메뉴 팝업 안에서 바로 다른 팝업을 열 수 없어 다음 줄에서 연다
 			}
+			if (ImGui::MenuItem("Create Particle System"))
+			{
+				strcpy_s(NewAssetName, "NewParticleSystem");
+				bOpenCreateParticle = true;     // 팝업 안에서 다른 팝업을 바로 못 연다
+			}
 			ImGui::EndPopup();
 		}
 		if (bOpenCreateWidget) { ImGui::OpenPopup("Create Widget"); bOpenCreateWidget = false; }
+		if (bOpenCreateParticle) { ImGui::OpenPopup("Create Particle System"); bOpenCreateParticle = false; }
 
 		if (ImGui::BeginPopupModal("Create Widget", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 		{
@@ -224,6 +232,33 @@ void FContentDrawerPanel::RenderContents()
 			if (ImGui::Button("Create") && OnCreateWidget)
 			{
 				OnCreateWidget(Target.generic_string());   // "Assets/UI/GameOver.widget" 형식
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndDisabled();
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+			ImGui::EndPopup();
+		}
+
+		if (ImGui::BeginPopupModal("Create Particle System", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			ImGui::InputText("Name", NewAssetName, sizeof(NewAssetName));
+			const fs::path Target = CurrentPath / (FString(NewAssetName) + ".particle");
+			const bool bExists = fs::exists(Target);
+			if (bExists) ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "A file with this name already exists.");
+
+			ImGui::BeginDisabled(bExists || NewAssetName[0] == '\0');
+			if (ImGui::Button("Create"))
+			{
+				FString Error;
+				if (ParticleSystemFile::CreateDefault(Target, Error))
+				{
+					if (OnOpenMesh) OnOpenMesh(Target.generic_string());   // 만들자마자 에디터로 연다
+				}
+				else
+				{
+					HTR_LOG(Warning, "Failed to create particle system: {}", Error);
+				}
 				ImGui::CloseCurrentPopup();
 			}
 			ImGui::EndDisabled();
@@ -380,12 +415,11 @@ void FContentDrawerPanel::RenderContents()
 					{
 						OnOpenMesh(PathString);
 					}
-
-					else if ((BlendSpaceFile::IsBlendSpacePath(PathString) || AnimBlueprintFile::IsAnimBlueprintPath(PathString)) && OnOpenMesh)
+					else if ((BlendSpaceFile::IsBlendSpacePath(PathString) || AnimBlueprintFile::IsAnimBlueprintPath(PathString)
+						|| ParticleSystemFile::IsParticleSystemPath(PathString)) && OnOpenMesh)   // 추가
 					{
 						OnOpenMesh(PathString);
 					}
-
 				}
 				// 파일 이름 표시
 				ImGui::TextWrapped("%s", FilenameString.c_str());

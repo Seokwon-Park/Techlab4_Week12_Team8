@@ -24,6 +24,9 @@
 #include "Animation/BlendSpaceFile.h"
 #include "Asset/AssetUtils.h"
 
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemFile.h"
+
 #include "Render/ImageLoader.h"
 #include "Asset/AssetLoadProfiler.h"
 #include "Core/Misc/Paths.h"
@@ -840,4 +843,27 @@ UBlendSpace1D* UAssetManager::LoadBlendSpace(const FString& Path)
 
 	Get().BlendSpaceMap[Key] = BlendSpace;
 	return BlendSpace;
+}
+
+UParticleSystem* UAssetManager::LoadParticleSystem(const FString& Path)
+{
+	const FString& Key = MakeLookupKey(Path);
+	if (UParticleSystem** Found = Get().ParticleSystemMap.Find(Key))
+	{
+		return *Found;
+	}
+
+	const FString FilePath = FAssetUtils::ResolveAssetFilePath(Path);
+	UParticleSystem* System = NewObject<UParticleSystem>();
+
+	FString Error;
+	if (!ParticleSystemFile::Read(std::filesystem::path(FilePath.empty() ? Path : FilePath), *System, Error))
+	{
+		HTR_LOG(Warning, "Failed to load ParticleSystem: {} ({})", Path, Error);
+		delete System;
+		return nullptr;
+	}
+
+	Get().ParticleSystemMap.FindOrAdd(Key) = System;
+	return System;
 }

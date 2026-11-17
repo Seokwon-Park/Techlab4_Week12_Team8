@@ -7,7 +7,10 @@
 
 #include "Particles/ParticleModule.h"
 #include "Render/MaterialInterface.h"
+#include "Render/Texture2D.h"            // UTexture2D* UPROPERTY는 완전한 타입이 필요하다
 #include "ParticleModuleRequired.generated.h"
+
+class UMaterial;
 
 enum EParticleSortMode : int
 {

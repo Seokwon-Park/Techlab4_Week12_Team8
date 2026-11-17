@@ -51,6 +51,7 @@ private:
 	bool bDrawerOpen = false;
 	bool bJustOpened = false;
 	bool bPendingDock = false;
+	bool bOpenCreateParticle = false;
 	ImVec2 DrawerPos = ImVec2(0.0f, 0.0f);
 	ImVec2 DrawerSize = ImVec2(0.0f, 0.0f);
 	ImGuiID DrawerViewportId = 0;
