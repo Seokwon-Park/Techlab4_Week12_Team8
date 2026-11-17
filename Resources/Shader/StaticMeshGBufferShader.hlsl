@@ -1,5 +1,6 @@
 #pragma pack_matrix(row_major)
 #include "GpuSkinCommon.hlsli"
+#include "MeshParticleInstancing.hlsli"
 
 cbuffer ViewConstants : register(b0)
 {
@@ -28,6 +29,7 @@ struct VS_INPUT
 	float2 UV : TEXCOORD;
 	float4 Color : COLOR;
 	GPU_SKIN_VS_INPUT
+	MESH_PARTICLE_VS_INPUT
 };
 
 struct PS_INPUT
@@ -72,14 +74,15 @@ PS_INPUT mainVS(VS_INPUT Input)
 {
     PS_INPUT Output;
     GPU_SKIN_APPLY(Input, Input.Position, Input.Normal, Input.Tangent);
-    float4 WorldPosition = mul(float4(Input.Position, 1.0f), World);
+    float4x4 WorldTransform = MESH_PARTICLE_WORLD(Input);
+    float4 WorldPosition = mul(float4(Input.Position, 1.0f), WorldTransform);
 
     Output.Position = mul(WorldPosition, VP);
-    Output.WorldNormal = mul(float4(Input.Normal, 0.0f), NormalMatrix).xyz;
-    float3 T = mul(float4(Input.Tangent.xyz, 0.0f), World).xyz;
+    Output.WorldNormal = mul(Input.Normal, MESH_PARTICLE_NORMAL(WorldTransform));
+    float3 T = mul(float4(Input.Tangent.xyz, 0.0f), WorldTransform).xyz;
 
     // CPU가 구한 로컬 공간 부호에 월드 변환의 거울 반전만 반영한다.
-    float Handedness = Input.Tangent.w * (determinant((float3x3)World) < 0.0f ? -1.0f : 1.0f);
+    float Handedness = Input.Tangent.w * (determinant((float3x3)WorldTransform) < 0.0f ? -1.0f : 1.0f);
     Output.WorldTangent = float4(T, Handedness);
     Output.UV = Input.UV;
     Output.ReceiveShadow = ShadowFlags.x;

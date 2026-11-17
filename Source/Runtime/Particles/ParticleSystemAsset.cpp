@@ -279,7 +279,6 @@ void UParticleLODLevel::Serialize(FStructuredArchive::FRecord Record)
 	if (Ar.IsLoading())
 	{
 		Modules = std::move(Loaded);
-		SpawnModule = nullptr;     // 1번/2번: Modules에서 Spawn 모듈을 찾아 넣는다 (UpdateModuleLists에서 같이 해도 됨)
 
 		if (!RequiredModule)       // 파일이 깨졌어도 에디터가 열리게 Required는 항상 있게 한다
 		{

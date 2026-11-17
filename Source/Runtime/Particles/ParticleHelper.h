@@ -210,6 +210,14 @@ struct FMeshParticleInstanceVertex
 	float SubUVLerp;
 	/** The relative time of the particle. */
 	float RelativeTime;
+
+	FMatrix GetWorldMatrix() const
+	{
+		FMatrix World = FMatrix::Identity;
+		for (int32 Column = 0; Column < 3; ++Column)
+			World.SetColumn(Column, Transform[Column]);
+		return World;
+	}
 };
 
 // SortSpriteParticles()의 결과 한 칸
@@ -454,6 +462,7 @@ struct FDynamicSpriteEmitterData : public FDynamicSpriteEmitterDataBase
 struct FDynamicMeshEmitterReplayData
 	: public FDynamicSpriteEmitterReplayDataBase
 {
+	bool	bUseGPUInstancing = false;
 	bool	bScaleUV;
 	int32	MeshRotationOffset;
 	uint8	MeshAlignment;
@@ -470,6 +479,8 @@ struct FDynamicMeshEmitterReplayData
 	}
 };
 
+FMatrix BuildMeshParticleTransform(const FBaseParticle& Particle, const FVector& Scale);
+
 /** Dynamic emitter data for Mesh emitters */
 struct FDynamicMeshEmitterData : public FDynamicSpriteEmitterDataBase
 {
@@ -479,7 +490,7 @@ struct FDynamicMeshEmitterData : public FDynamicSpriteEmitterDataBase
 	{
 	}
 
-	/** Initialize this emitter's dynamic rendering data, called after source data has been filled in. 구현은 렌더러 담당 */
+	/** Initialize the dynamic rendering data after Source has been filled in. */
 	void Init(	bool bInSelected,
 				const FParticleMeshEmitterInstance* InEmitterInstance,
 				UStaticMesh* InStaticMesh);

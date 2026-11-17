@@ -4,6 +4,7 @@
 #include "LightEvaluation.hlsli"
 #include "LightGridCommon.hlsli"
 #include "GpuSkinCommon.hlsli"
+#include "MeshParticleInstancing.hlsli"
 
 // 셰이더 스캐너는 매크로 정의 없이 이 파일을 컴파일하므로 기본 변형에는 Lambert를 쓴다.
 // 명시적인 변형은 조명 모델 또는 뷰 모드 하나만 1로 설정한다.
@@ -70,6 +71,7 @@ struct VS_IN
 	float2 UV : TEXCOORD;
 	float4 Color : COLOR;
 	GPU_SKIN_VS_INPUT
+    MESH_PARTICLE_VS_INPUT
 };
 
 struct VS_OUT
@@ -404,7 +406,8 @@ VS_OUT Uber_VS(VS_IN Input)
 {
     VS_OUT Output;
     GPU_SKIN_APPLY(Input, Input.Position, Input.Normal, Input.Tangent);
-    float4 WorldPosition = mul(float4(Input.Position, 1.0f), World);
+    float4x4 WorldTransform = MESH_PARTICLE_WORLD(Input);
+    float4 WorldPosition = mul(float4(Input.Position, 1.0f), WorldTransform);
     float4 ViewPosition = mul(WorldPosition, View);
     Output.Position = mul(ViewPosition, Projection);
     Output.Color = Input.Color;
@@ -417,11 +420,11 @@ VS_OUT Uber_VS(VS_IN Input)
 #endif
     Output.UV = Input.UV * UVTransform.zw + UVTransform.xy;
 
-    float3 N = mul(float4(Input.Normal, 0.0f), NormalMatrix).xyz;
+    float3 N = mul(Input.Normal, MESH_PARTICLE_NORMAL(WorldTransform));
     Output.WorldNormal = N;
-    float3 T = mul(float4(Input.Tangent.xyz, 0.0f), World).xyz;
+    float3 T = mul(float4(Input.Tangent.xyz, 0.0f), WorldTransform).xyz;
     // CPU가 구한 로컬 공간 부호에 월드 변환의 거울 반전만 반영한다.
-    float Handedness = Input.Tangent.w * (determinant((float3x3)World) < 0.0f ? -1.0f : 1.0f);
+    float Handedness = Input.Tangent.w * (determinant((float3x3)WorldTransform) < 0.0f ? -1.0f : 1.0f);
     Output.WorldTangent = float4(T, Handedness);
 #if LIGHTING_MODEL_GOURAUD
     FLightResult Lit = CalculateLighting(float3(0.0f, 0.0f, 0.0f), WorldPosition.xyz, ViewPosition.x, N, true);

@@ -155,9 +155,9 @@ void RenderCommand::DrawIndexed(uint32 IndexCount, uint32 StartIndexLocation, in
 	RenderDevice->GetContext()->DrawIndexed(IndexCount, StartIndexLocation, BaseVertexLocation);
 }
 
-void RenderCommand::DrawInstance(uint32 IndexCount, uint32 StartIndexLocation, int32 BaseVertexLocation)
+void RenderCommand::DrawIndexedInstanced(uint32 IndexCount, uint32 InstanceCount, uint32 StartIndexLocation)
 {
-	//RenderDevice->GetContext()->DrawInstanced();
+	RenderDevice->GetContext()->DrawIndexedInstanced(IndexCount, InstanceCount, StartIndexLocation, 0, 0);
 }
 
 void RenderCommand::UpdateBufferData(FBuffer* InBuffer, const void* Data, uint32 DataSize)
@@ -170,13 +170,13 @@ void RenderCommand::UpdateBufferData(FBuffer* InBuffer, const void* Data, uint32
 	RenderDevice->GetContext()->Unmap(Buffer, 0);
 }
 
-void RenderCommand::BindVertexBuffer(FVertexBuffer* VertexBuffer)
+void RenderCommand::BindVertexBuffer(FVertexBuffer* VertexBuffer, uint32 Slot)
 {
 	ID3D11Buffer* Buffer = VertexBuffer ? VertexBuffer->GetBuffer() : nullptr;
 
 	uint32 Offset = 0;
 	uint32 Stride = VertexBuffer ? VertexBuffer->GetStride() : 0;
-	RenderDevice->GetContext()->IASetVertexBuffers(0, 1, &Buffer, &Stride, &Offset);
+	RenderDevice->GetContext()->IASetVertexBuffers(Slot, 1, &Buffer, &Stride, &Offset);
 }
 
 void RenderCommand::BindIndexBuffer(FIndexBuffer* IndexBuffer)

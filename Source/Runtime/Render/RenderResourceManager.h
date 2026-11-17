@@ -58,10 +58,12 @@ public:
 
 	static FPipelineState* GetPSO(const EPSOType& InType);
 	static FShaderProgram* GetForwardShaderProgram(ELightingModel Model);
+	static FShaderProgram* FindMeshParticleShader(const FShaderProgram& Base);
 private:
 	
 	void LoadOrCompileShader(const FString& Path);
-	void CreateSkinnedVariant(const FString& Path, const char* LightingMacro, const FShaderProgram& Base);
+	void CreateVertexShaderVariant(const FString& Path, const char* FeatureMacro,
+		const char* LightingMacro, const FShaderProgram& Base);
 	void InitPipelineStates();
 
 	TMap<FString, TUniquePtr<FVertexShader>> VertexShaderMap;

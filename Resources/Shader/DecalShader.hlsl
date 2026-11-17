@@ -1,4 +1,5 @@
 #pragma pack_matrix(row_major)
+#include "MeshParticleInstancing.hlsli"
 
 cbuffer PerObject : register(b0)
 {
@@ -25,6 +26,7 @@ struct VS_IN
     float4 Tangent : TANGENT;
     float2 UV : TEXCOORD;
     float4 Color : COLOR;
+    MESH_PARTICLE_VS_INPUT
 };
 
 struct VS_OUT
@@ -36,7 +38,7 @@ struct VS_OUT
 VS_OUT mainVS(VS_IN Input) 
 {
     VS_OUT OUTPUT;
-    float4 WorldPosition = mul(float4(Input.Position, 1.0f), World);
+    float4 WorldPosition = mul(float4(Input.Position, 1.0f), MESH_PARTICLE_WORLD(Input));
     float4 ViewPosition = mul(WorldPosition, View);
     
     OUTPUT.Position = mul(ViewPosition, Projection);

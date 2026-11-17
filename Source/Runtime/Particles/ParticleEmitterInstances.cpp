@@ -12,6 +12,7 @@
 #include "Particles/ParticleModuleRequired.h"
 #include "Particles/Spawn/ParticleModuleSpawn.h"
 #include "Particles/TypeData/ParticleModuleTypeDataBase.h"
+#include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
 
 // [Week12 런타임 코어] 템플릿의 설정을 실행하며 파티클 풀과 모듈별 데이터를 소유한다.
 // 렌더러에는 FillReplayData()로 복사한 스냅샷을 전달한다.
@@ -559,6 +560,7 @@ bool FParticleSpriteEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBas
 	FDynamicSpriteEmitterReplayDataBase& Data = static_cast<FDynamicSpriteEmitterReplayDataBase&>(OutData);
 
 	UParticleModuleRequired* Required = LOD->RequiredModule;
+
 	// Material이 비어 있으면 Required의 Texture·bAdditive로 만든 파티클 PSO 머티리얼을 쓴다 (null이면 렌더러가 건너뛴다)
 	Data.MaterialInterface = CurrentMaterial ? CurrentMaterial : Required->GetRenderMaterial();
 	Data.RequiredModule = nullptr;  // 컷아웃·SubUV 확장 때 FParticleRequiredModule 사본을 만든다
@@ -577,18 +579,43 @@ bool FParticleSpriteEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBas
 -----------------------------------------------------------------------------*/
 FDynamicEmitterDataBase* FParticleMeshEmitterInstance::GetDynamicData(bool bSelected)
 {
-	// TODO(4번 Mesh 렌더링)
-	return nullptr;
+	const UParticleLODLevel* LOD = CurrentLODLevel;
+	const auto* TypeData = LOD ? Cast<UParticleModuleTypeDataMesh>(LOD->TypeDataModule) : nullptr;
+	if (!TypeData || !TypeData->StaticMesh || !LOD->RequiredModule)
+	{
+		return nullptr;
+	}
+
+	auto Data = MakeUnique<FDynamicMeshEmitterData>(LOD->RequiredModule);
+	if (!FillReplayData(Data->Source))
+	{
+		return nullptr;
+	}
+
+	Data->Init(bSelected, this, TypeData->StaticMesh);
+	return Data.release();
 }
 
 FDynamicEmitterReplayDataBase* FParticleMeshEmitterInstance::GetReplayData()
 {
-	// TODO(4번 Mesh 렌더링)
-	return nullptr;
+	auto Data = MakeUnique<FDynamicMeshEmitterReplayData>();
+	return FillReplayData(*Data) ? Data.release() : nullptr;
 }
 
 bool FParticleMeshEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBase& OutData)
 {
-	// TODO(4번 Mesh 렌더링)
-	return false;
+	const UParticleLODLevel* LOD = CurrentLODLevel;
+	if (!LOD || !LOD->bEnabled || !LOD->RequiredModule || !LOD->TypeDataModule ||
+		!LOD->TypeDataModule->bEnabled || !FParticleEmitterInstance::FillReplayData(OutData))
+	{
+		return false;
+	}
+
+	auto& Data = static_cast<FDynamicMeshEmitterReplayData&>(OutData);
+	Data.eEmitterType = DET_Mesh;
+	Data.bUseLocalSpace = LOD->RequiredModule->bUseLocalSpace;
+	const auto* TypeData = Cast<UParticleModuleTypeDataMesh>(LOD->TypeDataModule);
+	Data.bUseGPUInstancing = TypeData && TypeData->bUseGPUInstancing;
+	Data.MaxDrawCount = ActiveParticles;
+	return true;
 }
