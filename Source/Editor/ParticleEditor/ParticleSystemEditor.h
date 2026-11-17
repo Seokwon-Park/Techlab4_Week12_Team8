@@ -2,6 +2,7 @@
 
 #include "Editor/AssetEditor/AssetEditor.h"
 #include "Camera/ViewportCameraMovement.h"
+#include "Particles/ParticleCurve.h"
 #include <functional>
 
 class UParticleSystem;
@@ -10,6 +11,7 @@ class UParticleModule;
 class UParticleSystemComponent;
 class UClass;
 class UObject;
+class FStructProperty;
 
 class FParticleSystemEditor : public FAssetEditor
 {
@@ -55,6 +57,26 @@ public:
 
 	bool Save();
 	void HandleShortcuts();                      // 패널의 DrawContent 안에서 부른다
+
+	// ── 커브 에디터 트랙 (Cascade: 모듈의 커브 버튼으로 올린 Distribution) ──
+	struct FCurveTrack
+	{
+		UParticleModule* Module = nullptr;
+		const FStructProperty* Property = nullptr;   // FRawDistributionFloat 또는 FRawDistributionVector 멤버
+		FString Label;                               // "AlphaOverLife"
+		int32 NumChannels = 1;                       // Float 1, Vector 3
+		bool bChannelVisible[3] = { true, true, true };
+
+		FParticleCurve* GetChannel(int32 Channel) const;
+		bool IsCurveType() const;                    // 디테일에서 Type을 다른 걸로 바꿨으면 false
+	};
+
+	TArray<FCurveTrack>& GetCurveTracks() { return CurveTracks; }
+	static bool HasDistributions(const UParticleModule* Module);
+	bool HasCurveTracks(const UParticleModule* Module) const;
+	void ToggleCurveTracks(UParticleModule* Module);       // 모듈 줄의 커브 버튼
+	void RemoveCurveTracks(const UParticleModule* Module);  // 모듈을 지우기 전에
+
 protected:
 	TUniquePtr<IEditorTab> CreateTab() override;
 	bool InitializeResources() override;
@@ -68,7 +90,7 @@ private:
 	FString GetFilePath() const;
 
 	UParticleSystem* System = nullptr;
-	UParticleSystemComponent* PreviewScene = nullptr;
+	UParticleSystemComponent* PreviewComponent = nullptr;
 
 	TArray<std::function<void()>> PendingEdits;
 	bool bRestartPending = false;
@@ -78,8 +100,10 @@ private:
 	int32 SelectedEmitter = -1;
 
 	FViewportCameraInput CameraInput;
-	uint32 ViewportWIdth = 0;
+	uint32 ViewportWidth = 0;
 	uint32 ViewportHeight = 0;
-	bool bViewportVisisble = false;
+	bool bViewportVisible = false;
 	bool bInitialFocusPending = true;
+
+	TArray<FCurveTrack> CurveTracks;
 };

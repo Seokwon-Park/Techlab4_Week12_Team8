@@ -57,9 +57,17 @@ float FRawDistributionFloat::GetValue(float F) const
 	case ERawDistributionType::ConstantCurve:
 		return FMath::Lerp(CurveStart, CurveEnd, ClampCurveInput(F));
 
+	case ERawDistributionType::Curve:
+		return Curve.Eval(F, Constant);
+
 	case ERawDistributionType::Constant:
+
+
+
 	default:
 		return Constant;
+
+
 	}
 }
 
@@ -77,12 +85,26 @@ void FRawDistributionFloat::GetOutRange(float& OutMin, float& OutMax) const
 		OutMax = std::max(CurveStart, CurveEnd);
 		return;
 
+	case ERawDistributionType::Curve:
+		if (Curve.Keys.IsEmpty()) { OutMin = OutMax = Constant; }
+		else Curve.GetValueRange(OutMin, OutMax);
+		return;
+
 	case ERawDistributionType::Constant:
+		return;
+
 	default:
 		OutMin = Constant;
 		OutMax = Constant;
 		return;
 	}
+}
+
+void FRawDistributionFloat::EnsureCurveKeys()
+{
+	if (!Curve.Keys.IsEmpty()) return;
+	Curve.AddKey(0.0f, Constant);
+	Curve.AddKey(1.0f, Constant);
 }
 
 FRawDistributionVector FRawDistributionVector::MakeConstant(const FVector& Value)
@@ -168,6 +190,10 @@ FVector FRawDistributionVector::GetValue(float F) const
 	case ERawDistributionType::ConstantCurve:
 		return FMath::Lerp(CurveStart, CurveEnd, ClampCurveInput(F));
 
+	case ERawDistributionType::Curve:
+		return FVector(Curves[0].Eval(F, Constant.X), Curves[1].Eval(F, Constant.Y), Curves[2].Eval(F, Constant.Z));
+
+
 	case ERawDistributionType::Constant:
 	default:
 		return Constant;
@@ -202,6 +228,20 @@ void FRawDistributionVector::GetRange(FVector& OutMin, FVector& OutMax) const
 		B = CurveEnd;
 		break;
 
+	case ERawDistributionType::Curve:
+	{
+		float Lo[3], Hi[3];
+		const float Def[3] = { Constant.X, Constant.Y, Constant.Z };
+		for (int32 i = 0; i < 3; ++i)
+		{
+			if (Curves[i].Keys.IsEmpty()) { Lo[i] = Hi[i] = Def[i]; }
+			else Curves[i].GetValueRange(Lo[i], Hi[i]);
+		}
+		A = FVector(Lo[0], Lo[1], Lo[2]);
+		B = FVector(Hi[0], Hi[1], Hi[2]);
+		break;
+	}
+
 	case ERawDistributionType::Constant:
 	default:
 		A = Constant;
@@ -222,4 +262,15 @@ void FRawDistributionVector::GetOutRange(float& OutMin, float& OutMax) const
 
 	OutMin = std::min({ RangeMin.X, RangeMin.Y, RangeMin.Z });
 	OutMax = std::max({ RangeMax.X, RangeMax.Y, RangeMax.Z });
+}
+
+void FRawDistributionVector::EnsureCurveKeys()
+{
+	const float Def[3] = { Constant.X, Constant.Y, Constant.Z };
+	for (int32 i = 0; i < 3; ++i)
+	{
+		if (!Curves[i].Keys.IsEmpty()) continue;
+		Curves[i].AddKey(0.0f, Def[i]);
+		Curves[i].AddKey(1.0f, Def[i]);
+	}
 }

@@ -559,7 +559,8 @@ bool FParticleSpriteEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBas
 	FDynamicSpriteEmitterReplayDataBase& Data = static_cast<FDynamicSpriteEmitterReplayDataBase&>(OutData);
 
 	UParticleModuleRequired* Required = LOD->RequiredModule;
-	Data.MaterialInterface = CurrentMaterial ? CurrentMaterial : Required->Material;
+	// Material이 비어 있으면 Required의 Texture·bAdditive로 만든 파티클 PSO 머티리얼을 쓴다 (null이면 렌더러가 건너뛴다)
+	Data.MaterialInterface = CurrentMaterial ? CurrentMaterial : Required->GetRenderMaterial();
 	Data.RequiredModule = nullptr;  // 컷아웃·SubUV 확장 때 FParticleRequiredModule 사본을 만든다
 	Data.bUseLocalSpace = Required->bUseLocalSpace;
 	Data.SubUVDataOffset = SubUVDataOffset;

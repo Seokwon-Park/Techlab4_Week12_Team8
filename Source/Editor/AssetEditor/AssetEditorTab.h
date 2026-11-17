@@ -25,6 +25,7 @@ public:
 
 	// 저장하지 않은 변경이 있으면 파일 이름 뒤에 *를 붙인다 (### 뒤 ID는 같아 창 배치가 유지된다)
 	const char* GetTabName() const override;
+	bool GetTabIcon(EEditorIcon& OutIcon, ImU32& OutColor) const override;   // 에디터 종류별 (콘텐츠 드로어와 같은 아이콘·색)
 	bool CanClose() const override { return true; }
 	bool ConfirmClose() override;
 

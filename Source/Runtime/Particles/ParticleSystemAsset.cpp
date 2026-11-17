@@ -4,11 +4,15 @@
 #include "Particles/ParticleLODLevel.h"
 #include "Particles/ParticleModuleRequired.h"
 #include "Particles/TypeData/ParticleModuleTypeDataBase.h"
+#include "Particles/Spawn/ParticleModuleSpawn.h"
 #include "Render/Material.h"
+#include "UObject/Casts.h"
 #include "Asset/AssetManager.h"
 
 namespace
 {
+	void SerializeDistributionCurves(FStructuredArchive::FRecord Record, UObject* Object);   // 아래에 정의
+
 	template <typename T>
 	void SerializeSubobject(FStructuredArchive::FRecord Record, T*& Object)
 	{
@@ -35,32 +39,118 @@ namespace
 		if (Object)
 		{
 			Object->Serialize(Record.EnterRecord("Object"));
+			SerializeDistributionCurves(Record, Object);
 		}
 	}
+
+	void SerializeCurve(FStructuredArchive::FRecord Record, const char* Name, FParticleCurve& Curve)
+	{
+		FArchive& Ar = Record.GetUnderlyingArchive();
+		if (Ar.IsSaving() && Curve.Keys.IsEmpty()) return;
+
+		TOptional<FStructuredArchive::FSlot> Field = Record.TryEnterField(Name, true);
+		if (!Field.IsSet()) return;                     // 불러오기: 이 커브가 없는 파일 (키 없음 또는 옛 파일)
+
+		int32 Count = Ar.IsSaving() ? static_cast<int32>(Curve.Keys.Num()) : 0;
+		auto Array = Field.GetValue().EnterArray(Count);
+		if (Ar.IsLoading()) Curve.Keys.SetNum(Count);
+
+		for (int32 i = 0; i < Count; ++i)
+		{
+			auto KeyRecord = Array.EnterElement().EnterRecord();
+			FParticleCurveKey& Key = Curve.Keys[i];
+			int32 Mode = static_cast<int32>(Key.InterpMode);
+
+			KeyRecord << SA_VALUE("T", Key.Time);
+			KeyRecord << SA_VALUE("V", Key.Value);
+			KeyRecord << SA_VALUE("Mode", Mode);
+			KeyRecord << SA_VALUE("Auto", Key.bAutoTangent);
+			KeyRecord << SA_VALUE("Arrive", Key.ArriveTangent);
+			KeyRecord << SA_VALUE("Leave", Key.LeaveTangent);
+
+			if (Ar.IsLoading()) Key.InterpMode = static_cast<EParticleCurveInterp>(std::clamp(Mode, 0, 2));
+		}
+	}
+
+	// 객체의 UPROPERTY 중 Distribution 구조체를 찾아 그 커브를 "Curves"에 쓴다
+	void SerializeDistributionCurves(FStructuredArchive::FRecord Record, UObject* Object)
+	{
+		TOptional<FStructuredArchive::FSlot> CurvesField = Record.TryEnterField("Curves", true);
+		if (!CurvesField.IsSet()) return;
+		FStructuredArchive::FRecord Curves = CurvesField.GetValue().EnterRecord();
+
+		for (const UStruct* Struct = Object->GetClass(); Struct; Struct = Struct->GetSuperStruct())
+		{
+			for (const FProperty* Property : Struct->GetProperties())
+			{
+				const FStructProperty* StructProperty = CastField<FStructProperty>(Property);
+				if (!StructProperty) continue;
+				void* Value = Property->ContainerPtrToValuePtr(Object);
+
+				if (StructProperty->Struct == FRawDistributionFloat::StaticStruct())
+				{
+					SerializeCurve(Curves, Property->Name.c_str(), static_cast<FRawDistributionFloat*>(Value)->Curve);
+				}
+				else if (StructProperty->Struct == FRawDistributionVector::StaticStruct())
+				{
+					auto* Distribution = static_cast<FRawDistributionVector*>(Value);
+					TOptional<FStructuredArchive::FSlot> Axes = Curves.TryEnterField(Property->Name.c_str(), true);
+					if (!Axes.IsSet()) continue;
+					FStructuredArchive::FRecord AxesRecord = Axes.GetValue().EnterRecord();
+					SerializeCurve(AxesRecord, "X", Distribution->Curves[0]);
+					SerializeCurve(AxesRecord, "Y", Distribution->Curves[1]);
+					SerializeCurve(AxesRecord, "Z", Distribution->Curves[2]);
+				}
+			}
+		}
+	}
+
 }
 
-// ───────── 소멸자: 위에서 아래로 delete ─────────
-UParticleSystem::~UParticleSystem() { DeleteEmitters(); }
+// ───────── 소유권 ─────────
+// 엔진 종료 때 FEngineLoop::DestroyAllObjectsExceptEngine()이 GUObjectArray의 모든 UObject를
+// 끝에서부터 한 번씩 delete한다. 소멸자에서 자식까지 지우면 이미 지워진 자식을 다시 지우게 되므로
+// 소멸자는 비워 두고, 실행 중에 계층을 지울 때만 아래 Destroy 함수로 명시적으로 지운다.
+UParticleSystem::~UParticleSystem() = default;
+UParticleEmitter::~UParticleEmitter() = default;
+UParticleLODLevel::~UParticleLODLevel() = default;
+UParticleModuleRequired::~UParticleModuleRequired() = default;
+
+void UParticleModuleRequired::ReleaseRenderMaterial()
+{
+	delete CachedMaterial;
+	CachedMaterial = nullptr;
+}
+
+void UParticleSystem::DestroyModule(UParticleModule* Module)
+{
+	if (!Module) return;
+	if (UParticleModuleRequired* Required = Cast<UParticleModuleRequired>(Module))
+	{
+		Required->ReleaseRenderMaterial();
+	}
+	delete Module;
+}
+
+void UParticleSystem::DestroyEmitter(UParticleEmitter* Emitter)
+{
+	if (!Emitter) return;
+	for (UParticleLODLevel* LOD : Emitter->LODLevels)
+	{
+		if (!LOD) continue;
+		DestroyModule(LOD->RequiredModule);
+		DestroyModule(LOD->TypeDataModule);
+		for (UParticleModule* Module : LOD->Modules) DestroyModule(Module);   // SpawnModule은 이 안에 있다
+		delete LOD;
+	}
+	delete Emitter;
+}
 
 void UParticleSystem::DeleteEmitters()
 {
-	for (UParticleEmitter* Emitter : Emitters) delete Emitter;
+	for (UParticleEmitter* Emitter : Emitters) DestroyEmitter(Emitter);
 	Emitters.Reset();
 }
-
-UParticleEmitter::~UParticleEmitter()
-{
-	for (UParticleLODLevel* LOD : LODLevels) delete LOD;
-}
-
-UParticleLODLevel::~UParticleLODLevel()
-{
-	delete RequiredModule;
-	delete TypeDataModule;
-	for (UParticleModule* Module : Modules) delete Module;   // SpawnModule은 이 안에 있으므로 따로 지우지 않는다
-}
-
-UParticleModuleRequired::~UParticleModuleRequired() { delete CachedMaterial; }
 
 // ───────── 렌더용 머티리얼 ─────────
 UMaterialInterface* UParticleModuleRequired::GetRenderMaterial()
@@ -93,7 +183,20 @@ void UParticleSystem::PostEditStructure()
 		if (!Emitter) continue;
 		for (UParticleLODLevel* LOD : Emitter->LODLevels)
 		{
-			if (LOD) LOD->UpdateModuleLists();        
+			if (!LOD) continue;
+			LOD->UpdateModuleLists();
+
+			// 코어의 Spawn()은 SpawnModule이 없으면 파티클을 하나도 만들지 않는다.
+			// UE처럼 Modules 안의 첫 Spawn 모듈을 가리키게 한다 (소유는 Modules)
+			LOD->SpawnModule = nullptr;
+			for (UParticleModule* Module : LOD->Modules)
+			{
+				if (UParticleModuleSpawn* Spawn = Cast<UParticleModuleSpawn>(Module))
+				{
+					LOD->SpawnModule = Spawn;
+					break;
+				}
+			}
 		}
 		Emitter->CacheEmitterModuleInfo();            
 	}

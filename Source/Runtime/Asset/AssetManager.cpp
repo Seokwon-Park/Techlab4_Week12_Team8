@@ -860,6 +860,7 @@ UParticleSystem* UAssetManager::LoadParticleSystem(const FString& Path)
 	if (!ParticleSystemFile::Read(std::filesystem::path(FilePath.empty() ? Path : FilePath), *System, Error))
 	{
 		HTR_LOG(Warning, "Failed to load ParticleSystem: {} ({})", Path, Error);
+		System->DeleteEmitters();   // 소멸자는 자식을 지우지 않는다
 		delete System;
 		return nullptr;
 	}

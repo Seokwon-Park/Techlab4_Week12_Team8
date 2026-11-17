@@ -13,6 +13,7 @@
 #include "ParticleSystem.generated.h"
 
 class UParticleEmitter;
+class UParticleModule;
 
 UCLASS()
 class UParticleSystem : public UObject
@@ -31,7 +32,11 @@ public:
 
 	void PostEditStructure();
 
+	// 실행 중에 계층을 지울 때 쓴다. 소멸자는 자식을 지우지 않는다 (엔진 종료 시 모든 UObject를 따로 delete하므로)
 	void DeleteEmitters();
+	static void DestroyEmitter(UParticleEmitter* Emitter);   // 이미터 + LOD + 모듈
+	static void DestroyModule(UParticleModule* Module);      // 모듈 (+ Required의 렌더용 머티리얼)
+
 	const FString& GetAssetPath() const { return AssetPath; }
 	void SetAssetPath(const FString& InPath) { AssetPath = InPath; }
 private:

@@ -290,6 +290,16 @@ void UWorld::PreviewWorldTick(float DeltaTime)
 		Comp->TickComponent(DeltaTime);
 	}
 
+	// 파티클 에디터 미리보기: 미리보기 월드는 이 함수만 돌므로 PSC도 여기서 Tick한다
+	for (TObjectIterator<UParticleSystemComponent> Comp; Comp; ++Comp)
+	{
+		if (!Comp || !Comp->IsRegistered() || Comp->GetWorld() != this)
+		{
+			continue;
+		}
+
+		Comp->TickComponent(DeltaTime);
+	}
 }
 
 void UWorld::ClearWorld()

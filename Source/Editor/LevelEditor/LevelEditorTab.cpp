@@ -18,6 +18,13 @@ namespace
 	}
 }
 
+bool FLevelEditorTab::GetTabIcon(EEditorIcon& OutIcon, ImU32& OutColor) const
+{
+	OutIcon = EEditorIcon::Level;
+	OutColor = IM_COL32(255, 160, 40, 255);   // 콘텐츠 드로어의 Level 색
+	return true;
+}
+
 FLevelEditorTab::FLevelEditorTab()
 {
 	OnLevelLoaded.Add([this](std::string_view Path) {
