@@ -21,6 +21,9 @@ struct FParticleEventCollideData
 	float Time = 0.0f;			// 이번 검사 구간의 몇 % 지점에서 충돌했는지 (0~1)
 };
 
+// 인자: 이벤트 이름, EmitterTime, 파티클 나이(RelativeTime), 위치, 속도, 진행 방향, 법선
+DECLARE_DELEGATE(FParticleCollisionSignature, const FString&, float, float, const FVector&, const FVector&, const FVector&, const FVector&);
+
 //Source/Runtime/Engine/Classes/Particles/ParticleSystemComponent.h 참고
 //원래는 Cascade와 Niagara 를 통합관리하기 위한 UFXSystemComponent가 부모로 존재하지만 생략한다.
 UCLASS()
@@ -72,6 +75,8 @@ public:
 
 	// ── Stat ──
 	int32 GetNumActiveParticles() const;              // ActiveParticles 합계
+
+	FParticleCollisionSignature OnParticleCollide;
 
 	// 이번 Tick 동안 EventGenerator가 기록한 충돌. Tick 시작 때 비운다.
 	TArray<FParticleEventCollideData> CollisionEvents;

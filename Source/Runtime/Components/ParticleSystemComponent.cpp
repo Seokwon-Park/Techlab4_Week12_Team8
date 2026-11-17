@@ -5,6 +5,8 @@
 #include "Particles/ParticleLODLevel.h"
 #include "Particles/ParticleModuleRequired.h"
 #include "Particles/TypeData/ParticleModuleTypeDataBase.h"
+#include "Particles/ParticleEventManager.h"
+#include "Engine/World.h"
 #include "Asset/AssetManager.h"
 #include <algorithm>
 #include <cmath>
@@ -256,6 +258,15 @@ void UParticleSystemComponent::TickComponent(float DeltaTime)
 			{
 				Instance->bEmitterIsDone = true;
 			}
+		}
+	}
+
+	if (!CollisionEvents.IsEmpty())
+	{
+		UWorld* World = GetWorld();
+		if (World && World->MyParticleEventManager)
+		{
+			World->MyParticleEventManager->HandleParticleCollisionEvents(this, CollisionEvents);
 		}
 	}
 
