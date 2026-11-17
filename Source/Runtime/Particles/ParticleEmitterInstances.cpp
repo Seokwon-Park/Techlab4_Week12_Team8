@@ -566,6 +566,8 @@ bool FParticleSpriteEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBas
 	Data.SubImages_Horizontal = 1;
 	Data.SubImages_Vertical = 1;
 	Data.MaxDrawCount = ActiveParticles;
+	Data.SubImages_Horizontal = std::max(1, Required->SubImagesHorizontal); 
+	Data.SubImages_Vertical = std::max(1, Required->SubImagesVertical);   
 	return true;
 }
 

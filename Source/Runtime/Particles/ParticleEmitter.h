@@ -19,6 +19,13 @@ class UParticleEmitter : public UObject
 
 public:
 	UParticleEmitter() = default;
+	virtual ~UParticleEmitter() override;
+
+	UPROPERTY(EditAnywhere)
+	FString EmitterName = "Particle Emitter";
+
+	using Super::Serialize;
+	void Serialize(FStructuredArchive::FRecord Record) override;
 
 	TArray<UParticleLODLevel*> LODLevels;
 

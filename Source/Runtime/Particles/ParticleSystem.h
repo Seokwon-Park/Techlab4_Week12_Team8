@@ -21,7 +21,19 @@ class UParticleSystem : public UObject
 
 public:
 	UParticleSystem() = default;
+	virtual ~UParticleSystem() override;
 
 	/** Emitters	- internal - the array of emitters in the system */
 	TArray<UParticleEmitter*> Emitters;
+
+	using Super::Serialize;
+	void Serialize(FStructuredArchive::FRecord Record) override;
+
+	void PostEditStructure();
+
+	void DeleteEmitters();
+	const FString& GetAssetPath() const { return AssetPath; }
+	void SetAssetPath(const FString& InPath) { AssetPath = InPath; }
+private:
+	FString AssetPath;
 };

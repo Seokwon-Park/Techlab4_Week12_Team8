@@ -20,6 +20,10 @@ class UParticleLODLevel : public UObject
 
 public:
 	UParticleLODLevel() = default;
+	virtual ~UParticleLODLevel() override;
+
+	using Super::Serialize;
+	void Serialize(FStructuredArchive::FRecord Record) override;
 
 	/** The index value of the LOD level */
 	int32 Level = 0;
