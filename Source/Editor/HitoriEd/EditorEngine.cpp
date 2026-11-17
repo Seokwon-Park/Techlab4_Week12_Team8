@@ -258,6 +258,10 @@ void UEditorEngine::InitPanels()
 	// StaticMesh / SkeletalMesh Viewer 열기
 	ContentDrawerPanel->SetOpenMeshCallback([this](const FString& Path) { EditorManager->OpenEditor(Path); });
 
+	// Content Browser 툴바의 Import / Save All
+	ContentDrawerPanel->SetImportCallback([](EFbxImportMode Mode) { FEditorFileUtils::ImportFbx(Mode); });
+	ContentDrawerPanel->SetSaveAllCallback([this]() { SaveCurrentScene(); });
+
 	ContentDrawerPanel->SetBlendSpaceCreatedCallback([this](const FString& Path) { EditorManager->OpenEditor(Path); });
     ContentDrawerPanel->SetAnimBlueprintCreatedCallback([this](const FString& Path) { EditorManager->OpenEditor(Path); });
 

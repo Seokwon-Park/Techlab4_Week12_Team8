@@ -47,6 +47,26 @@ enum class EEditorIcon : uint8
 	ViewRight,
 	ViewFront,      // 겹친 두 사각형 중 앞쪽을 채운다
 	ViewBack,       // 겹친 두 사각형 중 뒤쪽을 채운다
+	// Content Browser
+	Plus,
+	Import,
+	ArrowLeft,
+	ArrowRight,
+	ChevronRight,
+	Filter,
+	Sort,
+	Dock,
+	// 에셋 종류
+	Texture,
+	SkeletalMesh,
+	Animation,
+	Particle,
+	Level,
+	Font,
+	Sound,
+	Script,
+	File,
+	Widget,
 
 	Count
 };
@@ -84,7 +104,8 @@ namespace EditorIcons
 	void MenuNote(const char* Text, float WrapWidth = 250.0f);
 
 	// 왼쪽에 돋보기가 있는 검색 칸 (가로를 꽉 채운다). 글자가 바뀌면 true.
-	bool SearchBox(const char* Id, char* Buffer, size_t BufferSize, const char* Hint = "Search...");
+	// Width가 0 이하면 남은 가로를 꽉 채운다.
+	bool SearchBox(const char* Id, char* Buffer, size_t BufferSize, const char* Hint = "Search...", float Width = -FLT_MIN);
 	// 대소문자 구분 없이 Text 안에 Filter가 있으면 true. Filter가 비어 있으면 항상 true.
 	bool MatchesFilter(const char* Text, const char* Filter);
 }
