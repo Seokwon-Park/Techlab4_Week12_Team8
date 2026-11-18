@@ -443,13 +443,41 @@ void FParticleSystemSceneProxy::BuildBeamPoints(const FDynamicBeamEmitterReplayD
 		const float Phase = static_cast<float>(P.Flags & STATE_CounterMask) * 1.37f;   // 빔마다 다른 모양
 		const float Width = std::abs(P.Size.X) * Src.Scale.X;
 
+		// Lightning: 정수 해시로 만든 -1 ~ 1 난수. 같은 (빔, 시간 칸, 마디)면 같은 값 → 한 칸 동안 모양이 고정된다
+		const uint32 BeamSeed = (P.Flags & STATE_CounterMask) * 92821u
+			+ static_cast<uint32>(std::max(0.0f, Src.EmitterTime * std::max(Src.NoiseRefreshRate, 0.0f))) * 68917u;
+		auto Rand11 = [BeamSeed](uint32 Index, uint32 Axis)
+			{
+				uint32 X = BeamSeed ^ (Index * 0x9E3779B1u) ^ (Axis * 0x85EBCA77u);
+				X ^= X >> 16; X *= 0x7FEB352Du; X ^= X >> 15; X *= 0x846CA68Bu; X ^= X >> 16;
+				return static_cast<float>(X & 0xFFFFFFu) / static_cast<float>(0xFFFFFFu) * 2.0f - 1.0f;
+			};
+		// 굵은 꺾임(4마디마다 한 번 뽑아 사이를 잇는다) + 잔떨림(마디마다). 진짜 번개처럼 큰 지그재그 위에 작은 지그재그
+		auto LightningOffset = [&](int32 k, uint32 Axis)
+			{
+				constexpr int32 CoarseEvery = 4;
+				const int32 C0 = k / CoarseEvery;
+				const float F = static_cast<float>(k % CoarseEvery) / CoarseEvery;
+				const float Coarse = Rand11(static_cast<uint32>(C0), Axis) * (1.0f - F) + Rand11(static_cast<uint32>(C0 + 1), Axis) * F;
+				const float Fine = Rand11(static_cast<uint32>(k) + 1000u, Axis) * 0.35f;
+				return Coarse + Fine;
+			};
+
 		const int32 First = TrailPoints.Num();
 		for (int32 k = 0; k <= Segments; ++k)
 		{
 			const float T = static_cast<float>(k) / Segments;                // 0 = 시작점, 1 = 목표점
 			const float Envelope = std::sin(T * Pi);                          // 양 끝은 0 → 시작·목표점은 고정
-			const float W = T * Src.NoiseFrequency * 2.0f * Pi + Src.EmitterTime * Src.NoiseSpeed + Phase;
-			const FVector Noise = (AxisA * std::sin(W) + AxisB * std::cos(W * 1.3f + Phase)) * (Src.NoiseAmplitude * Envelope);
+			FVector Noise;
+			if (Src.NoiseType == 1)                                           // EBeamNoiseType::Lightning
+			{
+				Noise = (AxisA * LightningOffset(k, 0) + AxisB * LightningOffset(k, 1)) * (Src.NoiseAmplitude * Envelope);
+			}
+			else
+			{
+				const float W = T * Src.NoiseFrequency * 2.0f * Pi + Src.EmitterTime * Src.NoiseSpeed + Phase;
+				Noise = (AxisA * std::sin(W) + AxisB * std::cos(W * 1.3f + Phase)) * (Src.NoiseAmplitude * Envelope);
+			}
 
 			FTrailPoint Point;
 			Point.Position = Start + (Target - Start) * T + Noise;

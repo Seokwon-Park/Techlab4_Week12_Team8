@@ -12,6 +12,7 @@
 #include "Particles/ParticleModuleRequired.h"
 #include "Particles/Spawn/ParticleModuleSpawn.h"
 #include "Particles/SubUV/ParticleModuleSubUV.h"
+#include "Particles/Light/ParticleModuleLight.h"
 #include "Particles/TypeData/ParticleModuleTypeDataBase.h"
 #include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
 
@@ -617,6 +618,17 @@ bool FParticleSpriteEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBas
 	Data.RequiredModule = nullptr;  // 컷아웃·SubUV 확장 때 FParticleRequiredModule 사본을 만든다
 	Data.bUseLocalSpace = Required->bUseLocalSpace;
 	Data.SubUVDataOffset = SubUVDataOffset;
+
+	// Light 모듈이 켜져 있으면 그 페이로드 위치를 렌더러에 넘긴다 (Beam·Ribbon도 이 함수를 거친다)
+	Data.LightDataOffset = 0;
+	for (UParticleModule* Module : LOD->Modules)
+	{
+		if (Module && Module->bEnabled && Module->IsA(UParticleModuleLight::StaticClass()))
+		{
+			Data.LightDataOffset = static_cast<int32>(GetModuleDataOffset(Module));
+			break;
+		}
+	}
 	Data.SubImages_Horizontal = 1;
 	Data.SubImages_Vertical = 1;
 	Data.MaxDrawCount = ActiveParticles;
@@ -691,6 +703,8 @@ bool FParticleBeamEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBase&
 	Data.NoiseFrequency = Beam->NoiseFrequency;
 	Data.NoiseSpeed = Beam->NoiseSpeed;
 	Data.TextureTile = Beam->TextureTile;
+	Data.NoiseType = static_cast<uint8>(Beam->NoiseType);
+	Data.NoiseRefreshRate = Beam->NoiseRefreshRate;
 	Data.EmitterTime = SecondsSinceCreation;
 	return true;
 }

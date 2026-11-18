@@ -129,15 +129,11 @@ void FLevelEditorTab::OnRender(bool bActive)
 
 		ImGuiDockNodeFlags Flags = bPassthruCentralNode
 			? ImGuiDockNodeFlags_PassthruCentralNode : ImGuiDockNodeFlags_None;
-		// UE5처럼 탭마다 닫기(X)만 두고, 탭 줄 왼쪽의 창 메뉴(Hide tab bar)와 노드 오른쪽 끝의 닫기는 없앤다.
-		Flags |= ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoCloseButton;
 		if (!bActive)
 			Flags |= ImGuiDockNodeFlags_KeepAliveOnly;
 
-		// 패널 탭 높이를 패널 Begin과 같은 값으로 맞춘다 (EditorPanelUI).
-		EditorPanelUI::PushTabPadding();
-		ImGui::DockSpace(DockSpaceId, ImVec2(0.0f, -StatusBarHeight), Flags);
-		EditorPanelUI::PopTabPadding();
+		// 공용 도킹 플래그(창 메뉴·노드 닫기 없음)와 탭 높이는 EditorPanelUI::DockSpace가 맞춘다.
+		EditorPanelUI::DockSpace(DockSpaceId, ImVec2(0.0f, -StatusBarHeight), Flags);
 	}
 
 	if (bActive)

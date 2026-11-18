@@ -62,6 +62,9 @@ public:
 	virtual void PostEditChangeProperty(const FProperty& Property) override; // Template 변경 시 리셋
 
 	// ── 렌더 경계 ──
+	// Light 모듈이 있는 이미터의 파티클마다 점광원 하나를 OutLights에 더한다 (렌더러 InitViews가 부름).
+	// OutLights가 MaxLights개가 되면 멈춘다
+	void GatherParticleLights(TArray<struct FLightRenderParameters>& OutLights, int32 MaxLights) const;
 	void UpdateDynamicData();                         // 이전 RenderData delete -> 인스턴스마다 GetDynamicData(bSelected)
 	void ClearDynamicData();
 

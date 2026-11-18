@@ -28,7 +28,7 @@ void FSkeletalMeshEditorPanel::OnRender()
 	ImGui::SetNextWindowClass(&WindowClass);
 	ImGui::SetNextWindowSize(ImVec2(480.0f, 320.0f), ImGuiCond_FirstUseEver);
 
-	if (ImGui::Begin(GetWindowName()))
+	if (EditorPanelUI::BeginPanel(GetWindowName(), GetOpenFlag()))
 	{
 		DrawContent();
 	}

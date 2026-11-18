@@ -288,7 +288,7 @@
                             "Object": {
                                 "Properties": {
                                     "Burst0": {
-                                        "Count": 6,
+                                        "Count": 2,
                                         "CountLow": -1,
                                         "Time": 0.0
                                     },
@@ -336,9 +336,9 @@
                                 "Properties": {
                                     "StartSize": {
                                         "Constant": {
-                                            "X": 1.5,
-                                            "Y": 1.5,
-                                            "Z": 1.5
+                                            "X": 2.5,
+                                            "Y": 2.5,
+                                            "Z": 2.5
                                         },
                                         "CurveEnd": {
                                             "X": 0.0,
@@ -498,12 +498,12 @@
                                         "Type": "Constant"
                                     },
                                     "AlphaOverLife": {
-                                        "Constant": 0.6,
+                                        "Type": "ConstantCurve",
+                                        "CurveStart": 1.0,
                                         "CurveEnd": 0.0,
-                                        "CurveStart": 0.6,
-                                        "Max": 0.0,
+                                        "Constant": 1.0,
                                         "Min": 0.0,
-                                        "Type": "ConstantCurve"
+                                        "Max": 0.0
                                     },
                                     "bEnabled": true
                                 }
@@ -519,7 +519,7 @@
                         "Object": {
                             "Properties": {
                                 "Material": null,
-                                "Texture": "WhiteTexture",
+                                "Texture": "Particles/T_SoftGlow.png",
                                 "bAdditive": true,
                                 "SubImagesHorizontal": 1,
                                 "SubImagesVertical": 1,

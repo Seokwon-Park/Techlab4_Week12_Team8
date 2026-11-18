@@ -1,4 +1,5 @@
 #include "EnginePCH.h"
+#include "Editor/Viewports/EditorViewportToolbar.h"
 #include "StaticMeshViewportPanel.h"
 #include "Editor/StaticMeshEditor/StaticMeshEditor.h"
 
@@ -17,17 +18,23 @@ void FStaticMeshViewportPanel::DrawContent()
 	}
 
 	const ImVec2 Origin = ImGui::GetCursorScreenPos();
-
-	// 이미지 영역을 입력 항목으로 등록하여 드래그 중에도 카메라 조작을 유지합니다.
-	ImGui::InvisibleButton("##StaticMeshViewport", Size,
-		ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
+	const ImVec2 ViewMax(Origin.x + Size.x, Origin.y + Size.y);
 	if (FTexture2D* Target = Client->Viewport ? Client->Viewport->GetRenderTargetTexture() : nullptr; Target && Target->GetSRV())
 	{
-		ImGui::GetWindowDrawList()->AddImage(Target->GetSRV(), Origin,
-			ImVec2(Origin.x + Size.x, Origin.y + Size.y));
+		ImGui::GetWindowDrawList()->AddImage(Target->GetSRV(), Origin, ViewMax);
 	}
 
-	const bool bHovered = ImGui::IsItemHovered();
+	// UE5식 뷰포트 툴바(기즈모 도구, 뷰 종류, 카메라, 뷰 모드, 쇼 플래그)와 왼쪽 아래 축 표시.
+	// 입력 영역보다 먼저 그려야 툴바 버튼이 마우스를 먼저 받는다. 툴바 위에서는 뷰포트 입력을 막는다.
+	const bool bToolbarBusy = EditorViewportUI::DrawAssetViewportToolbar(Client, Origin, ViewMax);
+
+	// 이미지 영역을 입력 항목으로 등록하여 드래그 중에도 카메라 조작을 유지한다.
+	ImGui::SetCursorScreenPos(Origin);
+	ImGui::InvisibleButton("##StaticMeshViewport", Size,
+		ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
+
+
+	const bool bHovered = ImGui::IsItemHovered() && !bToolbarBusy;
 	if (bHovered && (ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
 		ImGui::IsMouseClicked(ImGuiMouseButton_Right)))
 	{
@@ -35,6 +42,8 @@ void FStaticMeshViewportPanel::DrawContent()
 	}
 
 	const bool bFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+	if (bFocused && bHovered)
+		EditorViewportUI::HandleViewTypeShortcuts(Client);
 	if (bFocused && bHovered && ImGui::IsKeyPressed(ImGuiKey_F, false))
 	{
 		Editor.FocusMesh();

@@ -44,4 +44,16 @@ namespace EditorPanelUI
 		PopTabPadding();
 		return bVisible;
 	}
+
+	// 모든 에디터 탭(레벨, 에셋 에디터)의 도킹 공간이 같이 쓰는 플래그.
+	// UE5처럼 탭마다 닫기(X)만 두고, 탭 줄 왼쪽의 창 메뉴(Hide Tab Bar)와 노드 오른쪽 끝의 닫기는 없앤다.
+	inline constexpr ImGuiDockNodeFlags DockSpaceFlags = ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoCloseButton;
+
+	// ImGui::DockSpace 대신 쓴다. 공용 플래그를 더하고 탭 높이를 패널 Begin과 맞춘다.
+	inline void DockSpace(ImGuiID Id, const ImVec2& Size, ImGuiDockNodeFlags Flags, const ImGuiWindowClass* WindowClass = nullptr)
+	{
+		PushTabPadding();
+		ImGui::DockSpace(Id, Size, Flags | DockSpaceFlags, WindowClass);
+		PopTabPadding();
+	}
 }

@@ -95,7 +95,7 @@ void FStaticMeshEditorTab::OnRender(bool bActive)
 		const ImGuiDockNodeFlags Flags = bActive ? ImGuiDockNodeFlags_None : ImGuiDockNodeFlags_KeepAliveOnly;
 		if (bActive || ImGui::DockBuilderGetNode(DockSpaceId))
 		{
-			ImGui::DockSpace(DockSpaceId, ImVec2(0.0f, 0.0f), Flags, &WindowClass);
+			EditorPanelUI::DockSpace(DockSpaceId, ImVec2(0.0f, 0.0f), Flags, &WindowClass);
 		}
 	}
 

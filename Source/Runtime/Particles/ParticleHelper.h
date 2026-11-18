@@ -333,6 +333,20 @@ struct FDynamicEmitterReplayDataBase
 	virtual ~FDynamicEmitterReplayDataBase() = default;
 };
 
+/**
+ * Light 모듈이 파티클마다 붙이는 데이터 (UE: FLightParticlePayload).
+ * 렌더러는 ReplayData.LightDataOffset 위치에서 이것을 읽어 점광원을 만든다. 모듈 객체는 렌더러가 보지 않는다.
+ */
+struct FLightParticlePayload
+{
+	FVector ColorScale;        // 빛 색 (bUseParticleColor면 파티클 색을 한 번 더 곱한다)
+	float   Radius;            // 영향 반경 (월드 단위)
+	float   Intensity;         // 이번 프레임 밝기 (BrightnessOverLife까지 반영)
+	float   FalloffExponent;   // 점광원 감쇠 지수
+	uint32  bValid;            // 0이면 이 파티클은 빛을 내지 않는다 (SpawnFraction)
+	uint32  bUseParticleColor; // 1이면 파티클 색·알파로 빛이 함께 깜빡인다
+};
+
 /** Base class for Sprite emitters and other emitter types that share similar features. */
 struct FDynamicSpriteEmitterReplayDataBase
 	: public FDynamicEmitterReplayDataBase
@@ -341,6 +355,7 @@ struct FDynamicSpriteEmitterReplayDataBase
 	struct FParticleRequiredModule	*RequiredModule;	// ParticleModuleRequired.h
 	int32							MaxDrawCount;
 	int32							SubUVDataOffset;
+	int32							LightDataOffset;	// Light 모듈 페이로드 위치 (FLightParticlePayload). 0이면 광원 없음
 	int32							SubImages_Horizontal;
 	int32							SubImages_Vertical;
 	bool						bUseLocalSpace;
@@ -354,6 +369,7 @@ struct FDynamicSpriteEmitterReplayDataBase
 		, RequiredModule(nullptr)
 		, MaxDrawCount(0)
 		, SubUVDataOffset(0)
+		, LightDataOffset(0)
 		, SubImages_Horizontal(1)
 		, SubImages_Vertical(1)
 		, bUseLocalSpace(false)
@@ -535,6 +551,8 @@ struct FDynamicBeamEmitterReplayData : public FDynamicSpriteEmitterReplayDataBas
 	float   NoiseSpeed = 10.0f;                       // 출렁임이 흐르는 속도
 	float   TextureTile = 1.0f;                        // 빔 한 줄에 텍스처 반복 횟수
 	float   EmitterTime = 0.0f;                        // 노이즈 애니메이션 시간
+	uint8   NoiseType = 0;                             // 0: Sine (출렁이는 띠), 1: Lightning (지그재그, 일정 간격으로 모양이 바뀜)
+	float   NoiseRefreshRate = 20.0f;                  // Lightning: 1초에 모양을 몇 번 새로 뽑을지
 };
 
 /** Source data for Ribbon emitters. 파티클 하나 = 띠 위의 점 하나 */

@@ -9,6 +9,8 @@
 #include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
 #include "Particles/ParticleEventManager.h"
 #include "Engine/World.h"
+#include "Engine/SceneManagement.h"
+#include "Components/LightComponentBase.h"
 #include "Asset/AssetManager.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
@@ -609,4 +611,50 @@ void UParticleSystemComponent::ReportEventCollision(
 	Data.Normal = InNormal;
 	Data.Time = InTime;
 	CollisionEvents.Add(Data);
+}
+
+// ───────── 파티클 라이트 (Light 모듈) ─────────
+// 렌더러가 읽는 것은 이번 Tick의 스냅샷(EmitterRenderData)뿐이다. 모듈 객체나 인스턴스는 보지 않는다
+void UParticleSystemComponent::GatherParticleLights(TArray<FLightRenderParameters>& OutLights, int32 MaxLights) const
+{
+	const FMatrix LocalToWorld = GetWorldMatrix();
+	for (const FDynamicEmitterDataBase* Data : EmitterRenderData)
+	{
+		if (!Data || !Data->bValid) continue;
+		const FDynamicEmitterReplayDataBase& Base = Data->GetSource();
+		if (Base.eEmitterType != DET_Sprite && Base.eEmitterType != DET_Beam && Base.eEmitterType != DET_Ribbon) continue;
+
+		const auto& Src = static_cast<const FDynamicSpriteEmitterReplayDataBase&>(Base);
+		if (Src.LightDataOffset <= 0) continue;
+
+		for (int32 i = 0; i < Src.ActiveParticleCount; ++i)
+		{
+			if (static_cast<int32>(OutLights.Num()) >= MaxLights) return;
+
+			const uint8* ParticleBase = Src.DataContainer.ParticleData + Src.ParticleStride * Src.DataContainer.ParticleIndices[i];
+			const FBaseParticle& Particle = *reinterpret_cast<const FBaseParticle*>(ParticleBase);
+			const FLightParticlePayload& Payload = *reinterpret_cast<const FLightParticlePayload*>(ParticleBase + Src.LightDataOffset);
+			if (!Payload.bValid || Payload.Intensity <= 0.0f || Payload.Radius <= 0.0f) continue;
+
+			FVector Color = Payload.ColorScale;
+			if (Payload.bUseParticleColor)
+			{
+				// 알파까지 곱해 ColorOverLife로 사라질 때 빛도 같이 꺼진다
+				const float A = std::clamp(Particle.Color.A, 0.0f, 1.0f);
+				Color = FVector(Color.X * Particle.Color.R * A, Color.Y * Particle.Color.G * A, Color.Z * Particle.Color.B * A);
+			}
+			if (Color.X <= 0.0f && Color.Y <= 0.0f && Color.Z <= 0.0f) continue;
+
+			FLightRenderParameters Light{};
+			Light.Type = static_cast<uint32>(ELightType::Point);
+			Light.Position = Src.bUseLocalSpace ? LocalToWorld.TransformPosition(Particle.Location) : Particle.Location;
+			Light.Radius = Payload.Radius;
+			Light.Color = Color;
+			Light.Intensity = Payload.Intensity;
+			Light.FalloffExponent = Payload.FalloffExponent;
+			Light.SourceSize = 0.0f;
+			Light.ShadowMapChannel = FLightRenderParameters::InvalidShadowMapChannel;
+			OutLights.Add(Light);
+		}
+	}
 }

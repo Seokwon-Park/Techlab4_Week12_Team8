@@ -212,6 +212,23 @@ void FSceneRenderer::InitViews(FRenderer* Renderer)
 		AddVisibleLight(Light);
 	}
 
+	// 파티클 라이트 (Light 모듈). 그림자 없는 점광원이라 레벨 광원처럼 프록시가 없다 → 프록시 자리는 nullptr
+	if (ViewFamily.EngineShowFlags.Particles)
+	{
+		constexpr int32 MaxParticleLights = 128;   // 한 뷰에서 파티클이 만들 수 있는 광원 수 상한
+		TArray<FLightRenderParameters> ParticleLights;
+		for (TObjectIterator<UParticleSystemComponent> PSC; PSC; ++PSC)
+		{
+			if (!PSC || !PSC->IsRegistered() || PSC->GetWorld() != World || !PSC->IsShown(View.bGameView)) continue;
+			PSC->GatherParticleLights(ParticleLights, MaxParticleLights);
+		}
+		for (const FLightRenderParameters& Light : ParticleLights)
+		{
+			RenderData.VisibleLights.Add(Light);
+			RenderData.VisibleLightProxies.Add(nullptr);
+		}
+	}
+
 	RenderData.Commit(bLightUploadSucceeded);
 
 	InitDynamicShadows(Options);

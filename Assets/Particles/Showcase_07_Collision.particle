@@ -31,7 +31,7 @@
                                         "CountLow": -1,
                                         "Time": 0.0
                                     },
-                                    "Rate": 25.0,
+                                    "Rate": 8.0,
                                     "bEnabled": true
                                 }
                             }
@@ -45,9 +45,9 @@
                                         "Constant": 3.0,
                                         "CurveEnd": 0.0,
                                         "CurveStart": 0.0,
-                                        "Max": 0.0,
-                                        "Min": 0.0,
-                                        "Type": "Constant"
+                                        "Max": 6.0,
+                                        "Min": 4.5,
+                                        "Type": "Uniform"
                                     },
                                     "bEnabled": true
                                 }
@@ -117,14 +117,14 @@
                                         },
                                         "LockedAxes": "EDVLF_None",
                                         "Max": {
-                                            "X": 1.2,
-                                            "Y": 1.2,
-                                            "Z": -4.0
+                                            "X": 1.6,
+                                            "Y": 1.6,
+                                            "Z": 2.5
                                         },
                                         "Min": {
-                                            "X": -1.2,
-                                            "Y": -1.2,
-                                            "Z": -6.0
+                                            "X": -1.6,
+                                            "Y": -1.6,
+                                            "Z": -0.5
                                         },
                                         "MirrorX": "EDVMF_Different",
                                         "MirrorY": "EDVMF_Different",
@@ -226,6 +226,67 @@
                             }
                         },
                         {
+                            "Class": "UParticleModuleColorOverLife",
+                            "Curves": {
+                                "AlphaOverLife": [
+                                    {
+                                        "T": 0.0,
+                                        "V": 1.0,
+                                        "Mode": 1,
+                                        "Auto": true,
+                                        "Arrive": 0.0,
+                                        "Leave": 0.0
+                                    },
+                                    {
+                                        "T": 0.8,
+                                        "V": 1.0,
+                                        "Mode": 1,
+                                        "Auto": true,
+                                        "Arrive": 0.0,
+                                        "Leave": 0.0
+                                    },
+                                    {
+                                        "T": 1.0,
+                                        "V": 0.0,
+                                        "Mode": 1,
+                                        "Auto": true,
+                                        "Arrive": 0.0,
+                                        "Leave": 0.0
+                                    }
+                                ]
+                            },
+                            "Object": {
+                                "Properties": {
+                                    "ColorOverLife": {
+                                        "Type": "Constant",
+                                        "Constant": {
+                                            "X": 1.0,
+                                            "Y": 0.9,
+                                            "Z": 0.5
+                                        }
+                                    },
+                                    "AlphaOverLife": {
+                                        "Type": "Curve"
+                                    },
+                                    "bEnabled": true
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleAccelerationConstant",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "Acceleration": {
+                                        "X": 0.0,
+                                        "Y": 0.0,
+                                        "Z": -14.0
+                                    },
+                                    "bEnabled": true
+                                }
+                            }
+                        },
+                        {
                             "Class": "UParticleModuleCollision",
                             "Curves": {},
                             "Object": {
@@ -248,29 +309,29 @@
                                         },
                                         "LockedAxes": "EDVLF_None",
                                         "Max": {
-                                            "X": 0.0,
-                                            "Y": 0.0,
-                                            "Z": 0.0
+                                            "X": 0.9,
+                                            "Y": 0.9,
+                                            "Z": 0.7
                                         },
                                         "Min": {
-                                            "X": 0.0,
-                                            "Y": 0.0,
-                                            "Z": 0.0
+                                            "X": 0.8,
+                                            "Y": 0.8,
+                                            "Z": 0.55
                                         },
                                         "MirrorX": "EDVMF_Different",
                                         "MirrorY": "EDVMF_Different",
                                         "MirrorZ": "EDVMF_Different",
-                                        "Type": "Constant"
+                                        "Type": "Uniform"
                                     },
                                     "MaxCollisions": {
-                                        "Constant": 3.0,
+                                        "Constant": 12.0,
                                         "CurveEnd": 0.0,
                                         "CurveStart": 0.0,
                                         "Max": 0.0,
                                         "Min": 0.0,
                                         "Type": "Constant"
                                     },
-                                    "CollisionCompletionOption": "EPCC_Kill",
+                                    "CollisionCompletionOption": "EPCC_FreezeTranslation",
                                     "DirScalar": 3.5,
                                     "DelayAmount": {
                                         "Constant": 0.0,

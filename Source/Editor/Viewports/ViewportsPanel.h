@@ -82,8 +82,6 @@ private:
 	void DrawViewportToolbar(int32 ViewIndex, FEditorViewportClient* Client, const ImVec2& ViewMin, const ImVec2& ViewMax);
 
 	void DrawStatOverlay(ImDrawList* DrawList, const ImVec2& ViewMin, FEditorViewportClient* Client) const;
-	// 뷰 왼쪽 아래 월드 축 표시 (UE5 뷰포트 좌하단 XYZ). 카메라 회전을 따라 돈다.
-	static void DrawAxisIndicator(ImDrawList* DrawList, const FEditorViewportClient* Client, const ImVec2& ViewMin, const ImVec2& ViewMax);
 	// 칸 사이 경계선을 그리고 끌기를 받는다.
 	void DrawSplitters(ImDrawList* DrawList);
 	// UE5 Layout 메뉴 (One~Four Panes 그림 버튼 + Immersive View / Maximize Viewport)

@@ -1,0 +1,4104 @@
+{
+  "Properties": {},
+  "Version": 1,
+  "Emitters": [
+    {
+      "Properties": {
+        "EmitterName": "Stroke 00"
+      },
+      "LODLevels": [
+        {
+          "Properties": {},
+          "Level": 0,
+          "Enabled": true,
+          "Required": {
+            "Class": "UParticleModuleRequired",
+            "Curves": {},
+            "Object": {
+              "Properties": {
+                "bEnabled": true,
+                "Texture": "Particles/T_LightningBeam.png",
+                "bAdditive": true,
+                "SubImagesHorizontal": 1,
+                "SubImagesVertical": 1,
+                "EmitterDuration": 8.0,
+                "EmitterLoops": 0,
+                "SortMode": 0,
+                "bUseLocalSpace": true
+              }
+            }
+          },
+          "TypeData": {
+            "Class": "UParticleModuleTypeDataRibbon",
+            "Curves": {},
+            "Object": {
+              "Properties": {
+                "bEnabled": true,
+                "TilingDistance": 0.0,
+                "bConnectToSource": false
+              }
+            }
+          },
+          "Modules": [
+            {
+              "Class": "UParticleModuleSpawn",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "Rate": 90.0
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleLifetime",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "Lifetime": {
+                    "Type": "Constant",
+                    "Constant": 7.5
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleLocation",
+              "Curves": {
+                "StartLocation": {
+                  "X": [
+                    {
+                      "T": 0.0,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.3138,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.4165,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.6248,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.7675,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.9046,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.9174,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0087,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0975,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.2601,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.6766,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.6852,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.1209,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.4147,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.4147,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Y": [
+                    {
+                      "T": 0.0,
+                      "V": -4.165,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.3138,
+                      "V": -0.425,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.4165,
+                      "V": -0.459,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.6248,
+                      "V": -2.941,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.7675,
+                      "V": -2.941,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.9046,
+                      "V": -1.785,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.9174,
+                      "V": -1.649,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0087,
+                      "V": -1.649,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0975,
+                      "V": -2.363,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.2601,
+                      "V": -0.425,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.6766,
+                      "V": -0.425,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.6852,
+                      "V": -0.527,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.1209,
+                      "V": -4.199,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.4147,
+                      "V": -4.165,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.4147,
+                      "V": -4.165,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Z": [
+                    {
+                      "T": 0.0,
+                      "V": 7.844,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.3138,
+                      "V": 7.81,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.4165,
+                      "V": 6.586,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.6248,
+                      "V": 6.552,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.7675,
+                      "V": 4.852,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.9046,
+                      "V": 3.696,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.9174,
+                      "V": 3.764,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0087,
+                      "V": 4.852,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0975,
+                      "V": 5.634,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.2601,
+                      "V": 5.634,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.6766,
+                      "V": 0.67,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.6852,
+                      "V": 0.67,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.1209,
+                      "V": 4.342,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.4147,
+                      "V": 7.844,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.4147,
+                      "V": 7.844,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ]
+                }
+              },
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartLocation": {
+                    "Type": "Curve"
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleSize",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartSize": {
+                    "Type": "Constant",
+                    "Constant": {
+                      "X": 0.13,
+                      "Y": 0.13,
+                      "Z": 0.13
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleColor",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartColor": {
+                    "Type": "Constant",
+                    "Constant": {
+                      "X": 1.7,
+                      "Y": 1.25,
+                      "Z": 0.45
+                    }
+                  },
+                  "StartAlpha": {
+                    "Type": "Constant",
+                    "Constant": 1.0
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleColorOverLife",
+              "Curves": {
+                "ColorOverLife": {
+                  "X": [
+                    {
+                      "T": 0.0,
+                      "V": 3.74,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.7,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.7,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Y": [
+                    {
+                      "T": 0.0,
+                      "V": 2.75,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.25,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.25,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Z": [
+                    {
+                      "T": 0.0,
+                      "V": 0.9900000000000001,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 0.45,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 0.45,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ]
+                },
+                "AlphaOverLife": [
+                  {
+                    "T": 0.0,
+                    "V": 1.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  },
+                  {
+                    "T": 0.8,
+                    "V": 1.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  },
+                  {
+                    "T": 1.0,
+                    "V": 0.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  }
+                ]
+              },
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "ColorOverLife": {
+                    "Type": "Curve"
+                  },
+                  "AlphaOverLife": {
+                    "Type": "Curve"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Properties": {
+        "EmitterName": "Stroke 01"
+      },
+      "LODLevels": [
+        {
+          "Properties": {},
+          "Level": 0,
+          "Enabled": true,
+          "Required": {
+            "Class": "UParticleModuleRequired",
+            "Curves": {},
+            "Object": {
+              "Properties": {
+                "bEnabled": true,
+                "Texture": "Particles/T_LightningBeam.png",
+                "bAdditive": true,
+                "SubImagesHorizontal": 1,
+                "SubImagesVertical": 1,
+                "EmitterDuration": 8.0,
+                "EmitterLoops": 0,
+                "SortMode": 0,
+                "bUseLocalSpace": true
+              }
+            }
+          },
+          "TypeData": {
+            "Class": "UParticleModuleTypeDataRibbon",
+            "Curves": {},
+            "Object": {
+              "Properties": {
+                "bEnabled": true,
+                "TilingDistance": 0.0,
+                "bConnectToSource": false
+              }
+            }
+          },
+          "Modules": [
+            {
+              "Class": "UParticleModuleSpawn",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "Rate": 90.0
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleLifetime",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "Lifetime": {
+                    "Type": "Constant",
+                    "Constant": 7.5
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleLocation",
+              "Curves": {
+                "StartLocation": {
+                  "X": [
+                    {
+                      "T": 1.3281,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.6419,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.9329,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.3686,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.3772,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.7937,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.9563,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.9648,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.0455,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1425,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1516,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.2928,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4297,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4377,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6431,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7487,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7487,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Y": [
+                    {
+                      "T": 1.3281,
+                      "V": 0.425,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.6419,
+                      "V": 4.165,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.9329,
+                      "V": 4.165,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.3686,
+                      "V": 0.493,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.3772,
+                      "V": 0.391,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.7937,
+                      "V": 0.391,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.9563,
+                      "V": 2.329,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.9648,
+                      "V": 2.329,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.0455,
+                      "V": 1.649,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1425,
+                      "V": 1.649,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1516,
+                      "V": 1.751,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.2928,
+                      "V": 2.941,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4297,
+                      "V": 2.941,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4377,
+                      "V": 2.873,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6431,
+                      "V": 0.425,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7487,
+                      "V": 0.425,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7487,
+                      "V": 0.425,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Z": [
+                    {
+                      "T": 1.3281,
+                      "V": 7.844,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.6419,
+                      "V": 7.81,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.9329,
+                      "V": 4.342,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.3686,
+                      "V": 0.67,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.3772,
+                      "V": 0.67,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.7937,
+                      "V": 5.634,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.9563,
+                      "V": 5.668,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.9648,
+                      "V": 5.566,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.0455,
+                      "V": 4.886,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1425,
+                      "V": 3.73,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1516,
+                      "V": 3.696,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.2928,
+                      "V": 4.886,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4297,
+                      "V": 6.518,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4377,
+                      "V": 6.586,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6431,
+                      "V": 6.586,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7487,
+                      "V": 7.844,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7487,
+                      "V": 7.844,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ]
+                }
+              },
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartLocation": {
+                    "Type": "Curve"
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleSize",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartSize": {
+                    "Type": "Constant",
+                    "Constant": {
+                      "X": 0.13,
+                      "Y": 0.13,
+                      "Z": 0.13
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleColor",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartColor": {
+                    "Type": "Constant",
+                    "Constant": {
+                      "X": 1.3,
+                      "Y": 1.35,
+                      "Z": 1.5
+                    }
+                  },
+                  "StartAlpha": {
+                    "Type": "Constant",
+                    "Constant": 1.0
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleColorOverLife",
+              "Curves": {
+                "ColorOverLife": {
+                  "X": [
+                    {
+                      "T": 0.0,
+                      "V": 2.8600000000000003,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.3,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.3,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Y": [
+                    {
+                      "T": 0.0,
+                      "V": 2.9700000000000006,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.35,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.35,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Z": [
+                    {
+                      "T": 0.0,
+                      "V": 3.3000000000000003,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.5,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.5,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ]
+                },
+                "AlphaOverLife": [
+                  {
+                    "T": 0.0,
+                    "V": 1.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  },
+                  {
+                    "T": 0.8,
+                    "V": 1.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  },
+                  {
+                    "T": 1.0,
+                    "V": 0.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  }
+                ]
+              },
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "ColorOverLife": {
+                    "Type": "Curve"
+                  },
+                  "AlphaOverLife": {
+                    "Type": "Curve"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Properties": {
+        "EmitterName": "Stroke 02"
+      },
+      "LODLevels": [
+        {
+          "Properties": {},
+          "Level": 0,
+          "Enabled": true,
+          "Required": {
+            "Class": "UParticleModuleRequired",
+            "Curves": {},
+            "Object": {
+              "Properties": {
+                "bEnabled": true,
+                "Texture": "Particles/T_LightningBeam.png",
+                "bAdditive": true,
+                "SubImagesHorizontal": 1,
+                "SubImagesVertical": 1,
+                "EmitterDuration": 8.0,
+                "EmitterLoops": 0,
+                "SortMode": 0,
+                "bUseLocalSpace": true
+              }
+            }
+          },
+          "TypeData": {
+            "Class": "UParticleModuleTypeDataRibbon",
+            "Curves": {},
+            "Object": {
+              "Properties": {
+                "bEnabled": true,
+                "TilingDistance": 0.0,
+                "bConnectToSource": false
+              }
+            }
+          },
+          "Modules": [
+            {
+              "Class": "UParticleModuleSpawn",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "Rate": 90.0
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleLifetime",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "Lifetime": {
+                    "Type": "Constant",
+                    "Constant": 7.5
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleLocation",
+              "Curves": {
+                "StartLocation": {
+                  "X": [
+                    {
+                      "T": 2.6594,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.8083,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.834,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.854,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.9128,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.933,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.0129,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.0209,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.0694,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.0922,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1185,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1328,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1933,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.2761,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4187,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6013,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6013,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Y": [
+                    {
+                      "T": 2.6594,
+                      "V": -4.233,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.8083,
+                      "V": -2.567,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.834,
+                      "V": -2.567,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.854,
+                      "V": -2.805,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.9128,
+                      "V": -3.485,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.933,
+                      "V": -3.723,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.0129,
+                      "V": -3.723,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.0209,
+                      "V": -3.655,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.0694,
+                      "V": -3.077,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.0922,
+                      "V": -3.077,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1185,
+                      "V": -3.281,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1328,
+                      "V": -3.281,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1933,
+                      "V": -2.567,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.2761,
+                      "V": -2.567,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4187,
+                      "V": -4.267,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6013,
+                      "V": -4.233,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6013,
+                      "V": -4.233,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Z": [
+                    {
+                      "T": 2.6594,
+                      "V": 10.598,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.8083,
+                      "V": 9.986,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.834,
+                      "V": 9.68,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.854,
+                      "V": 9.68,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.9128,
+                      "V": 9.85,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 2.933,
+                      "V": 9.816,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.0129,
+                      "V": 8.864,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.0209,
+                      "V": 8.796,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.0694,
+                      "V": 8.796,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.0922,
+                      "V": 9.068,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1185,
+                      "V": 9.306,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1328,
+                      "V": 9.476,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1933,
+                      "V": 9.374,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.2761,
+                      "V": 8.388,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4187,
+                      "V": 8.422,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6013,
+                      "V": 10.598,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6013,
+                      "V": 10.598,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ]
+                }
+              },
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartLocation": {
+                    "Type": "Curve"
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleSize",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartSize": {
+                    "Type": "Constant",
+                    "Constant": {
+                      "X": 0.09,
+                      "Y": 0.09,
+                      "Z": 0.09
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleColor",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartColor": {
+                    "Type": "Constant",
+                    "Constant": {
+                      "X": 1.3,
+                      "Y": 1.35,
+                      "Z": 1.5
+                    }
+                  },
+                  "StartAlpha": {
+                    "Type": "Constant",
+                    "Constant": 1.0
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleColorOverLife",
+              "Curves": {
+                "ColorOverLife": {
+                  "X": [
+                    {
+                      "T": 0.0,
+                      "V": 2.8600000000000003,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.3,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.3,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Y": [
+                    {
+                      "T": 0.0,
+                      "V": 2.9700000000000006,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.35,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.35,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Z": [
+                    {
+                      "T": 0.0,
+                      "V": 3.3000000000000003,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.5,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.5,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ]
+                },
+                "AlphaOverLife": [
+                  {
+                    "T": 0.0,
+                    "V": 1.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  },
+                  {
+                    "T": 0.8,
+                    "V": 1.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  },
+                  {
+                    "T": 1.0,
+                    "V": 0.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  }
+                ]
+              },
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "ColorOverLife": {
+                    "Type": "Curve"
+                  },
+                  "AlphaOverLife": {
+                    "Type": "Curve"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Properties": {
+        "EmitterName": "Stroke 03"
+      },
+      "LODLevels": [
+        {
+          "Properties": {},
+          "Level": 0,
+          "Enabled": true,
+          "Required": {
+            "Class": "UParticleModuleRequired",
+            "Curves": {},
+            "Object": {
+              "Properties": {
+                "bEnabled": true,
+                "Texture": "Particles/T_LightningBeam.png",
+                "bAdditive": true,
+                "SubImagesHorizontal": 1,
+                "SubImagesVertical": 1,
+                "EmitterDuration": 8.0,
+                "EmitterLoops": 0,
+                "SortMode": 0,
+                "bUseLocalSpace": true
+              }
+            }
+          },
+          "TypeData": {
+            "Class": "UParticleModuleTypeDataRibbon",
+            "Curves": {},
+            "Object": {
+              "Properties": {
+                "bEnabled": true,
+                "TilingDistance": 0.0,
+                "bConnectToSource": false
+              }
+            }
+          },
+          "Modules": [
+            {
+              "Class": "UParticleModuleSpawn",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "Rate": 90.0
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleLifetime",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "Lifetime": {
+                    "Type": "Constant",
+                    "Constant": 7.5
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleLocation",
+              "Curves": {
+                "StartLocation": {
+                  "X": [
+                    {
+                      "T": 2.9891,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1211,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1439,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.2323,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.2497,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.3355,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.3613,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4469,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4642,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.547,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.5728,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7069,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.8353,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.8353,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Y": [
+                    {
+                      "T": 2.9891,
+                      "V": -2.125,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1211,
+                      "V": -0.561,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1439,
+                      "V": -0.561,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.2323,
+                      "V": -1.615,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.2497,
+                      "V": -1.581,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.3355,
+                      "V": -0.561,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.3613,
+                      "V": -0.595,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4469,
+                      "V": -1.615,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4642,
+                      "V": -1.581,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.547,
+                      "V": -0.595,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.5728,
+                      "V": -0.561,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7069,
+                      "V": -2.159,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.8353,
+                      "V": -2.125,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.8353,
+                      "V": -2.125,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Z": [
+                    {
+                      "T": 2.9891,
+                      "V": 9.918,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1211,
+                      "V": 9.748,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.1439,
+                      "V": 9.476,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.2323,
+                      "V": 9.476,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.2497,
+                      "V": 9.272,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.3355,
+                      "V": 9.204,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.3613,
+                      "V": 8.898,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4469,
+                      "V": 8.898,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4642,
+                      "V": 8.694,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.547,
+                      "V": 8.694,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.5728,
+                      "V": 8.388,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7069,
+                      "V": 8.388,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.8353,
+                      "V": 9.918,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.8353,
+                      "V": 9.918,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ]
+                }
+              },
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartLocation": {
+                    "Type": "Curve"
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleSize",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartSize": {
+                    "Type": "Constant",
+                    "Constant": {
+                      "X": 0.09,
+                      "Y": 0.09,
+                      "Z": 0.09
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleColor",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartColor": {
+                    "Type": "Constant",
+                    "Constant": {
+                      "X": 1.3,
+                      "Y": 1.35,
+                      "Z": 1.5
+                    }
+                  },
+                  "StartAlpha": {
+                    "Type": "Constant",
+                    "Constant": 1.0
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleColorOverLife",
+              "Curves": {
+                "ColorOverLife": {
+                  "X": [
+                    {
+                      "T": 0.0,
+                      "V": 2.8600000000000003,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.3,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.3,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Y": [
+                    {
+                      "T": 0.0,
+                      "V": 2.9700000000000006,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.35,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.35,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Z": [
+                    {
+                      "T": 0.0,
+                      "V": 3.3000000000000003,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.5,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.5,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ]
+                },
+                "AlphaOverLife": [
+                  {
+                    "T": 0.0,
+                    "V": 1.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  },
+                  {
+                    "T": 0.8,
+                    "V": 1.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  },
+                  {
+                    "T": 1.0,
+                    "V": 0.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  }
+                ]
+              },
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "ColorOverLife": {
+                    "Type": "Curve"
+                  },
+                  "AlphaOverLife": {
+                    "Type": "Curve"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Properties": {
+        "EmitterName": "Stroke 04"
+      },
+      "LODLevels": [
+        {
+          "Properties": {},
+          "Level": 0,
+          "Enabled": true,
+          "Required": {
+            "Class": "UParticleModuleRequired",
+            "Curves": {},
+            "Object": {
+              "Properties": {
+                "bEnabled": true,
+                "Texture": "Particles/T_LightningBeam.png",
+                "bAdditive": true,
+                "SubImagesHorizontal": 1,
+                "SubImagesVertical": 1,
+                "EmitterDuration": 8.0,
+                "EmitterLoops": 0,
+                "SortMode": 0,
+                "bUseLocalSpace": true
+              }
+            }
+          },
+          "TypeData": {
+            "Class": "UParticleModuleTypeDataRibbon",
+            "Curves": {},
+            "Object": {
+              "Properties": {
+                "bEnabled": true,
+                "TilingDistance": 0.0,
+                "bConnectToSource": false
+              }
+            }
+          },
+          "Modules": [
+            {
+              "Class": "UParticleModuleSpawn",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "Rate": 90.0
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleLifetime",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "Lifetime": {
+                    "Type": "Constant",
+                    "Constant": 7.5
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleLocation",
+              "Curves": {
+                "StartLocation": {
+                  "X": [
+                    {
+                      "T": 3.2853,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.3052,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4279,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4536,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.5427,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.597,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6427,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7568,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7883,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.8717,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9288,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9551,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9551,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Y": [
+                    {
+                      "T": 3.2853,
+                      "V": 1.241,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.3052,
+                      "V": 1.479,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4279,
+                      "V": 1.445,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4536,
+                      "V": 1.139,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.5427,
+                      "V": 0.323,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.597,
+                      "V": 0.289,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6427,
+                      "V": -0.255,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7568,
+                      "V": -0.255,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7883,
+                      "V": 0.119,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.8717,
+                      "V": 0.901,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9288,
+                      "V": 0.935,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9551,
+                      "V": 1.241,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9551,
+                      "V": 1.241,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Z": [
+                    {
+                      "T": 3.2853,
+                      "V": 9.85,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.3052,
+                      "V": 9.85,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4279,
+                      "V": 8.388,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.4536,
+                      "V": 8.388,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.5427,
+                      "V": 9.068,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.597,
+                      "V": 8.422,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6427,
+                      "V": 8.388,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7568,
+                      "V": 9.748,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7883,
+                      "V": 9.714,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.8717,
+                      "V": 9.102,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9288,
+                      "V": 9.782,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9551,
+                      "V": 9.85,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9551,
+                      "V": 9.85,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ]
+                }
+              },
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartLocation": {
+                    "Type": "Curve"
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleSize",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartSize": {
+                    "Type": "Constant",
+                    "Constant": {
+                      "X": 0.09,
+                      "Y": 0.09,
+                      "Z": 0.09
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleColor",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartColor": {
+                    "Type": "Constant",
+                    "Constant": {
+                      "X": 1.3,
+                      "Y": 1.35,
+                      "Z": 1.5
+                    }
+                  },
+                  "StartAlpha": {
+                    "Type": "Constant",
+                    "Constant": 1.0
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleColorOverLife",
+              "Curves": {
+                "ColorOverLife": {
+                  "X": [
+                    {
+                      "T": 0.0,
+                      "V": 2.8600000000000003,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.3,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.3,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Y": [
+                    {
+                      "T": 0.0,
+                      "V": 2.9700000000000006,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.35,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.35,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Z": [
+                    {
+                      "T": 0.0,
+                      "V": 3.3000000000000003,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.5,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.5,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ]
+                },
+                "AlphaOverLife": [
+                  {
+                    "T": 0.0,
+                    "V": 1.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  },
+                  {
+                    "T": 0.8,
+                    "V": 1.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  },
+                  {
+                    "T": 1.0,
+                    "V": 0.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  }
+                ]
+              },
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "ColorOverLife": {
+                    "Type": "Curve"
+                  },
+                  "AlphaOverLife": {
+                    "Type": "Curve"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Properties": {
+        "EmitterName": "Stroke 05"
+      },
+      "LODLevels": [
+        {
+          "Properties": {},
+          "Level": 0,
+          "Enabled": true,
+          "Required": {
+            "Class": "UParticleModuleRequired",
+            "Curves": {},
+            "Object": {
+              "Properties": {
+                "bEnabled": true,
+                "Texture": "Particles/T_LightningBeam.png",
+                "bAdditive": true,
+                "SubImagesHorizontal": 1,
+                "SubImagesVertical": 1,
+                "EmitterDuration": 8.0,
+                "EmitterLoops": 0,
+                "SortMode": 0,
+                "bUseLocalSpace": true
+              }
+            }
+          },
+          "TypeData": {
+            "Class": "UParticleModuleTypeDataRibbon",
+            "Curves": {},
+            "Object": {
+              "Properties": {
+                "bEnabled": true,
+                "TilingDistance": 0.0,
+                "bConnectToSource": false
+              }
+            }
+          },
+          "Modules": [
+            {
+              "Class": "UParticleModuleSpawn",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "Rate": 90.0
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleLifetime",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "Lifetime": {
+                    "Type": "Constant",
+                    "Constant": 7.5
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleLocation",
+              "Curves": {
+                "StartLocation": {
+                  "X": [
+                    {
+                      "T": 3.5197,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.5368,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.571,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6053,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6367,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.654,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.654,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Y": [
+                    {
+                      "T": 3.5197,
+                      "V": 1.887,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.5368,
+                      "V": 2.091,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.571,
+                      "V": 2.091,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6053,
+                      "V": 1.683,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6367,
+                      "V": 1.683,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.654,
+                      "V": 1.887,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.654,
+                      "V": 1.887,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Z": [
+                    {
+                      "T": 3.5197,
+                      "V": 8.796,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.5368,
+                      "V": 8.796,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.571,
+                      "V": 8.388,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6053,
+                      "V": 8.388,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.6367,
+                      "V": 8.762,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.654,
+                      "V": 8.796,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.654,
+                      "V": 8.796,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ]
+                }
+              },
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartLocation": {
+                    "Type": "Curve"
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleSize",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartSize": {
+                    "Type": "Constant",
+                    "Constant": {
+                      "X": 0.09,
+                      "Y": 0.09,
+                      "Z": 0.09
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleColor",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartColor": {
+                    "Type": "Constant",
+                    "Constant": {
+                      "X": 1.3,
+                      "Y": 1.35,
+                      "Z": 1.5
+                    }
+                  },
+                  "StartAlpha": {
+                    "Type": "Constant",
+                    "Constant": 1.0
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleColorOverLife",
+              "Curves": {
+                "ColorOverLife": {
+                  "X": [
+                    {
+                      "T": 0.0,
+                      "V": 2.8600000000000003,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.3,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.3,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Y": [
+                    {
+                      "T": 0.0,
+                      "V": 2.9700000000000006,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.35,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.35,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Z": [
+                    {
+                      "T": 0.0,
+                      "V": 3.3000000000000003,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.5,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.5,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ]
+                },
+                "AlphaOverLife": [
+                  {
+                    "T": 0.0,
+                    "V": 1.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  },
+                  {
+                    "T": 0.8,
+                    "V": 1.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  },
+                  {
+                    "T": 1.0,
+                    "V": 0.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  }
+                ]
+              },
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "ColorOverLife": {
+                    "Type": "Curve"
+                  },
+                  "AlphaOverLife": {
+                    "Type": "Curve"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Properties": {
+        "EmitterName": "Stroke 06"
+      },
+      "LODLevels": [
+        {
+          "Properties": {},
+          "Level": 0,
+          "Enabled": true,
+          "Required": {
+            "Class": "UParticleModuleRequired",
+            "Curves": {},
+            "Object": {
+              "Properties": {
+                "bEnabled": true,
+                "Texture": "Particles/T_LightningBeam.png",
+                "bAdditive": true,
+                "SubImagesHorizontal": 1,
+                "SubImagesVertical": 1,
+                "EmitterDuration": 8.0,
+                "EmitterLoops": 0,
+                "SortMode": 0,
+                "bUseLocalSpace": true
+              }
+            }
+          },
+          "TypeData": {
+            "Class": "UParticleModuleTypeDataRibbon",
+            "Curves": {},
+            "Object": {
+              "Properties": {
+                "bEnabled": true,
+                "TilingDistance": 0.0,
+                "bConnectToSource": false
+              }
+            }
+          },
+          "Modules": [
+            {
+              "Class": "UParticleModuleSpawn",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "Rate": 90.0
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleLifetime",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "Lifetime": {
+                    "Type": "Constant",
+                    "Constant": 7.5
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleLocation",
+              "Curves": {
+                "StartLocation": {
+                  "X": [
+                    {
+                      "T": 3.5667,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.5781,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.621,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7033,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.72,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7941,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.8455,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.8742,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9085,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9142,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9786,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 4.087,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 4.2268,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 4.3638,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 4.5,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 4.5,
+                      "V": 0.0,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Y": [
+                    {
+                      "T": 3.5667,
+                      "V": 4.097,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.5781,
+                      "V": 4.233,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.621,
+                      "V": 4.199,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7033,
+                      "V": 3.247,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.72,
+                      "V": 3.077,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7941,
+                      "V": 3.077,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.8455,
+                      "V": 3.689,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.8742,
+                      "V": 3.723,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9085,
+                      "V": 3.451,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9142,
+                      "V": 3.451,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9786,
+                      "V": 4.199,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 4.087,
+                      "V": 4.233,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 4.2268,
+                      "V": 2.567,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 4.3638,
+                      "V": 2.567,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 4.5,
+                      "V": 4.097,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 4.5,
+                      "V": 4.097,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Z": [
+                    {
+                      "T": 3.5667,
+                      "V": 10.564,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.5781,
+                      "V": 10.564,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.621,
+                      "V": 10.054,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7033,
+                      "V": 9.816,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.72,
+                      "V": 9.714,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.7941,
+                      "V": 8.83,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.8455,
+                      "V": 8.83,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.8742,
+                      "V": 9.17,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9085,
+                      "V": 9.476,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9142,
+                      "V": 9.544,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 3.9786,
+                      "V": 9.714,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 4.087,
+                      "V": 8.422,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 4.2268,
+                      "V": 8.388,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 4.3638,
+                      "V": 10.02,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 4.5,
+                      "V": 10.564,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 4.5,
+                      "V": 10.564,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ]
+                }
+              },
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartLocation": {
+                    "Type": "Curve"
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleSize",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartSize": {
+                    "Type": "Constant",
+                    "Constant": {
+                      "X": 0.09,
+                      "Y": 0.09,
+                      "Z": 0.09
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleColor",
+              "Curves": {},
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "StartColor": {
+                    "Type": "Constant",
+                    "Constant": {
+                      "X": 1.3,
+                      "Y": 1.35,
+                      "Z": 1.5
+                    }
+                  },
+                  "StartAlpha": {
+                    "Type": "Constant",
+                    "Constant": 1.0
+                  }
+                }
+              }
+            },
+            {
+              "Class": "UParticleModuleColorOverLife",
+              "Curves": {
+                "ColorOverLife": {
+                  "X": [
+                    {
+                      "T": 0.0,
+                      "V": 2.8600000000000003,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.3,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.3,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Y": [
+                    {
+                      "T": 0.0,
+                      "V": 2.9700000000000006,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.35,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.35,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ],
+                  "Z": [
+                    {
+                      "T": 0.0,
+                      "V": 3.3000000000000003,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 0.06,
+                      "V": 1.5,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    },
+                    {
+                      "T": 1.0,
+                      "V": 1.5,
+                      "Mode": 1,
+                      "Auto": false,
+                      "Arrive": 0.0,
+                      "Leave": 0.0
+                    }
+                  ]
+                },
+                "AlphaOverLife": [
+                  {
+                    "T": 0.0,
+                    "V": 1.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  },
+                  {
+                    "T": 0.8,
+                    "V": 1.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  },
+                  {
+                    "T": 1.0,
+                    "V": 0.0,
+                    "Mode": 1,
+                    "Auto": false,
+                    "Arrive": 0.0,
+                    "Leave": 0.0
+                  }
+                ]
+              },
+              "Object": {
+                "Properties": {
+                  "bEnabled": true,
+                  "ColorOverLife": {
+                    "Type": "Curve"
+                  },
+                  "AlphaOverLife": {
+                    "Type": "Curve"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

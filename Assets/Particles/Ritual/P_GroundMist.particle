@@ -1,0 +1,291 @@
+{
+    "Properties": {},
+    "Version": 1,
+    "Emitters": [
+        {
+            "Properties": {
+                "EmitterName": "Mist"
+            },
+            "LODLevels": [
+                {
+                    "Properties": {},
+                    "Level": 0,
+                    "Enabled": true,
+                    "Required": {
+                        "Class": "UParticleModuleRequired",
+                        "Curves": {},
+                        "Object": {
+                            "Properties": {
+                                "bEnabled": true,
+                                "Texture": "SubUV/CloudAtlas.png",
+                                "bAdditive": false,
+                                "SubImagesHorizontal": 8,
+                                "SubImagesVertical": 8,
+                                "EmitterDuration": 1.0,
+                                "EmitterLoops": 0,
+                                "SortMode": 2,
+                                "bUseLocalSpace": false
+                            }
+                        }
+                    },
+                    "TypeData": {
+                        "Class": ""
+                    },
+                    "Modules": [
+                        {
+                            "Class": "UParticleModuleSpawn",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "bEnabled": true,
+                                    "Rate": 2.2,
+                                    "Burst0": {
+                                        "Count": 0,
+                                        "CountLow": -1,
+                                        "Time": 0.0
+                                    },
+                                    "Burst1": {
+                                        "Count": 0,
+                                        "CountLow": -1,
+                                        "Time": 0.0
+                                    },
+                                    "Burst2": {
+                                        "Count": 0,
+                                        "CountLow": -1,
+                                        "Time": 0.0
+                                    },
+                                    "Burst3": {
+                                        "Count": 0,
+                                        "CountLow": -1,
+                                        "Time": 0.0
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleLifetime",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "bEnabled": true,
+                                    "Lifetime": {
+                                        "Type": "Uniform",
+                                        "Min": 7.0,
+                                        "Max": 10.0
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleLocation",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "bEnabled": true,
+                                    "StartLocation": {
+                                        "Type": "Uniform",
+                                        "Min": {
+                                            "X": -6.0,
+                                            "Y": -6.0,
+                                            "Z": 0.2
+                                        },
+                                        "Max": {
+                                            "X": 6.0,
+                                            "Y": 6.0,
+                                            "Z": 0.6
+                                        },
+                                        "LockedAxes": "EDVLF_None"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleVelocity",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "bEnabled": true,
+                                    "StartVelocity": {
+                                        "Type": "Uniform",
+                                        "Min": {
+                                            "X": -0.25,
+                                            "Y": -0.25,
+                                            "Z": 0.0
+                                        },
+                                        "Max": {
+                                            "X": 0.25,
+                                            "Y": 0.25,
+                                            "Z": 0.08
+                                        },
+                                        "LockedAxes": "EDVLF_None"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleSize",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "bEnabled": true,
+                                    "StartSize": {
+                                        "Type": "Uniform",
+                                        "Min": {
+                                            "X": 4.0,
+                                            "Y": 4.0,
+                                            "Z": 4.0
+                                        },
+                                        "Max": {
+                                            "X": 6.5,
+                                            "Y": 6.5,
+                                            "Z": 6.5
+                                        },
+                                        "LockedAxes": "EDVLF_XYZ"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleSizeByLife",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "bEnabled": true,
+                                    "LifeMultiplier": {
+                                        "Type": "ConstantCurve",
+                                        "CurveStart": {
+                                            "X": 0.8,
+                                            "Y": 0.8,
+                                            "Z": 0.8
+                                        },
+                                        "CurveEnd": {
+                                            "X": 1.4,
+                                            "Y": 1.4,
+                                            "Z": 1.4
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleRotation",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "bEnabled": true,
+                                    "StartRotation": {
+                                        "Type": "Uniform",
+                                        "Min": 0.0,
+                                        "Max": 1.0
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleRotationRate",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "bEnabled": true,
+                                    "StartRotationRate": {
+                                        "Type": "Uniform",
+                                        "Min": -0.03,
+                                        "Max": 0.03
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleColor",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "bEnabled": true,
+                                    "StartColor": {
+                                        "Type": "Constant",
+                                        "Constant": {
+                                            "X": 0.35,
+                                            "Y": 0.45,
+                                            "Z": 0.55
+                                        }
+                                    },
+                                    "StartAlpha": {
+                                        "Type": "Constant",
+                                        "Constant": 0.28
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleColorOverLife",
+                            "Curves": {
+                                "AlphaOverLife": [
+                                    {
+                                        "T": 0.0,
+                                        "V": 0.0,
+                                        "Mode": 2,
+                                        "Auto": true,
+                                        "Arrive": 0.0,
+                                        "Leave": 0.0
+                                    },
+                                    {
+                                        "T": 0.3,
+                                        "V": 0.28,
+                                        "Mode": 2,
+                                        "Auto": true,
+                                        "Arrive": 0.0,
+                                        "Leave": 0.0
+                                    },
+                                    {
+                                        "T": 0.75,
+                                        "V": 0.22400000000000003,
+                                        "Mode": 2,
+                                        "Auto": true,
+                                        "Arrive": 0.0,
+                                        "Leave": 0.0
+                                    },
+                                    {
+                                        "T": 1.0,
+                                        "V": 0.0,
+                                        "Mode": 2,
+                                        "Auto": true,
+                                        "Arrive": 0.0,
+                                        "Leave": 0.0
+                                    }
+                                ]
+                            },
+                            "Object": {
+                                "Properties": {
+                                    "bEnabled": true,
+                                    "ColorOverLife": {
+                                        "Type": "Constant",
+                                        "Constant": {
+                                            "X": 0.35,
+                                            "Y": 0.45,
+                                            "Z": 0.55
+                                        }
+                                    },
+                                    "AlphaOverLife": {
+                                        "Type": "Curve"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleSubUV",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "bEnabled": true,
+                                    "Mode": "Random",
+                                    "FramesPerSecond": 30.0,
+                                    "bRandomStartFrame": false
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
