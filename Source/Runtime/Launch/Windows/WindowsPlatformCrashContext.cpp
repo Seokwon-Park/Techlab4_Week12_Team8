@@ -7,6 +7,7 @@
 #include <csignal>
 #include <cstdint>
 #include <cstdlib>
+#include <crtdbg.h>
 #include <cstring>
 #include <exception>
 #include <process.h>
@@ -30,6 +31,23 @@ namespace
     constexpr DWORD PureCallCode = 0xE0000003;
     constexpr DWORD TerminateCode = 0xE0000004;
     constexpr DWORD AbortCode = 0xE0000005;
+
+    const wchar_t* GetCrashType(DWORD ExceptionCode)
+    {
+        switch (ExceptionCode)
+        {
+        case CrtInvalidParameterCode: return L"CRT 잘못된 인자 전달";
+        case PureCallCode: return L"순수 가상 함수 호출";
+        case TerminateCode: return L"std::terminate 호출";
+        case AbortCode: return L"abort 호출";
+        case EXCEPTION_INT_DIVIDE_BY_ZERO: return L"정수 0 나누기";
+        case EXCEPTION_FLT_DIVIDE_BY_ZERO: return L"부동소수점 0 나누기";
+        case EXCEPTION_ACCESS_VIOLATION: return L"잘못된 메모리 접근";
+        case EXCEPTION_STACK_OVERFLOW: return L"스택 오버플로";
+        case 0xE0000001: return L"테스트 크래시";
+        default: return L"분류되지 않은 예외";
+        }
+    }
 
     bool WriteMinidump(DWORD ExceptionThreadId, EXCEPTION_POINTERS* ExceptionPointers)
     {
@@ -69,11 +87,16 @@ namespace
             return false;
         }
 
-        wchar_t Message[MAX_PATH + 128]{};
+        const wchar_t* CrashType = ExceptionPointers && ExceptionPointers->ExceptionRecord
+            ? GetCrashType(ExceptionPointers->ExceptionRecord->ExceptionCode)
+            : L"분류되지 않은 예외";
+
+        wchar_t Message[MAX_PATH + 256]{};
         const int MessageLength = ::swprintf_s(
             Message,
             _countof(Message),
-            L"Hitori가 예기치 않게 종료됩니다.\n\n덤프 저장 위치:\n%ls",
+            L"Hitori가 예기치 않게 종료됩니다.\n\n오류 유형: %ls\n\n덤프 저장 위치:\n%ls",
+            CrashType,
             DumpPath);
 
         ::MessageBoxW(
@@ -243,6 +266,12 @@ void WindowsPlatformCrashContext::RegisterUnhandledExceptionHandler()
     ::_set_purecall_handler(&OnPureCall);
     std::set_terminate(&OnTerminate);
     std::signal(SIGABRT, &OnAbort);
+
+    // CRT 기본 대화상자보다 엔진의 크래시 안내창으로 바로 진행한다.
+    ::_set_abort_behavior(0, _WRITE_ABORT_MSG);
+#ifdef _DEBUG
+    ::_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_DEBUG);
+#endif
 }
 
 __declspec(noinline) void WindowsPlatformCrashContext::CrashDefault()
