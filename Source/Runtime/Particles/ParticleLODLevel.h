@@ -24,7 +24,10 @@ public:
 	/** The index value of the LOD level */
 	int32 Level = 0;
 
-	/** True if the LOD level is enabled, meaning it should be updated and rendered. */
+	/** 이 LOD를 선택할 최소 카메라 거리 (엔진 월드 단위). LOD0은 0. */
+	float MinDistance = 0.0f;
+
+	/** False면 생성/모듈 실행/렌더링을 생략한다. 기존 파티클의 수명은 계속 흐른다. */
 	uint32 bEnabled:1 = true;
 
 	/** The required module for this LOD level */

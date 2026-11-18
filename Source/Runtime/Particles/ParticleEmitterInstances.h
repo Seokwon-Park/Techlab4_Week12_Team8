@@ -117,6 +117,9 @@ public:
 	// 생성 -> Base 값 복원 -> Update 모듈 -> 위치 적분 -> 수명이 끝난 파티클 Kill
 	virtual void Tick(float DeltaTime, bool bSuppressSpawning);
 
+	// 공통 메모리 배치를 유지하며 현재 모듈/머티리얼/정렬 설정만 전환한다.
+	bool SetLODLevel(int32 LODLevelIndex);
+
 	// 현재 템플릿의 ModuleOffsetMap에서 모듈의 페이로드 offset을 찾는다. 없으면 0
 	uint32 GetModuleDataOffset(UParticleModule* Module);
 

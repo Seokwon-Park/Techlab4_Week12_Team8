@@ -136,16 +136,16 @@ void FParticleEmitterInstance::Init()
 	TypeDataInstanceOffset = -1;
 	SpawnFraction = SecondsSinceCreation = EmitterTime = LastDeltaTime = 0.0f;
 	LoopCount = 0;
-	EmitterDuration = 0.0f; // Required 모듈에 duration 설정이 없으므로 기본은 연속 실행이다.
+	EmitterDuration = 0.0f; // 아래에서 현재 LOD의 Required 설정을 읽는다.
 	bHaltSpawning = bEmitterIsDone = false;
 	Location = Component ? Component->GetWorldLocation() : FVector(0.0f);
 	OldLocation = Location;
 	CurrentMaterial = nullptr;
 	SortMode = PSORTMODE_None;
 	bRequiresSorting = false;
-	CurrentLODLevelIndex = 0; // 페이로드 캐시는 LOD 0의 배치를 사용한다.
+	CurrentLODLevelIndex = 0;
 	CurrentLODLevel = SpriteTemplate ? SpriteTemplate->GetLODLevel(0) : nullptr;
-	bEnabled = CurrentLODLevel && CurrentLODLevel->bEnabled && CurrentLODLevel->RequiredModule;
+	bEnabled = SpriteTemplate && SpriteTemplate->IsLODLevelCompatible(CurrentLODLevel);
 	if (!bEnabled)
 	{
 		return;
@@ -170,6 +170,7 @@ void FParticleEmitterInstance::Init()
 	CurrentMaterial = Required->Material;
 	SortMode = Required->SortMode;
 	bRequiresSorting = SortMode != PSORTMODE_None;
+	EmitterDuration = std::max(0.0f, Required->EmitterDuration);
 
 	if (InstancePayloadSize > 0)
 	{
@@ -231,13 +232,30 @@ bool FParticleEmitterInstance::Resize(int32 NewMaxActiveParticles, bool bSetMaxA
 	return true;
 }
 
+bool FParticleEmitterInstance::SetLODLevel(int32 LODLevelIndex)
+{
+	UParticleLODLevel* LOD = SpriteTemplate ? SpriteTemplate->GetLODLevel(LODLevelIndex) : nullptr;
+	if (!bEnabled || !SpriteTemplate || !SpriteTemplate->IsLODLevelCompatible(LOD))
+	{
+		return false;
+	}
+	CurrentLODLevelIndex = LODLevelIndex;
+	CurrentLODLevel = LOD;
+	CurrentMaterial = LOD->RequiredModule->Material;
+	SortMode = LOD->RequiredModule->SortMode;
+	bRequiresSorting = SortMode != PSORTMODE_None;
+	EmitterDuration = std::max(0.0f, LOD->RequiredModule->EmitterDuration);
+	// 활성 파티클, 방출 시간, 생성량의 소수 부분, 페이로드는 유지한다.
+	return true;
+}
+
 void FParticleEmitterInstance::Tick(float DeltaTime, bool bSuppressSpawning)
 {
 	// 1. 시간과 이미터 위치를 갱신하고 허용된 경우 새 파티클을 생성한다.
 	// 2. Base 값을 복원한 뒤 활성 Update 모듈을 실행하고 이동/회전을 적분한다.
 	// 3. 수명이 끝난 파티클을 제거하고 FinalUpdate 및 완료 판정을 수행한다.
 	LastDeltaTime = 0.0f;
-	if (!bEnabled || !CurrentLODLevel || !CurrentLODLevel->bEnabled ||
+	if (!bEnabled || !CurrentLODLevel ||
 		!CurrentLODLevel->RequiredModule || bEmitterIsDone || !std::isfinite(DeltaTime) || DeltaTime <= 0.0f)
 	{
 		return;
@@ -256,7 +274,8 @@ void FParticleEmitterInstance::Tick(float DeltaTime, bool bSuppressSpawning)
 	{
 		ActiveParticles = 0; // 인덱스의 순열은 그대로 유효하므로 전체를 빈 슬롯으로 재사용한다.
 	}
-	if (!bSuppressSpawning && !bHaltSpawning)
+	const bool bLODEnabled = CurrentLODLevel->bEnabled;
+	if (bLODEnabled && !bSuppressSpawning && !bHaltSpawning)
 	{
 		SpawnFraction = Spawn(DeltaTime);
 	}
@@ -280,13 +299,13 @@ void FParticleEmitterInstance::Tick(float DeltaTime, bool bSuppressSpawning)
 	}
 	for (UParticleModule* Module : CurrentLODLevel->UpdateModules)
 	{
-		if (Module && Module->bEnabled)
+		if (bLODEnabled && Module && Module->bEnabled)
 		{
 			Module->Update(this, GetModuleDataOffset(Module), DeltaTime);
 		}
 	}
 	UParticleModuleTypeDataBase* TypeData = CurrentLODLevel->TypeDataModule;
-	if (TypeData && TypeData->bEnabled && TypeData->bUpdateModule)
+	if (bLODEnabled && TypeData && TypeData->bEnabled && TypeData->bUpdateModule)
 	{
 		TypeData->Update(this, TypeDataOffset, DeltaTime);
 	}
@@ -310,12 +329,12 @@ void FParticleEmitterInstance::Tick(float DeltaTime, bool bSuppressSpawning)
 	KillParticles();
 	for (UParticleModule* Module : CurrentLODLevel->Modules)
 	{
-		if (Module && Module->bEnabled && Module->bFinalUpdateModule)
+		if (bLODEnabled && Module && Module->bEnabled && Module->bFinalUpdateModule)
 		{
 			Module->FinalUpdate(this, GetModuleDataOffset(Module), DeltaTime);
 		}
 	}
-	if (TypeData && TypeData->bEnabled && TypeData->bFinalUpdateModule)
+	if (bLODEnabled && TypeData && TypeData->bEnabled && TypeData->bFinalUpdateModule)
 	{
 		TypeData->FinalUpdate(this, TypeDataOffset, DeltaTime);
 	}

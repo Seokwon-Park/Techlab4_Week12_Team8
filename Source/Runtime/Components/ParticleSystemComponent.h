@@ -33,6 +33,10 @@ public:
 	virtual void Activate(bool bReset = false) override;
 	virtual void Deactivate() override;
 
+	// 각 이미터의 MinDistance에 따라 전환한다. Tick에서는 월드의 활성 카메라를 자동으로 사용한다.
+	// 별도 카메라를 쓰는 호출자는 이 함수로 위치를 직접 전달할 수 있다.
+	void UpdateLODLevel(const FVector& ViewLocation);
+
 	// ── 엔진 훅 (override) ──
 	virtual void BeginPlay() override;                // bAutoActivate면 Activate
 	virtual void TickComponent(float DeltaTime) override;  // 인스턴스 Tick → UpdateDynamicData → 바운드 갱신
@@ -61,5 +65,6 @@ public:
 	////////////////////파티클 테스팅 용 코드(지워도 됨)
 
 private:
+	void UpdateLODLevelFromCamera();
 	void UpdateCompletion();
 };

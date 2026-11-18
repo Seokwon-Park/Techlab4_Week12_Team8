@@ -6,6 +6,10 @@
 #include "Particles/ParticleModuleRequired.h"
 #include "Particles/TypeData/ParticleModuleTypeDataBase.h"
 #include "Asset/AssetManager.h"
+#include "Camera/CameraComponent.h"
+#include "Camera/PlayerCameraManager.h"
+#include "Engine/World.h"
+#include "GameFramework/PlayerController.h"
 #include <algorithm>
 #include <cmath>
 
@@ -77,6 +81,7 @@ void UParticleSystemComponent::SetTemplate(UParticleSystem* NewTemplate)
 void UParticleSystemComponent::InitializeSystem()
 {
 	InitParticles();
+	UpdateLODLevelFromCamera();
 	bWasCompleted = false;
 	if (!Template || EmitterInstances.IsEmpty())
 	{
@@ -112,7 +117,6 @@ void UParticleSystemComponent::InitParticles()
 			}
 			Instance->InitParameters(Emitter, this);
 			Instance->Init();
-			Instance->EmitterDuration = std::max(0.0f, LOD->RequiredModule->EmitterDuration);
 			Instance->bHaltSpawning = !IsActive();
 		}
 		// 템플릿과 같은 인덱스를 유지해 렌더 데이터의 이미터 번호가 바뀌지 않게 한다.
@@ -153,7 +157,7 @@ void UParticleSystemComponent::Activate(bool bReset)
 	bool bHasEnabledEmitter = false;
 	for (FParticleEmitterInstance* Instance : EmitterInstances)
 	{
-		if (Instance && Instance->bEnabled && Instance->CurrentLODLevel && Instance->CurrentLODLevel->bEnabled)
+		if (Instance && Instance->bEnabled && Instance->CurrentLODLevel)
 		{
 			Instance->bHaltSpawning = false;
 			Instance->bEmitterIsDone = false;
@@ -207,6 +211,53 @@ void UParticleSystemComponent::BeginPlay()
 	}
 }
 
+void UParticleSystemComponent::UpdateLODLevel(const FVector& ViewLocation)
+{
+	const float Distance = (ViewLocation - GetWorldLocation()).Size();
+	if (!std::isfinite(Distance))
+	{
+		return;
+	}
+	for (FParticleEmitterInstance* Instance : EmitterInstances)
+	{
+		if (Instance && Instance->bEnabled && Instance->SpriteTemplate)
+		{
+			const int32 LODIndex = Instance->SpriteTemplate->SelectLODLevel(Distance);
+			if (LODIndex >= 0 && LODIndex != Instance->CurrentLODLevelIndex)
+			{
+				Instance->SetLODLevel(LODIndex);
+			}
+		}
+	}
+}
+
+void UParticleSystemComponent::UpdateLODLevelFromCamera()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	if (World->IsGameWorld())
+	{
+		if (APlayerController* Controller = World->GetPlayerController())
+		{
+			APlayerCameraManager* Camera = Controller->GetCameraManager();
+			if (Camera && Camera->HasCameraCache())
+			{
+				UpdateLODLevel(Camera->GetCameraCachePOV().Location);
+				return;
+			}
+		}
+	}
+	// 에디터는 Tick 전에 활성 뷰포트 위치를 MainCamera에 동기화한다.
+	ACameraActor* Camera = World->GetMainCamera();
+	if (Camera && Camera->GetCameraComponent())
+	{
+		UpdateLODLevel(Camera->GetCameraComponent()->GetWorldLocation());
+	}
+}
+
 void UParticleSystemComponent::TickComponent(float DeltaTime)
 {
 	Super::TickComponent(DeltaTime);
@@ -223,6 +274,7 @@ void UParticleSystemComponent::TickComponent(float DeltaTime)
 	{
 		return;
 	}
+	UpdateLODLevelFromCamera();
 
 	for (FParticleEmitterInstance* Instance : EmitterInstances)
 	{
@@ -375,7 +427,8 @@ void UParticleSystemComponent::UpdateCompletion()
 	bWasCompleted = true;
 	for (FParticleEmitterInstance*& Instance : EmitterInstances)
 	{
-		if (!Instance || !Instance->bEnabled || !Instance->CurrentLODLevel || !Instance->CurrentLODLevel->bEnabled)
+		// 거리로 비활성화된 LOD는 완료가 아니다. 가까워지면 다시 선택될 수 있어야 한다.
+		if (!Instance || !Instance->bEnabled || !Instance->CurrentLODLevel)
 		{
 			continue;
 		}
