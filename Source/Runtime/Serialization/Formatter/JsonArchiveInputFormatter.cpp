@@ -5,6 +5,8 @@
 #include "Asset/AssetManager.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/AnimSequenceFile.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemFile.h"
 
 
 FJsonArchiveInputFormatter::FJsonArchiveInputFormatter(FArchive& InInner)
@@ -237,6 +239,15 @@ void FJsonArchiveInputFormatter::Serialize(UObject*& Value)
         {
             HTR_LOG(Warning, "Load: animation '{}' not found, keeping default", AssetPath);
         }
+        return;
+    }
+
+    if (ParticleSystemFile::IsParticleSystemPath(AssetPath))
+    {
+        if (UParticleSystem* System = UAssetManager::LoadParticleSystem(AssetPath))
+            Value = System;
+        else
+            HTR_LOG(Warning, "Load: particle system '{}' not found, keeping default", AssetPath);
         return;
     }
 

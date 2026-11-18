@@ -3,10 +3,12 @@
 #include "Mesh.h"
 #include "Shader.h"
 #include "Material.h"
+#include "Particles/ParticleHelper.h"
 #include <array>
 #include <utility>
 #include <algorithm>
 #include <bit>
+#include <span>
 
 class FPrimitiveSceneProxy;
 inline constexpr uint32 InvalidObjectSlot = ~0u;
@@ -21,10 +23,12 @@ struct FRenderPacket
 	FVertexBuffer* VertexBuffer = nullptr; // dynamic
 	FIndexBuffer* IndexBuffer= nullptr; // dynamic
 	const FStructuredBuffer* BoneBuffer = nullptr; // GPU 스킨
+	std::span<const FMeshParticleInstanceVertex> MeshParticleInstances;
 
 	UMaterial* Material = nullptr;
 	const void* MaterialParamData = nullptr;
 	float CameraToParticleDistance = 0.0f;
+	int16 TranslucencySortPriority = 0;   // 클수록 나중에 그린다
 	uint32 MaterialParamDataSize = 0;
 	uint32 StartIndex = 0;
 	uint32 IndexCount = 0; // 0이면 인덱스 버퍼 전체를 사용한다
@@ -101,6 +105,7 @@ class FRenderQueue : public TArray<FRenderPacket>
 	static constexpr uint32 MatricesPerBlock = 256;
 	using FMatrixBlock = std::array<FMatrix, MatricesPerBlock>;
 	TArray<TUniquePtr<FMatrixBlock>> MatrixBlocks;
+	TArray<TUniquePtr<TArray<FMeshParticleInstanceVertex>>> MeshParticleInstanceArrays;
 	uint32 MatrixCount = 0;
 	uint32 FirstTranslucentIndex = 0;
 
@@ -110,9 +115,9 @@ class FRenderQueue : public TArray<FRenderPacket>
 		if (Packet.Material->PSOType != EPSOType::StaticMesh_Opaque)
 		{
 			const uint64 DistanceBits = static_cast<uint64>(std::bit_cast<uint32>(Packet.CameraToParticleDistance));
-			return (1ull << 63) | (~DistanceBits & 0xFFFFFFFFull);
+			const uint64 PriorityBits = static_cast<uint16>(static_cast<int32>(Packet.TranslucencySortPriority) + 32768);
+			return (1ull << 63) | (PriorityBits << 32) | (~DistanceBits & 0xFFFFFFFFull);
 		}
-
 		const uint64 MeshKey = Packet.Mesh ? Packet.Mesh->SortID : 0xFFFFu;
 		return (static_cast<uint64>(Packet.Material->SortID) << 47)
 			| (static_cast<uint64>(MeshKey) << 31)
@@ -125,6 +130,7 @@ public:
 	FRenderQueue& operator=(const FRenderQueue&) = delete;
 	FRenderQueue(FRenderQueue&& Other) noexcept
 		: FPackets(std::move(Other)), MatrixBlocks(std::move(Other.MatrixBlocks)),
+		  MeshParticleInstanceArrays(std::move(Other.MeshParticleInstanceArrays)),
 		  MatrixCount(std::exchange(Other.MatrixCount, 0)),
 		  FirstTranslucentIndex(std::exchange(Other.FirstTranslucentIndex, 0)) {}
 	FRenderQueue& operator=(FRenderQueue&& Other) noexcept
@@ -133,6 +139,7 @@ public:
 		{
 			FPackets::operator=(std::move(Other));
 			MatrixBlocks = std::move(Other.MatrixBlocks);
+			MeshParticleInstanceArrays = std::move(Other.MeshParticleInstanceArrays);
 			MatrixCount = std::exchange(Other.MatrixCount, 0);
 			FirstTranslucentIndex = std::exchange(Other.FirstTranslucentIndex, 0);
 		}
@@ -147,6 +154,12 @@ public:
 		Stored = World;
 		++MatrixCount;
 		return &Stored;
+	}
+
+	TArray<FMeshParticleInstanceVertex>& AllocateMeshParticleInstances()
+	{
+		MeshParticleInstanceArrays.Add(MakeUnique<TArray<FMeshParticleInstanceVertex>>());
+		return *MeshParticleInstanceArrays.Last();
 	}
 
 	// 렌더 패킷 정렬
@@ -174,10 +187,10 @@ public:
 			SortItems.Add({ MakeSortKey(Packet), Index });
 		}
 
-		std::sort(SortItems.begin(), SortItems.end(), [](const FSortItem& A, const FSortItem& B)
-		{
-			return A.Key < B.Key;
-		});
+		std::stable_sort(SortItems.begin(), SortItems.end(), [](const FSortItem& A, const FSortItem& B)
+			{
+				return A.Key < B.Key;
+			});
 
 		FirstTranslucentIndex = 0;
 		while (FirstTranslucentIndex < static_cast<uint32>(SortItems.Num()) && !(SortItems[FirstTranslucentIndex].Key >> 63))
@@ -200,6 +213,7 @@ public:
 	void Reset()
 	{
 		FPackets::Reset();
+		MeshParticleInstanceArrays.Reset();
 		MatrixCount = 0;
 		FirstTranslucentIndex = 0;
 	}

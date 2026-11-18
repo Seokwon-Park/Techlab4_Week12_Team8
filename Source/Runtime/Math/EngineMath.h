@@ -1,5 +1,6 @@
 #pragma once
 #include <cmath>
+#include <cstdlib>
 #include "Vector.h"
 #include "Vector2.h"
 #include "Vector4.h"
@@ -336,4 +337,25 @@ namespace FMath
 		return fmod(X, Y);
 	}
 
+	inline float FRand() { return static_cast<float>(rand()) / static_cast<float>(RAND_MAX); }
+
+	inline float FRandRange(const float Min, const float Max) { return Min + FRand() * (Max - Min); }
+
+	// [0, A] 범위의 정수. FRand()가 1.0을 낼 수 있어 A - 1로 막는다
+	inline int32 RandHelper(const int32 A)
+	{
+		return A > 0 ? Min(static_cast<int32>(FRand() * static_cast<float>(A)), A - 1) : 0;
+	}
+
+	// [Min, Max] 범위의 정수 (양 끝 포함)
+	inline int32 RandRange(const int32 Min, const int32 Max) { return Min + RandHelper(Max - Min + 1); }
+
+	inline FVector VRandRange(const FVector& Min, const FVector& Max) 
+	{
+		return FVector(
+			FRandRange(Min.X, Max.X),
+			FRandRange(Min.Y, Max.Y),
+			FRandRange(Min.Z, Max.Z)
+		);
+	}
 }

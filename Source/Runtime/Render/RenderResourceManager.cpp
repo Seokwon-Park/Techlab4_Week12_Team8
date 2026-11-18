@@ -49,6 +49,10 @@ constexpr FPipelineTableEntry PipelineTable[] =
 	{ EPSOType::ShadowMaskVisualize, "Resources/Shader/ShadowMaskVisualize.hlsl", EPrimitiveTopology::TriangleList, ERasterizerState::SolidNone, EBlendState::Opaque, EDepthStencilState::Disabled },
 	{ EPSOType::Decal,			"Resources/Shader/DecalShader.hlsl",			EPrimitiveTopology::TriangleList,		ERasterizerState::SolidBack, EBlendState::AlphaBlend, EDepthStencilState::ReadOnly },
 	{ EPSOType::DecalAdditive,	"Resources/Shader/DecalShader.hlsl",			EPrimitiveTopology::TriangleList,		ERasterizerState::SolidBack, EBlendState::Additive, EDepthStencilState::ReadOnly },
+	{ EPSOType::ParticleSprite_AlphaBlend, "Resources/Shader/ParticleSpriteShader.hlsl", EPrimitiveTopology::TriangleList, ERasterizerState::SolidNone, EBlendState::AlphaBlend, EDepthStencilState::ReadOnly },
+	{ EPSOType::ParticleSprite_Additive,   "Resources/Shader/ParticleSpriteShader.hlsl", EPrimitiveTopology::TriangleList, ERasterizerState::SolidNone, EBlendState::Additive,   EDepthStencilState::ReadOnly },
+	{ EPSOType::ParticleTrail_AlphaBlend, "Resources/Shader/ParticleTrailShader.hlsl", EPrimitiveTopology::TriangleList, ERasterizerState::SolidNone, EBlendState::AlphaBlend, EDepthStencilState::ReadOnly },
+	{ EPSOType::ParticleTrail_Additive,   "Resources/Shader/ParticleTrailShader.hlsl", EPrimitiveTopology::TriangleList, ERasterizerState::SolidNone, EBlendState::Additive,   EDepthStencilState::ReadOnly },
 };
 
 static_assert(sizeof(PipelineTable) / sizeof(PipelineTable[0]) == static_cast<size_t>(EPSOType::Count));
@@ -97,7 +101,8 @@ void FRenderResourceManager::InitPipelineStates()
 		PixelShaderMap[Key + "#PS"] = std::move(PS);
 		ShaderProgramMap[Key] = MakeUnique<FShaderProgram>(VSRaw, PSRaw);
 		ShaderProgramMap[Key]->Name = Key;
-		CreateSkinnedVariant(Path, Name, *ShaderProgramMap[Key]);
+		CreateVertexShaderVariant(Path, "GPU_SKIN", Name, *ShaderProgramMap[Key]);
+		CreateVertexShaderVariant(Path, "MESH_PARTICLE_INSTANCING", Name, *ShaderProgramMap[Key]);
 		if (std::strcmp(Name, "VIEW_MODE_WORLD_NORMAL") == 0)
 			PipelineStateMap[EPSOType::StaticMesh_WorldNormal]->Shader = ShaderProgramMap[Key].get();
 	}
@@ -156,7 +161,12 @@ void FRenderResourceManager::ScanShaders(const fs::path& ShaderRoot)
 		if (Source.find("GPU_SKIN_VS_INPUT") != std::string::npos)
 		{
 			if (TUniquePtr<FShaderProgram>* Base = ShaderProgramMap.Find(Path))
-				CreateSkinnedVariant(Path, nullptr, **Base);
+				CreateVertexShaderVariant(Path, "GPU_SKIN", nullptr, **Base);
+		}
+		if (Source.find("MESH_PARTICLE_VS_INPUT") != std::string::npos)
+		{
+			if (TUniquePtr<FShaderProgram>* Base = ShaderProgramMap.Find(Path))
+				CreateVertexShaderVariant(Path, "MESH_PARTICLE_INSTANCING", nullptr, **Base);
 		}
 	}
 }
@@ -185,7 +195,7 @@ FShaderProgram* FRenderResourceManager::GetShaderProgram(const FString& InPath)
 
 
 void FRenderResourceManager::LoadOrCompileShader(const FString& Path)
-{ 
+{
 	FString VSCSOPath;
 	FString PSCSOPath;
 	FShaderByteCode VSCode = RenderUtil::GetOrCompile(Path, "mainVS", EShaderType::Vertex, VSCSOPath);
@@ -219,28 +229,37 @@ void FRenderResourceManager::LoadOrCompileShader(const FString& Path)
 }
 
 // UberLit 조명 변형처럼 매크로로 VS를 컴파일하고 이름으로 등록한다. PS는 기존 것을 함께 쓴다
-void FRenderResourceManager::CreateSkinnedVariant(const FString& Path, const char* LightingMacro, const FShaderProgram& Base)
+void FRenderResourceManager::CreateVertexShaderVariant(const FString& Path, const char* FeatureMacro,
+	const char* LightingMacro, const FShaderProgram& Base)
 {
-	const D3D_SHADER_MACRO SkinOnly[] = { { "GPU_SKIN", "1" }, { nullptr, nullptr } };
-	const D3D_SHADER_MACRO LitSkin[] = { { LightingMacro, "1" }, { "GPU_SKIN", "1" }, { nullptr, nullptr } };
+	const D3D_SHADER_MACRO FeatureOnly[] = { { FeatureMacro, "1" }, { nullptr, nullptr } };
+	const D3D_SHADER_MACRO WithLighting[] = { { LightingMacro, "1" }, { FeatureMacro, "1" }, { nullptr, nullptr } };
 
 	FString CSOPath;
-	FShaderByteCode Code = RenderUtil::GetOrCompile(Path, "mainVS", EShaderType::Vertex, CSOPath, LightingMacro ? LitSkin : SkinOnly);
+	FShaderByteCode Code = RenderUtil::GetOrCompile(Path, "mainVS", EShaderType::Vertex, CSOPath,
+		LightingMacro ? WithLighting : FeatureOnly);
 	if (!Code.IsValid())
 	{
-		HTR_LOG(Error, "[Shader] GPU skin variant compile failed: {}", Base.Name);
+		HTR_LOG(Error, "[Shader] {} variant compile failed: {}", FeatureMacro, Base.Name);
 		return;
 	}
 	TUniquePtr<FVertexShader> VS = RenderCommand::CreateVertexShader(Code);
-	if (!VS || !VS->IsValid())
+	if (!VS || !VS->IsValid() || !VS->GetLayout())
 	{
-		HTR_LOG(Error, "[Shader] GPU skin variant create failed: {}", Base.Name);
+		HTR_LOG(Error, "[Shader] {} variant create failed: {}", FeatureMacro, Base.Name);
 		return;
 	}
 
 	FVertexShader* VSRaw = VS.get();
 	VertexShaderMap[CSOPath] = std::move(VS);
-	const FString Key = Base.Name + "#GPU_SKIN";
+	const FString Key = Base.Name + "#" + FeatureMacro;
 	ShaderProgramMap[Key] = MakeUnique<FShaderProgram>(VSRaw, Base.PixelShader);
 	ShaderProgramMap[Key]->Name = Key;
+}
+
+FShaderProgram* FRenderResourceManager::FindMeshParticleShader(const FShaderProgram& Base)
+{
+	if (auto* Found = Get().ShaderProgramMap.Find(Base.Name + "#MESH_PARTICLE_INSTANCING"))
+		return Found->get();
+	return nullptr;
 }

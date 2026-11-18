@@ -23,6 +23,7 @@ class UStaticMesh;
 class USoundWave;
 class UAnimSequence;
 class UBlendSpace1D;
+class UParticleSystem;
 struct FSkeletalMaterialSlot;
 
 namespace fs = std::filesystem;
@@ -87,6 +88,9 @@ public:
 	static URenderAsset* LoadFbxMesh(const FString& Path, FString& OutError);
 	static UAnimSequence* LoadAnimSequence(const FString& Path);
 	static UBlendSpace1D* LoadBlendSpace(const FString& Path);
+	static UParticleSystem* LoadParticleSystem(const FString& Path);
+	// 로드된 파티클 시스템의 키(Assets 기준 경로). 로드된 적이 없으면 빈 문자열
+	static FString FindParticleSystemPath(const UParticleSystem* System);
 
 	FLODGenerateResult GenerateStaticMeshLODs(UStaticMesh& Mesh,const FLODGenerateRequest& Request);
 
@@ -108,6 +112,7 @@ private:
 	TMap<FString, USoundWave*> SoundMap;
 	TMap<FString, UAnimSequence*> AnimSequenceMap;
 	TMap<FString, UBlendSpace1D*> BlendSpaceMap;
+	TMap<FString, UParticleSystem*> ParticleSystemMap;
 
 	//TMap<FString, UStaticMesh*> MeshMap;	// KEY: FILE NAME OR 쉐입 첫글자 대문자
 	TMap<FString, TUniquePtr<FShader>> ShaderMap;	// KEY: FILE NAME

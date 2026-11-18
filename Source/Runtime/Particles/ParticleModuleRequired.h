@@ -7,7 +7,10 @@
 
 #include "Particles/ParticleModule.h"
 #include "Render/MaterialInterface.h"
+#include "Render/Texture2D.h"
 #include "ParticleModuleRequired.generated.h"
+
+class UMaterial;
 
 enum EParticleSortMode : int
 {
@@ -38,10 +41,23 @@ class UParticleModuleRequired : public UParticleModule
 
 public:
 	UParticleModuleRequired() = default;
+	virtual ~UParticleModuleRequired() override;
 
 	/** The material to utilize for the emitter at this LOD level. */
 	UPROPERTY(EditAnywhere)
 	UMaterialInterface* Material = nullptr;
+
+	UPROPERTY(EditAnywhere)
+	UTexture2D* Texture = nullptr;
+
+	UPROPERTY(EditAnywhere)
+	bool bAdditive = true;
+
+	UPROPERTY(EditAnywhere)
+	int32 SubImagesHorizontal = 1;
+
+	UPROPERTY(EditAnywhere)
+	int32 SubImagesVertical = 1;
 
 	/** If true, update the emitter in local space */
 	UPROPERTY(EditAnywhere)
@@ -50,4 +66,21 @@ public:
 	/** The sorting mode to use for this emitter. EParticleSortMode */
 	UPROPERTY(EditAnywhere)
 	int32 SortMode = PSORTMODE_None;
+
+	// 렌더러가 쓸 머티리얼. Material이 없으면 SubUVMaterial을 복제해 파티클 PSO로 만든다 (저장 안 함)
+	UMaterialInterface* GetRenderMaterial();
+
+	// GetRenderMaterial이 만든 머티리얼을 지운다. UParticleSystem::DestroyModule이 부른다
+	void ReleaseRenderMaterial();
+
+	// 루프 한번의 길이 (초). 0이면 루프하지 않고 EmitterTime이 계속 늘어남.
+	UPROPERTY(EditAnywhere)
+	float EmitterDuration = 1.0f;
+
+	// Emitter를 반복할 횟수. 0이면 무한 반복
+	UPROPERTY(EditAnywhere)
+	int32 EmitterLoops = 0;
+
+private:
+	UMaterial* CachedMaterial = nullptr;
 };

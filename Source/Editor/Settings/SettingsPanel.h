@@ -5,6 +5,7 @@
 #include "Math/Quat.h"
 #include "Math/Vector.h"
 #include "Render/RenderEnums.h"
+#include "Editor/LevelViewportLayout.h"
 
 class UWorld;
 
@@ -45,7 +46,10 @@ struct FEditorSettings
 	int32 GridSpacing = 1;
 	float MultipleViewportsHorizontal = 0.5f;
 	float MultipleViewportsVertical = 0.5f;
-	bool bMultipleViewportsSingle = false;
+	float MultipleViewportsThird0 = 1.0f / 3.0f;   // 세 칸 줄의 경계 (Four Panes 큰 칸 배치)
+	float MultipleViewportsThird1 = 2.0f / 3.0f;
+	EViewportLayout ViewportLayout = EViewportLayout::FourPanes2x2;
+	bool bMultipleViewportsSingle = false;   // 한 칸 최대화 중 (Maximize Viewport)
 	int32 MultipleViewportsSingleViewIndex = 0;
 
     // 미저장 표식은 초기 카메라 값을 유지한다. 위치·회전은 저장하지 않는다.

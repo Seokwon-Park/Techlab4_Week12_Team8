@@ -1,5 +1,6 @@
 #include "EnginePCH.h"
 #include "Editor/EditorUI/ImGuiRenderer.h"
+#include "Editor/EditorUI/EditorIcons.h"
 
 #include "Core/Window.h"
 #include "Input/InputSystem.h"
@@ -23,189 +24,178 @@ namespace
 		return ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam) != 0;
 	}
 
+    // UE5 에디터 구조(어둡고 평평하고 촘촘한 레이아웃) + 분홍 머리 / 파란 눈 / 노란 핀 팔레트.
+    // 포인트 색은 선택/활성 상태에만 쓰고, 평상시 위젯은 자두빛이 살짝 도는 회색으로 둔다.
     void ApplyDefaultStyle()
     {
         ImGuiStyle& style = ImGui::GetStyle();
         ImVec4* colors = style.Colors;
 
-        // Accent
-        const ImVec4 Accent = ImVec4(0.65f, 0.30f, 0.45f, 1.00f);
-        const ImVec4 AccentHover = ImVec4(0.75f, 0.40f, 0.55f, 1.00f);
-        const ImVec4 AccentActive = ImVec4(0.55f, 0.20f, 0.35f, 1.00f);
-
-        // Text
-        colors[ImGuiCol_Text] =
-            ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-        colors[ImGuiCol_TextDisabled] =
-            ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-        colors[ImGuiCol_TextLink] = AccentHover;
-        colors[ImGuiCol_TextSelectedBg] =
-            ImVec4(1.00f, 1.00f, 1.00f, 0.156f);
-
-        // Window Background
-        colors[ImGuiCol_WindowBg] =
-            ImVec4(0.180f, 0.180f, 0.180f, 1.00f);
-        colors[ImGuiCol_ChildBg] =
-            ImVec4(0.280f, 0.280f, 0.280f, 0.00f);
-        colors[ImGuiCol_PopupBg] =
-            ImVec4(0.313f, 0.313f, 0.313f, 1.00f);
-        colors[ImGuiCol_DockingEmptyBg] =
-            colors[ImGuiCol_WindowBg];
-
-        // Borders
-        colors[ImGuiCol_Border] =
-            ImVec4(0.266f, 0.266f, 0.266f, 1.00f);
-        colors[ImGuiCol_BorderShadow] =
-            ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-
-        // Input Frames
-        colors[ImGuiCol_FrameBg] =
-            ImVec4(0.160f, 0.160f, 0.160f, 1.00f);
-        colors[ImGuiCol_FrameBgHovered] =
-            ImVec4(0.200f, 0.200f, 0.200f, 1.00f);
-        colors[ImGuiCol_FrameBgActive] =
-            ImVec4(0.280f, 0.280f, 0.280f, 1.00f);
-        colors[ImGuiCol_InputTextCursor] =
-            ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-
-        // Title & Menu
-        colors[ImGuiCol_TitleBg] =
-            ImVec4(0.148f, 0.148f, 0.148f, 1.00f);
-        colors[ImGuiCol_TitleBgActive] =
-            ImVec4(0.148f, 0.148f, 0.148f, 1.00f);
-        colors[ImGuiCol_TitleBgCollapsed] =
-            ImVec4(0.148f, 0.148f, 0.148f, 1.00f);
-        colors[ImGuiCol_MenuBarBg] =
-            ImVec4(0.195f, 0.195f, 0.195f, 1.00f);
-
-        // Scrollbar
-        colors[ImGuiCol_ScrollbarBg] =
-            ImVec4(0.160f, 0.160f, 0.160f, 1.00f);
-        colors[ImGuiCol_ScrollbarGrab] =
-            ImVec4(0.277f, 0.277f, 0.277f, 1.00f);
-        colors[ImGuiCol_ScrollbarGrabHovered] =
-            ImVec4(0.360f, 0.360f, 0.360f, 1.00f);
-        colors[ImGuiCol_ScrollbarGrabActive] = AccentActive;
-
-        // Checkbox
-        // 선택된 박스는 분홍, 체크 표시는 흰색
-        colors[ImGuiCol_CheckboxSelectedBg] =
-            ImVec4(Accent.x, Accent.y, Accent.z, 0.80f);
-        colors[ImGuiCol_CheckMark] =
-            ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-
-        // Slider
-        colors[ImGuiCol_SliderGrab] =
-            ImVec4(0.391f, 0.391f, 0.391f, 1.00f);
-        colors[ImGuiCol_SliderGrabActive] = AccentHover;
-
-        // Button
-        colors[ImGuiCol_Button] =
-            ImVec4(Accent.x, Accent.y, Accent.z, 0.80f);
-        colors[ImGuiCol_ButtonHovered] = AccentHover;
-        colors[ImGuiCol_ButtonActive] = AccentActive;
-
-        // Header, TreeNode, Selectable
-        colors[ImGuiCol_Header] =
-            ImVec4(0.313f, 0.313f, 0.313f, 1.00f);
-        colors[ImGuiCol_HeaderHovered] =
-            ImVec4(0.400f, 0.400f, 0.400f, 1.00f);
-        colors[ImGuiCol_HeaderActive] =
-            ImVec4(0.469f, 0.469f, 0.469f, 1.00f);
-
-        // Separator
-        colors[ImGuiCol_Separator] = colors[ImGuiCol_Border];
-        colors[ImGuiCol_SeparatorHovered] =
-            ImVec4(0.391f, 0.391f, 0.391f, 1.00f);
-        colors[ImGuiCol_SeparatorActive] = Accent;
-
-        // Resize Grip
-        colors[ImGuiCol_ResizeGrip] =
-            ImVec4(1.00f, 1.00f, 1.00f, 0.25f);
-        colors[ImGuiCol_ResizeGripHovered] =
-            ImVec4(1.00f, 1.00f, 1.00f, 0.67f);
-        colors[ImGuiCol_ResizeGripActive] = Accent;
-
-        // Tabs
-        colors[ImGuiCol_Tab] =
-            ImVec4(0.098f, 0.098f, 0.098f, 1.00f);
-        colors[ImGuiCol_TabHovered] =
-            ImVec4(0.352f, 0.352f, 0.352f, 1.00f);
-        colors[ImGuiCol_TabSelected] =
-            ImVec4(0.250f, 0.250f, 0.250f, 1.00f);
-        colors[ImGuiCol_TabDimmed] =
-            ImVec4(0.098f, 0.098f, 0.098f, 1.00f);
-        colors[ImGuiCol_TabDimmedSelected] =
-            ImVec4(0.195f, 0.195f, 0.195f, 1.00f);
-        colors[ImGuiCol_TabSelectedOverline] = Accent;
-        colors[ImGuiCol_TabDimmedSelectedOverline] =
-            ImVec4(0.40f, 0.30f, 0.35f, 1.00f);
-
-        // Docking
-        colors[ImGuiCol_DockingPreview] =
-            ImVec4(Accent.x, Accent.y, Accent.z, 0.65f);
-
-        // Graphs
-        colors[ImGuiCol_PlotLines] =
-            ImVec4(0.469f, 0.469f, 0.469f, 1.00f);
-        colors[ImGuiCol_PlotLinesHovered] = AccentHover;
-        colors[ImGuiCol_PlotHistogram] =
-            ImVec4(0.586f, 0.586f, 0.586f, 1.00f);
-        colors[ImGuiCol_PlotHistogramHovered] = AccentHover;
-
-        // Tables
-        colors[ImGuiCol_TableHeaderBg] =
-            ImVec4(0.240f, 0.240f, 0.240f, 1.00f);
-        colors[ImGuiCol_TableBorderStrong] =
-            colors[ImGuiCol_Border];
-        colors[ImGuiCol_TableBorderLight] =
-            ImVec4(0.220f, 0.220f, 0.220f, 1.00f);
-        colors[ImGuiCol_TableRowBg] =
-            ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-        colors[ImGuiCol_TableRowBgAlt] =
-            ImVec4(1.00f, 1.00f, 1.00f, 0.03f);
-
-        // Misc
-        colors[ImGuiCol_TreeLines] =
-            colors[ImGuiCol_Border];
-        colors[ImGuiCol_DragDropTarget] = AccentHover;
-        colors[ImGuiCol_DragDropTargetBg] =
-            ImVec4(Accent.x, Accent.y, Accent.z, 0.18f);
-        colors[ImGuiCol_UnsavedMarker] = Accent;
-        colors[ImGuiCol_NavCursor] = Accent;
-        colors[ImGuiCol_NavWindowingHighlight] = Accent;
-        colors[ImGuiCol_NavWindowingDimBg] =
-            ImVec4(0.00f, 0.00f, 0.00f, 0.586f);
-        colors[ImGuiCol_ModalWindowDimBg] =
-            ImVec4(0.00f, 0.00f, 0.00f, 0.586f);
+        auto WithAlpha = [](const ImVec4& C, float A) { return ImVec4(C.x, C.y, C.z, A); };
 
         // ------------------------------------------------
-        // Layout & Spacing
+        // Palette
+        // ------------------------------------------------
+
+        // 배경 단계 (붉은 기가 살짝 도는 다크 그레이)
+        const ImVec4 Bg0   = ImVec4(0.071f, 0.059f, 0.067f, 1.00f); // #120F11 타이틀바, 비활성 탭
+        const ImVec4 Bg1   = ImVec4(0.102f, 0.090f, 0.098f, 1.00f); // #1A1719 창 배경
+        const ImVec4 Bg2   = ImVec4(0.141f, 0.125f, 0.137f, 1.00f); // #242023 팝업, 입력 hover
+        const ImVec4 Bg3   = ImVec4(0.196f, 0.173f, 0.188f, 1.00f); // #322C30 버튼, 테이블 헤더
+        const ImVec4 Bg4   = ImVec4(0.255f, 0.224f, 0.243f, 1.00f); // #41393E hover
+        const ImVec4 Input = ImVec4(0.055f, 0.047f, 0.051f, 1.00f); // #0E0C0D 입력 칸
+        const ImVec4 Line  = ImVec4(0.165f, 0.145f, 0.157f, 1.00f); // #2A2528 테두리/구분선
+
+        // 텍스트 (크림빛 흰색)
+        const ImVec4 Text    = ImVec4(0.949f, 0.925f, 0.933f, 1.00f); // #F2ECEE
+        const ImVec4 TextDim = ImVec4(0.541f, 0.498f, 0.522f, 1.00f); // #8A7F85
+
+        // 분홍 (머리카락) - 주 포인트: 선택/활성
+        const ImVec4 Pink      = ImVec4(0.941f, 0.604f, 0.722f, 1.00f); // #F09AB8
+        const ImVec4 PinkLight = ImVec4(0.969f, 0.737f, 0.816f, 1.00f); // #F7BCD0
+        const ImVec4 PinkDeep  = ImVec4(0.769f, 0.369f, 0.518f, 1.00f); // #C45E84 흰 글자가 올라가는 활성 배경
+        const ImVec4 PinkMuted = ImVec4(0.400f, 0.235f, 0.310f, 1.00f); // #663C4F 선택 행, 카테고리 헤더
+
+        // 파랑 (눈) - 보조 포인트: 도킹/드래그/링크/네비게이션
+        const ImVec4 Blue     = ImVec4(0.298f, 0.706f, 0.918f, 1.00f); // #4CB4EA
+        const ImVec4 BlueDeep = ImVec4(0.165f, 0.525f, 0.784f, 1.00f); // #2A86C8
+
+        // 노랑 (머리핀) - 작은 강조 표시
+        const ImVec4 Yellow = ImVec4(0.949f, 0.824f, 0.294f, 1.00f); // #F2D24B
+
+        // ------------------------------------------------
+        // Colors
+        // ------------------------------------------------
+
+        // Text
+        colors[ImGuiCol_Text]           = Text;
+        colors[ImGuiCol_TextDisabled]   = TextDim;
+        colors[ImGuiCol_TextLink]       = Blue;
+        colors[ImGuiCol_TextSelectedBg] = WithAlpha(BlueDeep, 0.45f);
+
+        // Window Background
+        colors[ImGuiCol_WindowBg]       = Bg1;
+        colors[ImGuiCol_ChildBg]        = WithAlpha(Bg2, 0.00f);
+        colors[ImGuiCol_PopupBg]        = Bg2;
+        colors[ImGuiCol_DockingEmptyBg] = Bg0;
+
+        // Borders
+        colors[ImGuiCol_Border]       = Line;
+        colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+
+        // Input Frames (UE5처럼 패널보다 어둡게 파인 칸)
+        colors[ImGuiCol_FrameBg]         = Input;
+        colors[ImGuiCol_FrameBgHovered]  = Bg2;
+        colors[ImGuiCol_FrameBgActive]   = Bg3;
+        colors[ImGuiCol_InputTextCursor] = Pink;
+
+        // Title & Menu
+        colors[ImGuiCol_TitleBg]          = Bg0;
+        colors[ImGuiCol_TitleBgActive]    = Bg0;
+        colors[ImGuiCol_TitleBgCollapsed] = Bg0;
+        colors[ImGuiCol_MenuBarBg]        = Bg0;
+
+        // Scrollbar
+        colors[ImGuiCol_ScrollbarBg]          = WithAlpha(Bg1, 0.00f);
+        colors[ImGuiCol_ScrollbarGrab]        = Bg3;
+        colors[ImGuiCol_ScrollbarGrabHovered] = Bg4;
+        colors[ImGuiCol_ScrollbarGrabActive]  = PinkDeep;
+
+        // Checkbox
+        colors[ImGuiCol_CheckboxSelectedBg] = PinkDeep;
+        colors[ImGuiCol_CheckMark]          = PinkLight;
+
+        // Slider
+        colors[ImGuiCol_SliderGrab]       = Pink;
+        colors[ImGuiCol_SliderGrabActive] = PinkLight;
+
+        // Button (평상시 무채색, 누를 때만 분홍)
+        colors[ImGuiCol_Button]        = Bg3;
+        colors[ImGuiCol_ButtonHovered] = Bg4;
+        colors[ImGuiCol_ButtonActive]  = PinkDeep;
+
+        // Header, TreeNode, Selectable (선택 행과 CollapsingHeader가 같이 쓴다)
+        colors[ImGuiCol_Header]        = PinkMuted;
+        colors[ImGuiCol_HeaderHovered] = WithAlpha(Pink, 0.22f);
+        colors[ImGuiCol_HeaderActive]  = PinkDeep;
+
+        // Separator
+        colors[ImGuiCol_Separator]        = Line;
+        colors[ImGuiCol_SeparatorHovered] = WithAlpha(Pink, 0.60f);
+        colors[ImGuiCol_SeparatorActive]  = Pink;
+
+        // Resize Grip
+        colors[ImGuiCol_ResizeGrip]        = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+        colors[ImGuiCol_ResizeGripHovered] = WithAlpha(Pink, 0.50f);
+        colors[ImGuiCol_ResizeGripActive]  = Pink;
+
+        // Tabs (선택 탭은 창 배경과 이어지고 위에 분홍 라인)
+        colors[ImGuiCol_Tab]                       = Bg0;
+        colors[ImGuiCol_TabHovered]                = Bg4;
+        colors[ImGuiCol_TabSelected]               = Bg1;
+        colors[ImGuiCol_TabSelectedOverline]       = Pink;
+        colors[ImGuiCol_TabDimmed]                 = Bg0;
+        colors[ImGuiCol_TabDimmedSelected]         = Bg1;
+        colors[ImGuiCol_TabDimmedSelectedOverline] = WithAlpha(Pink, 0.35f);
+
+        // Docking
+        colors[ImGuiCol_DockingPreview] = WithAlpha(Blue, 0.55f);
+
+        // Graphs
+        colors[ImGuiCol_PlotLines]            = Blue;
+        colors[ImGuiCol_PlotLinesHovered]     = Pink;
+        colors[ImGuiCol_PlotHistogram]        = Yellow;
+        colors[ImGuiCol_PlotHistogramHovered] = Pink;
+
+        // Tables
+        colors[ImGuiCol_TableHeaderBg]     = Bg3;
+        colors[ImGuiCol_TableBorderStrong] = Line;
+        colors[ImGuiCol_TableBorderLight]  = WithAlpha(Line, 0.60f);
+        colors[ImGuiCol_TableRowBg]        = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+        colors[ImGuiCol_TableRowBgAlt]     = ImVec4(1.00f, 1.00f, 1.00f, 0.025f);
+
+        // Misc
+        colors[ImGuiCol_TreeLines]             = Line;
+        colors[ImGuiCol_DragDropTarget]        = Blue;
+        colors[ImGuiCol_DragDropTargetBg]      = WithAlpha(Blue, 0.15f);
+        colors[ImGuiCol_UnsavedMarker]         = Yellow;
+        colors[ImGuiCol_NavCursor]             = Blue;
+        colors[ImGuiCol_NavWindowingHighlight] = Blue;
+        colors[ImGuiCol_NavWindowingDimBg]     = ImVec4(0.00f, 0.00f, 0.00f, 0.60f);
+        colors[ImGuiCol_ModalWindowDimBg]      = ImVec4(0.00f, 0.00f, 0.00f, 0.60f);
+
+        // ------------------------------------------------
+        // Layout & Spacing (UE5처럼 촘촘하게)
         // ------------------------------------------------
 
         // Padding
-        style.WindowPadding = ImVec2(10.0f, 10.0f);
-        style.FramePadding = ImVec2(8.0f, 4.0f);
-        style.ItemSpacing = ImVec2(8.0f, 6.0f);
-        style.ItemInnerSpacing = ImVec2(6.0f, 4.0f);
-        style.CellPadding = ImVec2(6.0f, 4.0f);
-        style.IndentSpacing = 18.0f;
+        style.WindowPadding    = ImVec2(8.0f, 8.0f);
+        style.FramePadding     = ImVec2(6.0f, 3.0f);
+        style.ItemSpacing      = ImVec2(6.0f, 4.0f);
+        style.ItemInnerSpacing = ImVec2(4.0f, 4.0f);
+        style.CellPadding      = ImVec2(4.0f, 2.0f);
+        style.IndentSpacing    = 14.0f;
 
         // Widget Sizes
-        style.GrabMinSize = 10.0f;
-        style.ScrollbarSize = 14.0f;
+        style.GrabMinSize   = 8.0f;
+        style.ScrollbarSize = 10.0f;
 
-        // Rounding
-        style.WindowRounding = 4.0f;
-        style.ChildRounding = 4.0f;
-        style.FrameRounding = 3.0f;
-        style.PopupRounding = 4.0f;
-        style.ScrollbarRounding = 7.0f;
-        style.TabRounding = 3.0f;
+        // Rounding (거의 각지게)
+        style.WindowRounding    = 0.0f;
+        style.ChildRounding     = 0.0f;
+        style.FrameRounding     = 2.0f;
+        style.PopupRounding     = 2.0f;
+        style.GrabRounding      = 2.0f;
+        style.ScrollbarRounding = 2.0f;
+        style.TabRounding       = 2.0f;
 
-        // Borders
-        style.FrameBorderSize = 1.0f;
-        style.TabBorderSize = 1.0f;
+        // Borders (입력 칸/탭 테두리 없음, 창/팝업만 얇게)
+        style.WindowBorderSize   = 1.0f;
+        style.ChildBorderSize    = 1.0f;
+        style.PopupBorderSize    = 1.0f;
+        style.FrameBorderSize    = 0.0f;
+        style.TabBorderSize      = 0.0f;
+        style.TabBarOverlineSize = 2.0f;
 
         // Minimum Window Size
         style.WindowMinSize = ImVec2(160.0f, 100.0f);
@@ -230,6 +220,7 @@ bool FImGuiRenderer::Init(HWND WindowHandle, ID3D11Device* Device, ID3D11DeviceC
 
 	ImGui_ImplWin32_Init(WindowHandle);
 	ImGui_ImplDX11_Init(Device, DeviceContext);
+	EditorIcons::Initialize(Device, DeviceContext);
 
 	// 분리된 ImGui 창의 스왑체인을 메인 창(FSwapchain)과 같은 플립 모델로 맞춘다.
 	// 백엔드 기본값(DISCARD, 버퍼 1개)을 플립 모델 메인 창과 섞어 Present하면 Present가 끝나지 않고 에디터가 멈췄다.
@@ -367,6 +358,7 @@ void FImGuiRenderer::Shutdown()
 	ShadowPreviewSampler.Reset();
 	ShadowPreviewCB.Reset();
 	ShadowPreviewPS.Reset();
+	EditorIcons::Shutdown();
 	ImGui_ImplDX11_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 }

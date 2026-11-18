@@ -56,10 +56,13 @@ private:
 	void EnsurePerObjectSlotCapacity(uint32 SlotCount);
 	void BindBatch(const FMeshDrawBatch& Batch);
 	void BindObject(const FMeshDrawBatch& Batch, const FMeshDrawBatch::FItem& Item);
+	bool UploadMeshParticleInstances(std::span<const FMeshParticleInstanceVertex> Instances);
+	void DrawMeshParticleFallback(const FMeshDrawBatch& Batch);
 	TUniquePtr<FConstantBuffer> ObjectCB;
 	TUniquePtr<FConstantBuffer> ViewCB;
 	TUniquePtr<FConstantBuffer> MaterialCB;
 	TUniquePtr<FConstantBuffer> PerObjectSlotCB;
+	TUniquePtr<FVertexBuffer> MeshParticleInstanceBuffer;
 	TUniquePtr<FConstantBuffer> ToneMapConstants;
 	TUniquePtr<FConstantBuffer> DecalConstants;
 	uint32 PerObjectSlotCapacity = 0;

@@ -1,0 +1,339 @@
+{
+    "Emitters": [
+        {
+            "LODLevels": [
+                {
+                    "Enabled": true,
+                    "Level": 0,
+                    "Modules": [
+                        {
+                            "Class": "UParticleModuleSpawn",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "Burst0": {
+                                        "Count": 0,
+                                        "CountLow": -1,
+                                        "Time": 0.0
+                                    },
+                                    "Burst1": {
+                                        "Count": 0,
+                                        "CountLow": -1,
+                                        "Time": 0.0
+                                    },
+                                    "Burst2": {
+                                        "Count": 0,
+                                        "CountLow": -1,
+                                        "Time": 0.0
+                                    },
+                                    "Burst3": {
+                                        "Count": 0,
+                                        "CountLow": -1,
+                                        "Time": 0.0
+                                    },
+                                    "Rate": 20.0,
+                                    "bEnabled": true
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleLifetime",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "Lifetime": {
+                                        "Constant": 1.0,
+                                        "CurveEnd": 0.0,
+                                        "CurveStart": 0.0,
+                                        "Max": 1.100000023841858,
+                                        "Min": 1.2000000476837158,
+                                        "Type": "Constant"
+                                    },
+                                    "bEnabled": true
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleSize",
+                            "Curves": {
+                                "StartSize": {
+                                    "X": [
+                                        {
+                                            "Arrive": 0.0,
+                                            "Auto": true,
+                                            "Leave": 0.0,
+                                            "Mode": 2,
+                                            "T": 0.898625373840332,
+                                            "V": 0.7874777317047119
+                                        },
+                                        {
+                                            "Arrive": 0.0,
+                                            "Auto": true,
+                                            "Leave": 0.0,
+                                            "Mode": 2,
+                                            "T": 1.7729763984680176,
+                                            "V": 1.067652702331543
+                                        }
+                                    ],
+                                    "Y": [
+                                        {
+                                            "Arrive": 0.0,
+                                            "Auto": true,
+                                            "Leave": 0.0,
+                                            "Mode": 2,
+                                            "T": 0.1237945556640625,
+                                            "V": 0.712470293045044
+                                        },
+                                        {
+                                            "Arrive": 0.0,
+                                            "Auto": true,
+                                            "Leave": 0.0,
+                                            "Mode": 2,
+                                            "T": 1.524177074432373,
+                                            "V": 1.1536905765533447
+                                        }
+                                    ],
+                                    "Z": [
+                                        {
+                                            "Arrive": 0.0,
+                                            "Auto": true,
+                                            "Leave": 0.0,
+                                            "Mode": 2,
+                                            "T": 0.061959270387887955,
+                                            "V": 0.43376627564430237
+                                        },
+                                        {
+                                            "Arrive": 0.0,
+                                            "Auto": true,
+                                            "Leave": 0.0,
+                                            "Mode": 2,
+                                            "T": 1.2611613273620605,
+                                            "V": 1.2154614925384521
+                                        }
+                                    ]
+                                }
+                            },
+                            "Object": {
+                                "Properties": {
+                                    "StartSize": {
+                                        "Constant": {
+                                            "X": 1.0,
+                                            "Y": 1.0,
+                                            "Z": 1.0
+                                        },
+                                        "CurveEnd": {
+                                            "X": 2.0,
+                                            "Y": 2.0,
+                                            "Z": 2.0
+                                        },
+                                        "CurveStart": {
+                                            "X": 1.0,
+                                            "Y": 1.0,
+                                            "Z": 1.0
+                                        },
+                                        "LockedAxes": "EDVLF_None",
+                                        "Max": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "Min": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "MirrorX": "EDVMF_Different",
+                                        "MirrorY": "EDVMF_Different",
+                                        "MirrorZ": "EDVMF_Different",
+                                        "Type": "Curve"
+                                    },
+                                    "bEnabled": true
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleVelocity",
+                            "Curves": {
+                                "StartVelocity": {
+                                    "X": [
+                                        {
+                                            "Arrive": 0.0,
+                                            "Auto": true,
+                                            "Leave": 0.0,
+                                            "Mode": 2,
+                                            "T": -0.00022624805569648743,
+                                            "V": -0.01967206597328186
+                                        }
+                                    ],
+                                    "Y": [
+                                        {
+                                            "Arrive": 0.0,
+                                            "Auto": true,
+                                            "Leave": 0.0,
+                                            "Mode": 2,
+                                            "T": 0.0005691945552825928,
+                                            "V": -0.019672095775604248
+                                        }
+                                    ],
+                                    "Z": [
+                                        {
+                                            "Arrive": 0.0,
+                                            "Auto": true,
+                                            "Leave": 0.0,
+                                            "Mode": 2,
+                                            "T": 0.0005094483494758606,
+                                            "V": 0.2601134777069092
+                                        },
+                                        {
+                                            "Arrive": 0.0,
+                                            "Auto": false,
+                                            "Leave": 0.0,
+                                            "Mode": 2,
+                                            "T": 0.4882776141166687,
+                                            "V": 1.4495446681976318
+                                        }
+                                    ]
+                                }
+                            },
+                            "Object": {
+                                "Properties": {
+                                    "StartVelocity": {
+                                        "Constant": {
+                                            "X": 3.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "CurveEnd": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "CurveStart": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "LockedAxes": "EDVLF_None",
+                                        "Max": {
+                                            "X": 1.0,
+                                            "Y": 1.0,
+                                            "Z": 1.0
+                                        },
+                                        "Min": {
+                                            "X": -1.0,
+                                            "Y": -1.0,
+                                            "Z": -1.0
+                                        },
+                                        "MirrorX": "EDVMF_Different",
+                                        "MirrorY": "EDVMF_Different",
+                                        "MirrorZ": "EDVMF_Different",
+                                        "Type": "Uniform"
+                                    },
+                                    "bEnabled": true
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleColor",
+                            "Curves": {
+                                "StartColor": {}
+                            },
+                            "Object": {
+                                "Properties": {
+                                    "StartAlpha": {
+                                        "Constant": 1.0,
+                                        "CurveEnd": 0.0,
+                                        "CurveStart": 0.0,
+                                        "Max": 0.0,
+                                        "Min": 0.0,
+                                        "Type": "Constant"
+                                    },
+                                    "StartColor": {
+                                        "Constant": {
+                                            "X": 1.0,
+                                            "Y": 1.0,
+                                            "Z": 1.0
+                                        },
+                                        "CurveEnd": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "CurveStart": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "LockedAxes": "EDVLF_None",
+                                        "Max": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "Min": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "MirrorX": "EDVMF_Different",
+                                        "MirrorY": "EDVMF_Different",
+                                        "MirrorZ": "EDVMF_Different",
+                                        "Type": "Constant"
+                                    },
+                                    "bEnabled": true
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleSubUV",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "FramesPerSecond": 60.0,
+                                    "Mode": "FrameRate",
+                                    "bEnabled": true,
+                                    "bRandomStartFrame": false
+                                }
+                            }
+                        }
+                    ],
+                    "Properties": {},
+                    "Required": {
+                        "Class": "UParticleModuleRequired",
+                        "Curves": {},
+                        "Object": {
+                            "Properties": {
+                                "EmitterDuration": 1.0,
+                                "EmitterLoops": 0,
+                                "Material": null,
+                                "SortMode": 0,
+                                "SubImagesHorizontal": 8,
+                                "SubImagesVertical": 8,
+                                "Texture": "WhiteTexture",
+                                "bAdditive": true,
+                                "bEnabled": true,
+                                "bUseLocalSpace": false
+                            }
+                        }
+                    },
+                    "TypeData": {
+                        "Class": "UParticleModuleTypeDataRibbon",
+                        "Curves": {},
+                        "Object": {
+                            "Properties": {
+                                "TilingDistance": 1.0,
+                                "bConnectToSource": true,
+                                "bEnabled": true
+                            }
+                        }
+                    }
+                }
+            ],
+            "Properties": {
+                "EmitterName": "Particle Emitter"
+            }
+        }
+    ],
+    "Properties": {},
+    "Version": 1
+}

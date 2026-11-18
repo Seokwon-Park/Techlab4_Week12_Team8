@@ -77,6 +77,8 @@ protected:
 	FPreviewScene PreviewScene;
 
 	TUniquePtr<FEditorViewportClient> ViewportClient;
+	// 미리보기 화면의 뷰포트. 그릴 대상(텍스처)과 크기를 갖고, 그리는 일은 위의 클라이언트에게 맡긴다.
+	TUniquePtr<FViewport> Viewport;
 
 private:
 	FString AssetPath;

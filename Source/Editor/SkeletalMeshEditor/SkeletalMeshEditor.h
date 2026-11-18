@@ -2,6 +2,7 @@
 
 #include "Editor/SkeletalPreviewEditor/SkeletalPreviewEditor.h"
 #include "Editor/Gizmo/Gizmo.h"
+#include "Editor/EditorModeManager.h"
 #include "Editor/Viewports/EditorViewportClient.h"
 
 
@@ -24,10 +25,10 @@ public:
 	void ResetPose();
 	void ResetBone(int32 BoneIndex);
 
-	void SetGizmoMode(EGizmoMode Mode);
-	void SetGizmoSpace(EGizmoSpace Space);
-	EGizmoMode  GetGizmoMode() const { return BoneGizmo.GetMode(); }
-	EGizmoSpace GetGizmoSpace() const { return BoneGizmo.GetSpace(); }
+	void SetGizmoMode(UE::Widget::EWidgetMode Mode);
+	void SetGizmoSpace(ECoordSystem Space);
+	UE::Widget::EWidgetMode  GetGizmoMode() const { return ModeTools.GetWidgetMode(); }
+	ECoordSystem GetGizmoSpace() const { return ModeTools.GetCoordSystem(); }
 	bool IsGizmoDragging() const { return BoneGizmo.IsUsing(); }
 
 protected:
@@ -48,7 +49,9 @@ private:
 	FQuat GetBoneWorldRotation(int32 BoneIndex) const;
 
 	USceneComponent* BoneGizmoTarget = nullptr;
-	FGizmo BoneGizmo;
+	// 이 에디터의 편집 모드와 좌표계. 에셋 에디터는 레벨 에디터와 따로 하나씩 갖는다. BoneGizmo보다 먼저 선언해야 한다.
+	FEditorModeTools ModeTools;
+	FGizmo BoneGizmo{ &ModeTools };
 	FTransform DragStartBoneTransform;
 	FMatrix DragParentInverse;
 	FQuat DragParentRotation;

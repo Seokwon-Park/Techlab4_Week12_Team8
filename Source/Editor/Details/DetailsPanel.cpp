@@ -32,6 +32,8 @@
 
 #include "Asset/AssetManager.h"
 #include "Asset/AssetUtils.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemFile.h"
 #include "Render/Material.h"
 #include "Render/Texture2D.h"
 #include "Render/SkeletalMesh.h"
@@ -41,7 +43,9 @@
 #include "Core/EngineLog.h"
 
 #include "Editor/HitoriEd/EditorFileUtils.h"
+#include "Editor/EditorUI/EditorIcons.h"
 #include "Script/LuaScriptManager.h"
+#include <unordered_map>
 
 
 namespace
@@ -119,87 +123,103 @@ namespace
 		}
 	}
 
-	bool DrawAxisControl(const FString& _label, float& _value, float _speed, float _minValue, float _maxValue, float _resetValue, FVector4 _color)
+	// UE5 Details의 축 색 (X 빨강, Y 초록, Z 파랑, W 회색)
+	ImU32 AxisColor(int32 Axis)
 	{
-		bool isValueChanged = false;
-
-		float lineHeight = GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
-		ImVec4 color(_color.X, _color.Y, _color.Z, _color.W);
-		ImVec2 buttonSize = { lineHeight + 2.0f , lineHeight };
-
-		// 각 버튼의 색상 설정
-		ImGui::PushStyleColor(ImGuiCol_Button, color);
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ color.x + 0.1f, color.y + 0.1f, color.z + 0.1f, 1.0f });
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ color.x - 0.1f, color.y - 0.1f, color.z - 0.1f, 1.0f });
-
-		// 굵은 폰트 적용
-		if (ImGui::Button(_label.c_str(), buttonSize))
+		switch (Axis)
 		{
-			_value = _resetValue;
-			isValueChanged = true;
+		case 0:  return IM_COL32(219, 66, 66, 255);
+		case 1:  return IM_COL32(115, 191, 64, 255);
+		case 2:  return IM_COL32(64, 128, 230, 255);
+		default: return IM_COL32(150, 150, 150, 255);
 		}
-		ImGui::PopStyleColor(3);
-
-		// 드래그 슬라이더
-		ImGui::SameLine();
-		std::string dragID = "##" + _label;
-		isValueChanged |= ImGui::DragFloat(dragID.c_str(), &_value, _speed, _minValue, _maxValue, "%.2f");
-
-		return isValueChanged;
-
 	}
 
+	// 검색 칸에 쓴 글자. 비어 있지 않으면 이름에 이 글자가 들어간 프로퍼티만 그린다.
+	// DrawProperties를 부르는 동안에만 FDetailsPanel::OnRender가 정한다.
+	const char* GPropertyFilter = nullptr;
+
+	// UE5 Details 카테고리 머리줄. 선택 색(분홍)과 구분되게 회색으로 칠한다.
+	bool CategoryHeader(const char* Label, ImGuiTreeNodeFlags Flags = ImGuiTreeNodeFlags_DefaultOpen)
+	{
+		ImGui::PushStyleColor(ImGuiCol_Header, ImGui::GetStyleColorVec4(ImGuiCol_TableHeaderBg));
+		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImGui::GetStyleColorVec4(ImGuiCol_ButtonHovered));
+		ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImGui::GetStyleColorVec4(ImGuiCol_ButtonHovered));
+		const bool bOpen = ImGui::CollapsingHeader(Label, Flags);
+		ImGui::PopStyleColor(3);
+		return bOpen;
+	}
+
+	// 입력 칸 Count개를 한 줄에 나눠 그리고, 각 칸 왼쪽에 축 색 막대를 붙인다 (UE5 벡터 입력).
+	// 전체 폭은 SetNextItemWidth로 정한 값(없으면 기본 아이템 폭)을 따른다.
+	bool DrawAxisFields(const char* Id, float* Values, int32 Count, float Speed, float Min, float Max, const char* Format = "%.3f")
+	{
+		const float S = EditorIcons::GetScale();
+		const float Spacing = 4.0f * S;
+		const float BarWidth = 3.0f * S;
+		const float TotalWidth = ImGui::CalcItemWidth();
+		const float FieldWidth = ImMax(1.0f, (TotalWidth - Spacing * (Count - 1)) / Count);
+		const ImGuiStyle& Style = ImGui::GetStyle();
+
+		bool bChanged = false;
+		ImGui::PushID(Id);
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(Spacing, Style.ItemSpacing.y));
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(Style.FramePadding.x + BarWidth, Style.FramePadding.y));
+		for (int32 Axis = 0; Axis < Count; ++Axis)
+		{
+			if (Axis > 0)
+				ImGui::SameLine();
+			ImGui::PushID(Axis);
+			ImGui::SetNextItemWidth(FieldWidth);
+			bChanged |= ImGui::DragFloat("##Axis", &Values[Axis], Speed, Min, Max, Format);
+			const ImVec2 ItemMin = ImGui::GetItemRectMin();
+			const ImVec2 ItemMax = ImGui::GetItemRectMax();
+			ImGui::GetWindowDrawList()->AddRectFilled(ItemMin, ImVec2(ItemMin.x + BarWidth, ItemMax.y),
+				AxisColor(Axis), ImGui::GetStyle().FrameRounding, ImDrawFlags_RoundCornersLeft);
+			ImGui::PopID();
+		}
+		ImGui::PopStyleVar(2);
+		ImGui::PopID();
+		return bChanged;
+	}
+
+	// Transform 한 줄: 라벨 | X Y Z | 리셋. 리셋 버튼은 값이 기본값과 다를 때만 보이고, 세 값을 _resetValue로 되돌린다.
 	bool DrawVector3Controller(const FString& _label, float* _values, float _resetValue, float _columnWidth)
 	{
-		ImGuiIO& io = ImGui::GetIO();
-		auto boldFont = io.Fonts->Fonts[0];
+		const float S = EditorIcons::GetScale();
+		const float StartX = ImGui::GetCursorPosX();
+		const float ResetSize = ImGui::GetFrameHeight();
+		const bool bIsDefault = _values[0] == _resetValue && _values[1] == _resetValue && _values[2] == _resetValue;
 
-		ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable;
-
-		bool isVectorChanged = false;
-
+		bool bChanged = false;
 		ImGui::PushID(_label.c_str());
-		if (ImGui::BeginTable(_label.c_str(), 2, flags)) // 고유 ID, 열 2개, 플래그
+
+		ImGui::AlignTextToFramePadding();
+		ImGui::TextUnformatted(_label.c_str());
+		ImGui::SameLine();
+		ImGui::SetCursorPosX(StartX + _columnWidth * S);
+
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - ResetSize - ImGui::GetStyle().ItemSpacing.x);
+		bChanged |= DrawAxisFields("##Fields", _values, 3, 0.1f, 0.0f, 0.0f, "%.2f");
+
+		ImGui::SameLine();
+		if (bIsDefault)
 		{
-			// ImGuiTableColumnFlags_WidthFixed: 초기 너비 고정
-			// ImGuiTableColumnFlags_WidthStretch: 창 크기에 따라 너비 조절 (기본값)
-			ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed, _columnWidth);
-			ImGui::TableSetupColumn("Content", ImGuiTableColumnFlags_WidthStretch);
-
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::Text(_label.c_str()); // 왼쪽 열: 레이블
-
-			ImGui::TableSetColumnIndex(1);
-			// [컨트롤러 UI 코드] // 오른쪽 열: 컨트롤러
-			ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
-			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 2,0 });
-			ImGui::PushFont(boldFont);
-
-			isVectorChanged |= DrawAxisControl("X", _values[0], 0.1f, 0.0f, 0.0f, _resetValue, { 0.8f, 0.1f, 0.1f, 1.0f });
-
-			ImGui::PopItemWidth();
-
-			ImGui::SameLine();
-			isVectorChanged |= DrawAxisControl("Y", _values[1], 0.1f, 0.0f, 0.0f, _resetValue, { 0.1f, 0.8f, 0.1f, 1.0f });
-
-			ImGui::PopItemWidth();
-
-			ImGui::SameLine();
-			isVectorChanged |= DrawAxisControl("Z", _values[2], 0.1f, 0.0f, 0.0f, _resetValue, { 0.1f, 0.1f, 0.8f, 1.0f });
-
-			ImGui::PopItemWidth();
-
-			ImGui::PopFont();
-			ImGui::PopStyleVar();
-			ImGui::EndTable();
+			ImGui::Dummy(ImVec2(ResetSize, ResetSize));
+		}
+		else
+		{
+			if (EditorIcons::Button("##Reset", EEditorIcon::Reset, ImGui::GetColorU32(ImGuiCol_Text, 0.7f),
+				nullptr, false, false, ResetSize))
+			{
+				_values[0] = _values[1] = _values[2] = _resetValue;
+				bChanged = true;
+			}
+			ImGui::SetItemTooltip("Reset to Default");
 		}
 
-		ImGui::Columns(1);
-
 		ImGui::PopID();
-
-		return isVectorChanged;
+		return bChanged;
 	}
 
 	// FRotator의 V는 (Pitch, Yaw, Roll) 순서지만 엔진은 Roll=X, Pitch=Y, Yaw=Z축이므로
@@ -207,7 +227,7 @@ namespace
 	bool DrawRotatorAsXYZ(const FString& _label, FRotator& _rotator)
 	{
 		float Euler[3] = { _rotator.Roll, _rotator.Pitch, _rotator.Yaw };
-		const bool isChanged = DrawVector3Controller(_label, Euler, 0.0f, 55.0f);
+		const bool isChanged = DrawVector3Controller(_label, Euler, 0.0f, 70.0f);
 		if (isChanged)
 		{
 			_rotator.Roll = Euler[0];
@@ -565,6 +585,64 @@ namespace
 		ImGui::EndCombo();
 	}
 
+	// UParticleSystem* 프로퍼티 (PSC::Template 등). 바꾸면 true를 돌려 PostEditChangeProperty로 재초기화를 맡긴다.
+	bool DrawParticleSystemSlot(UParticleSystem** SystemPtr)
+	{
+		static std::vector<FString> Paths;   // .particle 파일 키. 콤보를 열 때마다 다시 훑는다
+		UParticleSystem* Current = *SystemPtr;
+		const FString CurrentPath = UAssetManager::FindParticleSystemPath(Current);
+		const FString CurrentName = !Current ? "None" : (CurrentPath.empty() ? Current->GetName() : GetAssetDisplayName(CurrentPath));
+
+		ImGui::SetNextItemWidth(-1.0f);
+		const bool bOpen = ImGui::BeginCombo("##ParticleSystem", CurrentName.c_str());
+		if (ImGui::IsItemHovered() && !CurrentPath.empty()) ImGui::SetTooltip("%s", CurrentPath.c_str());
+		if (!bOpen) return false;
+
+		if (ImGui::IsWindowAppearing())
+		{
+			Paths.clear();
+			std::error_code Error;
+			std::filesystem::recursive_directory_iterator It("Assets", Error);
+			const std::filesystem::recursive_directory_iterator End;
+			while (!Error && It != End)
+			{
+				if (It->is_regular_file(Error))
+				{
+					const FString Path = FPaths::ToUtf8(It->path());
+					if (ParticleSystemFile::IsParticleSystemPath(Path))
+						Paths.push_back(FAssetUtils::GetAssetKey(Path));
+				}
+				if (!Error) It.increment(Error);
+			}
+			std::sort(Paths.begin(), Paths.end());
+		}
+
+		bool bChanged = false;
+		if (ImGui::Selectable("None", Current == nullptr) && Current)
+		{
+			*SystemPtr = nullptr;
+			bChanged = true;
+		}
+		for (const FString& Path : Paths)
+		{
+			ImGui::PushID(Path.c_str());
+			const bool bSelected = Path == CurrentPath;
+			if (ImGui::Selectable(GetAssetDisplayName(Path).c_str(), bSelected) && !bSelected)
+			{
+				if (UParticleSystem* Picked = UAssetManager::LoadParticleSystem(Path))   // 이미 로드됐으면 같은 객체
+				{
+					*SystemPtr = Picked;
+					bChanged = true;
+				}
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", Path.c_str());
+			if (bSelected) ImGui::SetItemDefaultFocus();
+			ImGui::PopID();
+		}
+		ImGui::EndCombo();
+		return bChanged;
+	}
+
 	void DrawMeshSlot(UObject* Owner, UStaticMesh** StaticMeshPtr)
 	{
 		UStaticMesh* Current = *StaticMeshPtr;
@@ -808,7 +886,7 @@ namespace
 			return;
 		}
 
-		if (!ImGui::CollapsingHeader("Materials", ImGuiTreeNodeFlags_DefaultOpen))
+		if (!CategoryHeader("Materials"))
 		{
 			return;
 		}
@@ -985,7 +1063,14 @@ namespace
 		return static_cast<uint32>(Value);
 	}
 
-	bool DrawPropertyRow(UObject* Object, void* Container, const FProperty& Property, ImFont* CustomFont);
+	bool DrawPropertyRow(UObject* Object, void* Container, const FProperty& Property, ImFont* CustomFont, const char* DisplayNameOverride = nullptr);
+
+	// FPropertyEditor::RegisterStructMemberRule로 등록한 구조체별 멤버 표시 규칙
+	std::unordered_map<const UStruct*, FPropertyEditor::FStructMemberRule>& GetStructMemberRules()
+	{
+		static std::unordered_map<const UStruct*, FPropertyEditor::FStructMemberRule> Rules;
+		return Rules;
+	}
 
 	// 프로퍼티 타입에 맞는 위젯 하나를 그린다. 값이 바뀌면 true
 	// UE도 FProperty는 위젯을 모르고, 에디터(PropertyEditor 모듈)가 CastField로 타입을 보고 위젯을 고른다.
@@ -1029,7 +1114,7 @@ namespace
 		{
 			FVector& Value = VectorProperty->GetPropertyValue(ValuePtr);
 			const FDragSettings Drag = GetDragSettings(VectorProperty->Meta, 0.1f);
-			const bool bChanged = ImGui::DragFloat3(Label, Value.V, Drag.Speed, Drag.Min, Drag.Max);
+			const bool bChanged = DrawAxisFields(Label, Value.V, 3, Drag.Speed, Drag.Min, Drag.Max);
 			if (bChanged) ClampToMeta(Value.V, 3, VectorProperty->Meta);
 			return bChanged;
 		}
@@ -1039,7 +1124,7 @@ namespace
 			// Transform의 Rotation과 같은 X/Y/Z 축 순서로 보여준다.
 			float Euler[3] = { Value.Roll, Value.Pitch, Value.Yaw };
 			const FDragSettings Drag = GetDragSettings(RotatorProperty->Meta, 0.1f);
-			if (ImGui::DragFloat3(Label, Euler, Drag.Speed, Drag.Min, Drag.Max))
+			if (DrawAxisFields(Label, Euler, 3, Drag.Speed, Drag.Min, Drag.Max))
 			{
 				ClampToMeta(Euler, 3, RotatorProperty->Meta);
 				Value.Roll = Euler[0];
@@ -1052,8 +1137,16 @@ namespace
 		{
 			FVector4& Value = Vector4Property->GetPropertyValue(ValuePtr);
 			const FDragSettings Drag = GetDragSettings(Vector4Property->Meta, 0.1f);
-			const bool bChanged = ImGui::DragFloat4(Label, &Value.X, Drag.Speed, Drag.Min, Drag.Max);
+			const bool bChanged = DrawAxisFields(Label, &Value.X, 4, Drag.Speed, Drag.Min, Drag.Max);
 			if (bChanged) ClampToMeta(&Value.X, 4, Vector4Property->Meta);
+			return bChanged;
+		}
+		if (const FVector2Property* Vector2Property = CastField<FVector2Property>(&Property))
+		{
+			FVector2& Value = Vector2Property->GetPropertyValue(ValuePtr);
+			const FDragSettings Drag = GetDragSettings(Vector2Property->Meta, 0.1f);
+			const bool bChanged = ImGui::DragFloat2(Label, &Value.X, Drag.Speed, Drag.Min, Drag.Max);
+			if (bChanged) ClampToMeta(&Value.X, 2, Vector2Property->Meta);
 			return bChanged;
 		}
 		if (const FBoolProperty* BoolProperty = CastField<FBoolProperty>(&Property))
@@ -1132,7 +1225,7 @@ namespace
 			ImGui::NewLine();
 
 			bool bChanged = false;
-			bChanged |= DrawVector3Controller("Location", Value.Location.V, 0.0f, 55.0f);
+			bChanged |= DrawVector3Controller("Location", Value.Location.V, 0.0f, 70.0f);
 			// 드래그 중 값이 튀지 않도록 프로퍼티마다 마지막 오일러 값을 기억한다
 			static TMap<const void*, FRotationConversionCache> RotationCaches;
 			FRotationConversionCache& RotationCache = RotationCaches[ValuePtr];
@@ -1142,7 +1235,7 @@ namespace
 				Value.Rotation = RotationCache.RotatorToQuat(Euler);
 				bChanged = true;
 			}
-			bChanged |= DrawVector3Controller("Scale", Value.Scale.V, 1.0f, 55.0f);
+			bChanged |= DrawVector3Controller("Scale", Value.Scale.V, 1.0f, 70.0f);
 			return bChanged;
 		}
 		if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(&Property))
@@ -1161,6 +1254,10 @@ namespace
 			else if (PropertyClass == UStaticMesh::StaticClass())
 			{
 				DrawMeshSlot(Object, reinterpret_cast<UStaticMesh**>(ObjPtr));
+			}
+			else if (PropertyClass == UParticleSystem::StaticClass())
+			{
+				return DrawParticleSystemSlot(reinterpret_cast<UParticleSystem**>(ObjPtr));
 			}
 			else if (PropertyClass == UTexture2D::StaticClass())
 			{
@@ -1184,6 +1281,10 @@ namespace
 				StructChain.Add(Struct);
 			}
 
+			const auto& Rules = GetStructMemberRules();
+			const auto RuleIt = Rules.find(StructProperty->Struct);
+			const FPropertyEditor::FStructMemberRule* Rule = RuleIt != Rules.end() ? &RuleIt->second : nullptr;
+
 			bool bChanged = false;
 			for (auto It = StructChain.rbegin(); It != StructChain.rend(); ++It)
 			{
@@ -1193,9 +1294,15 @@ namespace
 					{
 						continue;
 					}
+					FPropertyEditor::FStructMemberDisplay Display;
+					if (Rule) Display = (*Rule)(ValuePtr, *Member);
+					if (!Display.bVisible)
+					{
+						continue;
+					}
 					const bool bReadOnly = Member->HasAnyFlags(CPF_EditConst);
 					if (bReadOnly) ImGui::BeginDisabled();
-					bChanged |= DrawPropertyRow(Object, ValuePtr, *Member, CustomFont);
+					bChanged |= DrawPropertyRow(Object, ValuePtr, *Member, CustomFont, Display.Label);
 					if (bReadOnly) ImGui::EndDisabled();
 				}
 			}
@@ -1211,12 +1318,12 @@ namespace
 
 	// 프로퍼티 한 줄: 라벨과 값 위젯. 값이 바뀌면 true
 	// Container는 프로퍼티를 가진 메모리 (UObject 멤버면 객체, USTRUCT 멤버면 그 구조체 값)
-	bool DrawPropertyRow(UObject* Object, void* Container, const FProperty& Property, ImFont* CustomFont)
+	bool DrawPropertyRow(UObject* Object, void* Container, const FProperty& Property, ImFont* CustomFont, const char* DisplayNameOverride)
 	{
 		void* ValuePtr = Property.ContainerPtrToValuePtr(Container);
 		const FString Label = "##" + Property.Name;
 
-		const char* DisplayName = Property.Name.c_str();
+		const char* DisplayName = DisplayNameOverride ? DisplayNameOverride : Property.Name.c_str();
 
 		// 패널이 넓으면 라벨 | 값을 한 줄에, 좁거나 라벨이 길면 라벨 아래 줄에 값을 놓는다.
 		const float StartX = ImGui::GetCursorPosX();
@@ -1238,7 +1345,18 @@ namespace
 
 		ImGui::SetNextItemWidth(-1.0f);
 
-		return DrawPropertyValue(Object, Property, ValuePtr, Label.c_str(), CustomFont);
+		const bool bChanged = DrawPropertyValue(Object, Property, ValuePtr, Label.c_str(), CustomFont);
+
+		// UE5처럼 라벨 칸과 값 칸 사이에 세로 구분선을 긋는다.
+		if (bInline)
+		{
+			ImGuiWindow* Window = ImGui::GetCurrentWindow();
+			const float LineX = Window->Pos.x - Window->Scroll.x + StartX + LabelWidth - ImGui::GetStyle().ItemSpacing.x * 0.5f - 2.0f;
+			const float HalfGap = ImGui::GetStyle().ItemSpacing.y * 0.5f;
+			Window->DrawList->AddLine(ImVec2(LineX, ImGui::GetItemRectMin().y - HalfGap),
+				ImVec2(LineX, ImGui::GetItemRectMax().y + HalfGap), ImGui::GetColorU32(ImGuiCol_Border));
+		}
+		return bChanged;
 	}
 
 	// UClass에 등록된 프로퍼티 한 줄. 구조체 멤버 하나가 바뀌어도 객체에는 바깥 프로퍼티(구조체)가 바뀌었다고 알린다.
@@ -1270,11 +1388,15 @@ namespace
 		{
 			UClass* Class = *It;
 
-			// 노출할 프로퍼티가 하나도 없으면 헤더도 그리지 않는다
+			// 노출할 프로퍼티가 하나도 없으면 헤더도 그리지 않는다 (검색 중이면 검색어에 맞는 것만 센다)
+			auto IsShown = [](const FProperty* Property)
+			{
+				return Property->HasAnyFlags(CPF_Edit) && EditorIcons::MatchesFilter(Property->Name.c_str(), GPropertyFilter);
+			};
 			bool bHasVisibleProperty = false;
 			for (const FProperty* Property : Class->GetProperties())
 			{
-				if (Property->HasAnyFlags(CPF_Edit))
+				if (IsShown(Property))
 				{
 					bHasVisibleProperty = true;
 					break;
@@ -1286,11 +1408,15 @@ namespace
 			}
 
 			ImGui::PushID(Class->Name.c_str());
-			if (ImGui::CollapsingHeader(Class->Name.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+			// 검색 중에는 접어 둔 카테고리도 펼쳐서 결과를 보여 준다.
+			const bool bFiltering = GPropertyFilter && GPropertyFilter[0];
+			if (bFiltering)
+				ImGui::SetNextItemOpen(true);
+			if (CategoryHeader(Class->Name.c_str()))
 			{
 				for (const FProperty* Property : Class->GetProperties())
 				{
-					if (!Property->HasAnyFlags(CPF_Edit))
+					if (!IsShown(Property))
 					{
 						continue;
 					}
@@ -1311,10 +1437,22 @@ namespace
 
 		static char ComponentNameInputBuf[256] = {};
 
-		ImGui::Text("Actor: %s", Actor->GetName().c_str());
-		ImGui::Text("UUID: %u", Actor->GetUUID());
+		// UE5 Details 맨 위: [액터 이름 ............ + Add], 아래 줄에 흐린 UUID
+		const float S = EditorIcons::GetScale();
+		const char* AddLabel = "+ Add";
+		const float AddWidth = ImGui::CalcTextSize(AddLabel).x + ImGui::GetStyle().FramePadding.x * 2.0f + 8.0f * S;
 
-		if (ImGui::Button("Add Component"))
+		ImGui::AlignTextToFramePadding();
+		ImGui::TextUnformatted(Actor->GetName().c_str());
+		ImGui::SameLine();
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImMax(0.0f, ImGui::GetContentRegionAvail().x - AddWidth));
+		ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorConvertU32ToFloat4(EditorIcons::PlayGreen));
+		const bool bAddClicked = ImGui::Button(AddLabel, ImVec2(AddWidth, 0.0f));
+		ImGui::PopStyleColor();
+		ImGui::SetItemTooltip("Add a new component to this actor");
+		ImGui::TextDisabled("UUID %u", Actor->GetUUID());
+
+		if (bAddClicked)
 		{
 			ImGui::OpenPopup("AddComponentPopup");
 		}
@@ -1356,6 +1494,11 @@ namespace FPropertyEditor
 	{
 		DrawProperties(Object, CustomFont);
 	}
+
+	void RegisterStructMemberRule(const UStruct* Struct, FStructMemberRule Rule)
+	{
+		if (Struct) GetStructMemberRules()[Struct] = std::move(Rule);
+	}
 }
 
 bool FDetailsPanel::Init()
@@ -1394,7 +1537,7 @@ void FDetailsPanel::DrawShadowPreview()
 {
 	const ULightComponent* Light = GetSelectedLight();
 	if (!Light || !QueryShadowPreview || !ImGuiRenderer) return;
-	if (!ImGui::CollapsingHeader("Shadow Maps", ImGuiTreeNodeFlags_DefaultOpen)) return;
+	if (!CategoryHeader("Shadow Maps")) return;
 	FTexture2DArray* Atlas = nullptr;
 	TArray<FLightShadowRenderData> Shadows;
 	if (!QueryShadowPreview(Light, Atlas, Shadows) || !Atlas || !Atlas->GetWidth() || !Atlas->GetHeight())
@@ -1435,7 +1578,7 @@ void FDetailsPanel::OnRender()
 {
 	ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
 
-	ImGui::Begin("Details");
+	EditorPanelUI::BeginPanel("Details", GetOpenFlag());
 
 	if (TargetActor)
 	{
@@ -1452,6 +1595,10 @@ void FDetailsPanel::OnRender()
 		DrawActorHeader(TargetActor, TargetComponent);
 		DrawCompoenetList(TargetActor, TargetComponent);
 		ImGui::Separator();
+
+		// UE5처럼 프로퍼티 위에 검색 칸을 두고, 이름에 검색어가 들어간 프로퍼티만 보여 준다.
+		EditorIcons::SearchBox("##DetailsSearch", PropertySearch, sizeof(PropertySearch));
+		GPropertyFilter = PropertySearch;
 
 		// 액터 -> 컴포넌트 순으로, 클래스별 프로퍼티 표시
 		ImGui::PushID(TargetActor);
@@ -1505,6 +1652,7 @@ void FDetailsPanel::OnRender()
 				PendingDeleteComponent = nullptr;
 			}
 		}
+		GPropertyFilter = nullptr;
 	}
 	ImGui::End();
 }
@@ -1543,7 +1691,7 @@ void FDetailsPanel::DrawCompoenetList(AActor* SelectedActor, UActorComponent*& O
 
 	USceneComponent* Root = SelectedActor->GetRootComponent();
 
-	if (Root && ImGui::CollapsingHeader("Components", ImGuiTreeNodeFlags_DefaultOpen))
+	if (Root && CategoryHeader("Components"))
 	{
 		DrawSceneComponentNode(Root, Root, OutSelectedComponent);
 	}

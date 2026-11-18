@@ -4,6 +4,8 @@
 #include "Asset/AssetUtils.h"
 #include "Asset/RenderAsset.h"
 #include "Animation/AnimSequence.h"
+#include "Asset/AssetManager.h"
+#include "Particles/ParticleSystem.h"
 #include "UObject/Casts.h"
 
 FJsonArchiveOutputFormatter::FJsonArchiveOutputFormatter(FArchive& InInner)
@@ -184,6 +186,17 @@ void FJsonArchiveOutputFormatter::Serialize(UObject*& Value)
 		{
 			Top() = nullptr;
 		}
+		return;
+	}
+
+	// 파티클 시스템은 URenderAsset이 아니다. LoadParticleSystem의 키를 경로로 쓴다
+	if (UParticleSystem* System = Cast<UParticleSystem>(Value))
+	{
+		const FString Path = UAssetManager::FindParticleSystemPath(System);
+		if (!Path.empty())
+			Top() = Path;
+		else
+			Top() = nullptr;
 		return;
 	}
 

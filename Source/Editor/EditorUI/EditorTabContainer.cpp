@@ -1,6 +1,46 @@
 #include "EnginePCH.h"
 #include "Editor/EditorUI/EditorTabContainer.h"
 #include "Editor/EditorUI/EditorTitleBar.h"
+#include "Editor/EditorUI/EditorIcons.h"
+
+namespace
+{
+	// 맨 위 에디터 탭 줄의 세로 여백. 탭 줄 높이 = 글자 크기 + 2 * 이 값.
+	// 왼쪽 위 로고는 제목 표시줄 + 탭 줄 높이의 정사각형이라 이 값을 키우면 로고도 같이 커진다.
+	constexpr float TabRowFramePaddingY = 15.0f;
+
+	// 탭 아이콘 크기 (글자 크기 배율)와 이름 앞에 비워 둘 공백
+	constexpr float TabIconScale = 1.15f;
+
+	FString MakeTabLabel(const IEditorTab& Tab, bool bHasIcon)
+	{
+		if (!bHasIcon) return Tab.GetTabName();
+		// 이름 앞에 공백을 넣어 아이콘 자리를 만든다. ### 뒤 ID는 그대로라 창 배치·FindWindowByName에 영향이 없다
+		const float SpaceWidth = std::max(1.0f, ImGui::CalcTextSize(" ").x);
+		const int32 NumSpaces = static_cast<int32>(std::ceil((ImGui::GetFontSize() * TabIconScale + 5.0f) / SpaceWidth));
+		return FString(NumSpaces, ' ') + Tab.GetTabName();
+	}
+
+	// 방금 Begin한 창의 탭(도킹 노드 탭 줄 안)에 아이콘을 그린다. 분리돼 탭 줄이 없으면 그리지 않는다
+	void DrawTabIcon(EEditorIcon Icon, ImU32 Color)
+	{
+		ImGuiWindow* Window = ImGui::GetCurrentWindow();
+		ImGuiDockNode* Node = Window ? Window->DockNode : nullptr;
+		if (!Node || !Node->TabBar || !Node->HostWindow) return;
+		const ImGuiTabItem* Item = ImGui::TabBarFindTabByID(Node->TabBar, Window->TabId);
+		if (!Item) return;
+
+		const ImRect& Bar = Node->TabBar->BarRect;
+		const float IconSize = ImGui::GetFontSize() * TabIconScale;
+		const float X = Bar.Min.x + Item->Offset - Node->TabBar->ScrollingAnim + 8.0f + IconSize * 0.5f;   // 8 = 탭 FramePadding.x
+		const ImVec2 Center(X, (Bar.Min.y + Bar.Max.y) * 0.5f);
+
+		ImDrawList* DL = Node->HostWindow->DrawList;     // 탭 줄을 그린 창 위에 덧그린다
+		DL->PushClipRect(Bar.Min, Bar.Max, true);
+		EditorIcons::Draw(DL, Icon, Center, IconSize, Color);
+		DL->PopClipRect();
+	}
+}
 
 void FEditorTabContainer::AddTab(IEditorTab* Tab)
 {
@@ -154,11 +194,13 @@ void FEditorTabContainer::DrawTabs()
 	const float DockSpaceMinX = ImGui::GetCursorScreenPos().x;
 	const float TabBarInset = ImMax(0.0f, EditorTitleBar::GetLogoColumnMaxX() - DockSpaceMinX);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, TabBarInset);
+	// 탭 줄 높이는 DockSpace와 탭 창 Begin 둘 다에서 FramePadding으로 계산되므로 같은 값을 넣는다.
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, TabRowFramePaddingY));
 	ImGui::DockSpace(DockSpaceId, ImVec2(0.0f, 0.0f),
 		ImGuiDockNodeFlags_NoDockingSplit |
 		ImGuiDockNodeFlags_NoWindowMenuButton |
 		ImGuiDockNodeFlags_NoCloseButton, &TabClass);
-	ImGui::PopStyleVar();
+	ImGui::PopStyleVar(2);
 
 	// 로고 아래 끝을 탭 줄 아래 끝에 맞춘다. 탭 바가 아직 없으면 탭 줄 높이로 어림한다.
 	if (const ImGuiDockNode* Node = ImGui::DockBuilderGetNode(DockSpaceId))
@@ -179,7 +221,12 @@ void FEditorTabContainer::DrawTabs()
 		ImGui::SetNextWindowSize(ImVec2(960.0f, 640.0f), ImGuiCond_FirstUseEver);
 
 		// NoUndocking은 같은 노드의 모든 탭에 적용되므로 창별 NoMove로 고정한다.
-		const ImGuiWindow* ExistingWindow = ImGui::FindWindowByName(Tab->GetTabName());
+		EEditorIcon TabIcon{};
+		ImU32 TabIconColor = 0;
+		const bool bHasTabIcon = Tab->GetTabIcon(TabIcon, TabIconColor);
+		const FString TabLabel = MakeTabLabel(*Tab, bHasTabIcon);
+
+		const ImGuiWindow* ExistingWindow = ImGui::FindWindowByName(TabLabel.c_str());
 		const bool bInMainDockSpace =
 			!bCanDetach ||
 			!ExistingWindow ||
@@ -198,7 +245,7 @@ void FEditorTabContainer::DrawTabs()
 
 		
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 10.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, TabRowFramePaddingY));
 		const bool bActivate = PendingActivation == Tab;
 		if (bActivate)
 		{
@@ -207,8 +254,9 @@ void FEditorTabContainer::DrawTabs()
 		bool bOpen = true;
 		// 메인 영역의 탭은 메뉴에서 닫고, 분리된 탭만 닫기 버튼을 표시합니다.
 		const bool bShowCloseButton = Tab->CanClose() && !bInMainDockSpace;
-		const bool bVisible = ImGui::Begin(Tab->GetTabName(), Tab->CanClose() ? &bOpen : nullptr, Flags);
+		const bool bVisible = ImGui::Begin(TabLabel.c_str(), Tab->CanClose() ? &bOpen : nullptr, Flags);
 		ImGui::PopStyleVar(2);
+		if (bHasTabIcon) DrawTabIcon(TabIcon, TabIconColor);   // 선택 안 된 탭도 탭 줄에는 보이므로 bVisible과 상관없이
 		
 
 		if (!bOpen)

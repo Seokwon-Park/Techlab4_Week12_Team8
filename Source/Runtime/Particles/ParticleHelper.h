@@ -20,7 +20,7 @@
 class UMaterialInterface;
 class UParticleModuleRequired;
 class UStaticMesh;
-struct FSceneView;
+struct FViewContext;   // struct FSceneView; 대신 (또는 함께) 선언
 struct FParticleRequiredModule;
 struct FParticleMeshEmitterInstance;
 
@@ -151,6 +151,8 @@ static_assert(std::is_trivially_copyable_v<FBaseParticle>, "파티클은 memcpy�
 -----------------------------------------------------------------------------*/
 enum EParticleStates
 {
+	/** 하위 24비트: 스폰 순번. 코어가 스폰 때 ParticleCounter를 넣는다 (UE와 같음) */
+	STATE_CounterMask = 0x00FFFFFF,
 	/** Ignore updates to the particle						*/
 	STATE_Particle_JustSpawned			= 0x02000000,
 	/** Ignore updates to the particle						*/
@@ -208,7 +210,23 @@ struct FMeshParticleInstanceVertex
 	float SubUVLerp;
 	/** The relative time of the particle. */
 	float RelativeTime;
+
+	FMatrix GetWorldMatrix() const
+	{
+		FMatrix World = FMatrix::Identity;
+		for (int32 Column = 0; Column < 3; ++Column)
+			World.SetColumn(Column, Transform[Column]);
+		return World;
+	}
 };
+
+struct FParticleTrailVertex
+{
+	FVector      Position;   // 월드
+	FVector2     UV;         // U: 띠 길이 방향, V: 0 = 한쪽 가장자리, 1 = 반대쪽
+	FLinearColor Color;
+};
+static_assert(sizeof(FParticleTrailVertex) == 36, "ParticleTrailShader.hlsl VS_INPUT과 맞춘다");
 
 // SortSpriteParticles()의 결과 한 칸
 struct FParticleOrder
@@ -249,7 +267,7 @@ enum EDynamicEmitterType
 	DET_Unknown = 0,
 	DET_Sprite,
 	DET_Mesh,
-	DET_Beam2,
+	DET_Beam,   // UE는 DET_Beam2 (폐기된 첫 빔 TypeData의 흔적). 이 엔진은 빔이 하나라 숫자를 뺐다
 	DET_Ribbon,
 	DET_AnimTrail,
 	DET_Custom
@@ -394,7 +412,7 @@ struct FDynamicSpriteEmitterDataBase : public FDynamicEmitterDataBase
 	 */
 	void SortSpriteParticles(int32 SortMode, bool bLocalSpace,
 		int32 ParticleCount, const uint8* ParticleData, int32 ParticleStride, const uint16* ParticleIndices,
-		const FSceneView* View, const FMatrix& LocalToWorld, FParticleOrder* ParticleOrder) const;
+		const FViewContext* View, const FMatrix& LocalToWorld, FParticleOrder* ParticleOrder) const;
 
 	/**
 	 *	Get the vertex stride for the dynamic rendering data
@@ -452,6 +470,7 @@ struct FDynamicSpriteEmitterData : public FDynamicSpriteEmitterDataBase
 struct FDynamicMeshEmitterReplayData
 	: public FDynamicSpriteEmitterReplayDataBase
 {
+	bool	bUseGPUInstancing = false;
 	bool	bScaleUV;
 	int32	MeshRotationOffset;
 	uint8	MeshAlignment;
@@ -468,6 +487,8 @@ struct FDynamicMeshEmitterReplayData
 	}
 };
 
+FMatrix BuildMeshParticleTransform(const FBaseParticle& Particle, const FVector& Scale);
+
 /** Dynamic emitter data for Mesh emitters */
 struct FDynamicMeshEmitterData : public FDynamicSpriteEmitterDataBase
 {
@@ -477,7 +498,7 @@ struct FDynamicMeshEmitterData : public FDynamicSpriteEmitterDataBase
 	{
 	}
 
-	/** Initialize this emitter's dynamic rendering data, called after source data has been filled in. 구현은 렌더러 담당 */
+	/** Initialize the dynamic rendering data after Source has been filled in. */
 	void Init(	bool bInSelected,
 				const FParticleMeshEmitterInstance* InEmitterInstance,
 				UStaticMesh* InStaticMesh);
@@ -502,4 +523,52 @@ struct FDynamicMeshEmitterData : public FDynamicSpriteEmitterDataBase
 	FDynamicMeshEmitterReplayData Source;
 
 	UStaticMesh* StaticMesh;
+};
+
+/** Source data for Beam emitters. 파티클 하나 = 빔 한 줄 */
+struct FDynamicBeamEmitterReplayData : public FDynamicSpriteEmitterReplayDataBase
+{
+	FVector TargetOffset = FVector(5.0f, 0.0f, 0.0f);   // 시작점(파티클 위치)에서 목표점까지
+	int32   Segments = 16;                          // 빔을 몇 마디로 나눌지
+	float   NoiseAmplitude = 0.0f;                        // 출렁임 크기 (월드 단위)
+	float   NoiseFrequency = 3.0f;                        // 빔 한 줄에 들어가는 출렁임 수
+	float   NoiseSpeed = 10.0f;                       // 출렁임이 흐르는 속도
+	float   TextureTile = 1.0f;                        // 빔 한 줄에 텍스처 반복 횟수
+	float   EmitterTime = 0.0f;                        // 노이즈 애니메이션 시간
+};
+
+/** Source data for Ribbon emitters. 파티클 하나 = 띠 위의 점 하나 */
+struct FDynamicRibbonEmitterReplayData : public FDynamicSpriteEmitterReplayDataBase
+{
+	float   TilingDistance = 0.0f;    // > 0: 이 거리마다 텍스처 1번. 0: 띠 전체에 1번
+	bool    bConnectToSource = true;    // 머리를 지금 이미터 위치까지 잇는다 (꼬리가 늦게 따라오지 않게)
+	FVector SourceLocation;             // 이미터의 현재 월드 위치
+};
+
+struct FDynamicBeamEmitterData : public FDynamicSpriteEmitterDataBase
+{
+	FDynamicBeamEmitterData(const UParticleModuleRequired* RequiredModule)
+		: FDynamicSpriteEmitterDataBase(RequiredModule) {
+	}
+
+	void Init(bool bInSelected);   // 구현: ParticleSystemRender.cpp
+	virtual int32 GetDynamicVertexStride() const override { return sizeof(FParticleTrailVertex); }
+	virtual const FDynamicSpriteEmitterReplayDataBase* GetSourceData() const override { return &Source; }
+	virtual const FDynamicEmitterReplayDataBase& GetSource() const override { return Source; }
+
+	FDynamicBeamEmitterReplayData Source;
+};
+
+struct FDynamicRibbonEmitterData : public FDynamicSpriteEmitterDataBase
+{
+	FDynamicRibbonEmitterData(const UParticleModuleRequired* RequiredModule)
+		: FDynamicSpriteEmitterDataBase(RequiredModule) {
+	}
+
+	void Init(bool bInSelected);
+	virtual int32 GetDynamicVertexStride() const override { return sizeof(FParticleTrailVertex); }
+	virtual const FDynamicSpriteEmitterReplayDataBase* GetSourceData() const override { return &Source; }
+	virtual const FDynamicEmitterReplayDataBase& GetSource() const override { return Source; }
+
+	FDynamicRibbonEmitterReplayData Source;
 };

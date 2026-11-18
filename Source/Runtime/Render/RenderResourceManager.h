@@ -32,6 +32,10 @@ enum class EPSOType : uint8
 	ShadowMaskVisualize,     // Shadow Mask 뷰 모드: 마스크를 화면에 띄운다
 	Decal, 
 	DecalAdditive,
+	ParticleSprite_AlphaBlend,   // 새로 추가
+	ParticleSprite_Additive,     // 새로 추가
+	ParticleTrail_AlphaBlend,    // 새로 추가
+	ParticleTrail_Additive,      // 새로 추가
 	Count
 };
 
@@ -56,10 +60,12 @@ public:
 
 	static FPipelineState* GetPSO(const EPSOType& InType);
 	static FShaderProgram* GetForwardShaderProgram(ELightingModel Model);
+	static FShaderProgram* FindMeshParticleShader(const FShaderProgram& Base);
 private:
 	
 	void LoadOrCompileShader(const FString& Path);
-	void CreateSkinnedVariant(const FString& Path, const char* LightingMacro, const FShaderProgram& Base);
+	void CreateVertexShaderVariant(const FString& Path, const char* FeatureMacro,
+		const char* LightingMacro, const FShaderProgram& Base);
 	void InitPipelineStates();
 
 	TMap<FString, TUniquePtr<FVertexShader>> VertexShaderMap;

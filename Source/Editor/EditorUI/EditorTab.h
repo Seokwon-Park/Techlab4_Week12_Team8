@@ -2,11 +2,15 @@
 
 #include "Editor/EditorUI/EditorPanel.h"
 
+enum class EEditorIcon : uint8;
+
 class IEditorTab
 {
 public:
 	virtual ~IEditorTab() = default;
 	virtual const char* GetTabName() const = 0;
+	// 맨 위 탭 줄에서 이름 왼쪽에 그릴 아이콘. false면 아이콘 없이 이름만
+	virtual bool GetTabIcon(EEditorIcon& OutIcon, ImU32& OutColor) const { return false; }
 	virtual bool CanDetach() const { return true; }
 	// BeginMenuBar/EndMenuBar는 컨테이너가 담당하고 탭은 메뉴 내용만 그린다.
 	virtual void DrawMenuBar() {}

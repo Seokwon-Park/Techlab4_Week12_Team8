@@ -77,7 +77,7 @@ void FOutputLogPanel::OnRender()
 {
 	ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
 
-	ImGui::Begin("Output Log");
+	EditorPanelUI::BeginPanel("Output Log", GetOpenFlag());
 
 	//////////////////////////////////////////////////////////
 

@@ -4,7 +4,7 @@
 // [Week12 0단계 공통 계약] UE의 Engine/Public/ParticleEmitterInstances.h 에 대응한다.
 //
 // 데이터 필드는 매크로(BEGIN_UPDATE_LOOP)와 모듈이 직접 읽으므로 이름을 바꾸지 않는다.
-// 함수는 인터페이스만 있다. 본문은 ParticleEmitterInstances.cpp의 TODO를 담당자가 채운다.
+// 런타임 코어 본문은 ParticleEmitterInstances.cpp에 구현되어 있다.
 // ============================================================================
 
 #include "Particles/ParticleHelper.h"
@@ -63,9 +63,9 @@ public:
 	/** The size of the Instance data array.							*/
 	int32 InstancePayloadSize;
 	/** The total size of a particle (in bytes).						*/
-	int32 ParticleSize;
+	int32 ParticleSize; // 파티클 하나가 실제로 차지하는 크기
 	/** The stride between particles in the ParticleData array.			*/
-	int32 ParticleStride;
+	int32 ParticleStride; // 다음 파티클 칸까지 이동하는 간격 (ParticleSize + Padding)
 	/** The number of particles currently active in the emitter.		*/
 	int32 ActiveParticles;
 	/** Monotonically increasing counter. */
@@ -75,7 +75,7 @@ public:
 	 */
 	int32 MaxActiveParticles;
 	/** The fraction of time left over from spawning.					*/
-	float SpawnFraction;
+	float SpawnFraction; // 현재 프레임에서 만들어야하는 파티클 수 - 실제로 만들어진 파티클 수 = 현재 프레임에서 만들어야하는 파티클 수의 소숫점 부분
 	/** The number of seconds that have passed since the instance was
 	 *	created.
 	 */
@@ -117,6 +117,9 @@ public:
 	// 생성 -> Base 값 복원 -> Update 모듈 -> 위치 적분 -> 수명이 끝난 파티클 Kill
 	virtual void Tick(float DeltaTime, bool bSuppressSpawning);
 
+	// 공통 메모리 배치를 유지하며 현재 모듈/머티리얼/정렬 설정만 전환한다.
+	bool SetLODLevel(int32 LODLevelIndex);
+
 	// 현재 템플릿의 ModuleOffsetMap에서 모듈의 페이로드 offset을 찾는다. 없으면 0
 	uint32 GetModuleDataOffset(UParticleModule* Module);
 
@@ -127,8 +130,8 @@ public:
 	 * Spawn the indicated number of particles.
 	 *
 	 * @param Count The number of particles to spawn.
-	 * @param StartTime			The local emitter time at which to begin spawning particles.
-	 * @param Increment			The time delta between spawned particles.
+	 * @param StartTime			첫 파티클 생성 후 프레임 끝까지 남은 시간(초).
+	 * @param Increment			생성 간격(초). 다음 파티클의 남은 시간은 이 값만큼 감소한다.
 	 * @param InitialLocation	The initial location of spawned particles.
 	 * @param InitialVelocity	The initial velocity of spawned particles.
 	 * @param EventPayload		Event generator payload if events should be triggered.
@@ -203,4 +206,19 @@ struct FParticleMeshEmitterInstance : public FParticleEmitterInstance
 	virtual FDynamicEmitterDataBase* GetDynamicData(bool bSelected) override;
 	virtual FDynamicEmitterReplayDataBase* GetReplayData() override;
 	virtual bool FillReplayData( FDynamicEmitterReplayDataBase& OutData ) override;
+};
+
+
+struct FParticleBeamEmitterInstance : public FParticleSpriteEmitterInstance
+{
+	virtual FDynamicEmitterDataBase* GetDynamicData(bool bSelected) override;
+	virtual FDynamicEmitterReplayDataBase* GetReplayData() override;
+	virtual bool FillReplayData(FDynamicEmitterReplayDataBase& OutData) override;
+};
+
+struct FParticleRibbonEmitterInstance : public FParticleSpriteEmitterInstance
+{
+	virtual FDynamicEmitterDataBase* GetDynamicData(bool bSelected) override;
+	virtual FDynamicEmitterReplayDataBase* GetReplayData() override;
+	virtual bool FillReplayData(FDynamicEmitterReplayDataBase& OutData) override;
 };

@@ -61,7 +61,7 @@ public:
 
 	static void Draw(uint32 VertexCount, uint32 StartIndexLocation = 0);
 	static void DrawIndexed(uint32 IndexCount, uint32 StartIndexLocation = 0, int32 BaseVertexLocation = 0);
-	static void DrawInstance(uint32 IndexCount, uint32 StartIndexLocation = 0, int32 BaseVertexLocation = 0);
+	static void DrawIndexedInstanced(uint32 IndexCount, uint32 InstanceCount, uint32 StartIndexLocation = 0);
 
 	template <typename T>
 	static void UpdateBufferData(FBuffer* InBuffer, T* Data)
@@ -70,7 +70,7 @@ public:
 	}
 	static void UpdateBufferData(FBuffer* InBuffer, const void* Data, uint32 DataSize);
 
-	static void BindVertexBuffer(FVertexBuffer* VertexBuffer);
+	static void BindVertexBuffer(FVertexBuffer* VertexBuffer, uint32 Slot = 0);
 	static void BindIndexBuffer(FIndexBuffer* IndexBuffer);
 	// null 버퍼를 전달하면 해당 슬롯의 바인딩을 해제한다.
 	static void BindConstantBuffer(uint32 Slot, FConstantBuffer* ConstantBuffer, EShaderBindFlagBits FlagBits);

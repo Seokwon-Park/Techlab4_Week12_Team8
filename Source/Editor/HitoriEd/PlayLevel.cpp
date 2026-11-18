@@ -352,6 +352,10 @@ void UEditorEngine::StartPlayInEditorSession()
 	// Draw가 패스를 등록할 때마다 이 함수를 부른다. SIE 화면은 레벨 에디터 뷰포트가 그리므로 여기를 거치지 않는다.
 	if (FGameViewportClient* GameClient = PIEContext.GameViewport.get())
 	{
+		// PIE 게임 화면의 뷰포트를 만들어 게임 뷰포트 클라이언트와 서로 연결한다. 크기는 그리기 직전에 정해진다.
+		PlayInEditorViewport = MakeUnique<FViewport>(GameClient);
+		GameClient->Viewport = PlayInEditorViewport.get();
+
 		GameClient->DebugDrawDelegate = [this, GameClient](const FSceneView& SceneView, FSceneOverlayCallbacks& Overlays)
 		{
 			// Settings > Debug Draw (PIE)
@@ -402,6 +406,10 @@ void UEditorEngine::EndPlayMap()
 	ResetSceneSelection();
 	if (ViewportsPanel)
 		ViewportsPanel->ClearGameViewportClient();
+	// PIE 뷰포트를 버린다. 게임 뷰포트 클라이언트는 바로 아래에서 월드 컨텍스트와 함께 사라진다.
+	if (FWorldContext* Context = GetPIEWorldContext(); Context && Context->GameViewport)
+		Context->GameViewport->Viewport = nullptr;
+	PlayInEditorViewport.reset();
 	DestroyWorldContext(PlayWorld);
 	PlayWorld = nullptr;
 	PIEViewIndex = InvalidViewIndex;
@@ -467,9 +475,9 @@ bool UEditorEngine::UpdatePIEWindowTargets()
 	if (Width != PIETargetWidth || Height != PIETargetHeight)
 	{
 		FWorldContext* Context = GetPIEWorldContext();
-		if (!Context || !Context->GameViewport) return false;
-		Context->GameViewport->Resize(Width, Height);
-		if (!Context->GameViewport->GetViewTargets().IsValidFor(Width, Height))
+		if (!Context || !Context->GameViewport || !PlayInEditorViewport) return false;
+		PlayInEditorViewport->UpdateViewportRHI(false, Width, Height);
+		if (!PlayInEditorViewport->GetViewTargets().IsValidFor(Width, Height))
 		{
 			return false;
 		}
@@ -487,9 +495,8 @@ void UEditorEngine::CopyPIEWindowToBackbuffer()
 		return;
 
 	FTexture2D* Backbuffer = PIESwapchain->GetBackbuffer();
-	FWorldContext* Context = GetPIEWorldContext();
-	FTexture2D* PIEColorTarget = Context && Context->GameViewport
-		? Context->GameViewport->GetColorTarget() : nullptr;
+	FTexture2D* PIEColorTarget = PlayInEditorViewport
+		? PlayInEditorViewport->GetRenderTargetTexture() : nullptr;
 	if (!Backbuffer || !PIEColorTarget ||
 		Backbuffer->GetWidth() != PIETargetWidth ||
 		Backbuffer->GetHeight() != PIETargetHeight)

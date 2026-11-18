@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 #include "Input/KeyCode.h"
+#include "Editor/EditorUI/EditorIcons.h"
 
 class UTexture2D;
 
@@ -29,6 +30,9 @@ struct FEditorCommand
     std::function<void()> Execute;
     std::function<bool()> CanExecute = [] { return true; };
     std::function<bool()> IsVisible = [] { return true; };
+
+	// 도형으로 그리는 에디터 아이콘. None이 아니면 Icon 텍스처보다 먼저 쓴다.
+	EEditorIcon IconId = EEditorIcon::None;
 
     bool CanExecuteNow() const { return !CanExecute || CanExecute(); }
 	bool IsVisibleNow()  const { return !IsVisible || IsVisible(); }
