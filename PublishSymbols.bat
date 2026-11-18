@@ -83,9 +83,9 @@ rem 호출부는 로컬 저장소로 전환할 때 두 파일을 모두 다시 �
 if not exist "%STORE%\." mkdir "%STORE%"
 if not exist "%STORE%\." exit /b 1
 
-rem PDB의 체크섬과 일치하는 소스를 보관하고, 등록 전에 srcsrv 정보를 삽입한다.
-rem 저장소 fallback 시에는 소스 경로도 새 저장소에 맞춰 다시 기록한다.
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\IndexSources.ps1" -PdbPath "%BIN_DIR%\HitoriEditor.pdb" -SourceRoot "%STORE%\Sources"
+rem 소스 사본은 저장하지 않고 Git 원격 주소/커밋/경로를 PDB에 기록한다.
+rem 디버깅 시 Git에서 가져오므로 배포 전에 해당 커밋을 push해야 한다.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\IndexSources.ps1" -PdbPath "%BIN_DIR%\HitoriEditor.pdb"
 if errorlevel 2 exit /b 2
 if errorlevel 1 exit /b 1
 
