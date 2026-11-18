@@ -393,7 +393,7 @@ void FOutputLogPanel::RegisterCommands()
 			FLog::Log(ELogVerbosity::Info, "r.Skinning.ForceUpdate = {}", bOn ? 1 : 0);
 			return true;
 		});
-	Add("CauseCrash", "CauseCrash [zero|​​null|stack]", [](const TArray<FString>& Args, const FString&)
+	Add("CauseCrash", "CauseCrash [zero|null|stack|crt|purecall|terminate|abort]", [](const TArray<FString>& Args, const FString&)
 		{
 			if (Args.Num() == 1)
 			{
@@ -418,6 +418,22 @@ void FOutputLogPanel::RegisterCommands()
 			else if (EqualsIgnoreCase(Type, "stack"))
 			{
 				WindowsPlatformCrashContext::TriggerStackOverflow();
+			}
+			else if (EqualsIgnoreCase(Type, "crt"))
+			{
+				WindowsPlatformCrashContext::CrashInvalidParameter();
+			}
+			else if (EqualsIgnoreCase(Type, "purecall"))
+			{
+				WindowsPlatformCrashContext::CrashPureCall();
+			}
+			else if (EqualsIgnoreCase(Type, "terminate"))
+			{
+				WindowsPlatformCrashContext::CrashTerminate();
+			}
+			else if (EqualsIgnoreCase(Type, "abort"))
+			{
+				WindowsPlatformCrashContext::CrashAbort();
 			}
 			else
 				return false;

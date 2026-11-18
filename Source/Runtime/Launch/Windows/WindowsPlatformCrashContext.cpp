@@ -4,6 +4,13 @@
 #include <filesystem>
 #include <DbgHelp.h>
 #include <cwchar>
+#include <csignal>
+#include <cstdint>
+#include <cstdlib>
+#include <crtdbg.h>
+#include <cstring>
+#include <exception>
+#include <process.h>
 
 #pragma comment(lib, "dbghelp.lib")
 
@@ -12,7 +19,37 @@ namespace
     wchar_t DumpDirectory[MAX_PATH]{};
     volatile LONG DumpStarted = 0;
 
-    bool WriteMinidump(EXCEPTION_POINTERS* ExceptionPointers)
+    // 시작 시 준비하고 프로세스가 끝날 때까지 유지한다. 크래시 경로에서는
+    // 스레드 생성이나 요청 저장 공간의 동적 할당을 하지 않는다.
+    HANDLE DumpRequestedEvent = nullptr;
+    HANDLE DumpThread = nullptr;
+    unsigned DumpThreadId = 0;
+    DWORD CrashThreadId = 0;
+    EXCEPTION_POINTERS* CrashExceptionPointers = nullptr;
+
+    constexpr DWORD CrtInvalidParameterCode = 0xE0000002;
+    constexpr DWORD PureCallCode = 0xE0000003;
+    constexpr DWORD TerminateCode = 0xE0000004;
+    constexpr DWORD AbortCode = 0xE0000005;
+
+    const wchar_t* GetCrashType(DWORD ExceptionCode)
+    {
+        switch (ExceptionCode)
+        {
+        case CrtInvalidParameterCode: return L"CRT 잘못된 인자 전달";
+        case PureCallCode: return L"순수 가상 함수 호출";
+        case TerminateCode: return L"std::terminate 호출";
+        case AbortCode: return L"abort 호출";
+        case EXCEPTION_INT_DIVIDE_BY_ZERO: return L"정수 0 나누기";
+        case EXCEPTION_FLT_DIVIDE_BY_ZERO: return L"부동소수점 0 나누기";
+        case EXCEPTION_ACCESS_VIOLATION: return L"잘못된 메모리 접근";
+        case EXCEPTION_STACK_OVERFLOW: return L"스택 오버플로";
+        case 0xE0000001: return L"테스트 크래시";
+        default: return L"분류되지 않은 예외";
+        }
+    }
+
+    bool WriteMinidump(DWORD ExceptionThreadId, EXCEPTION_POINTERS* ExceptionPointers)
     {
         SYSTEMTIME CrashTime{};
         ::GetLocalTime(&CrashTime);
@@ -36,7 +73,7 @@ namespace
         }
 
         MINIDUMP_EXCEPTION_INFORMATION ExceptionInfo{};
-        ExceptionInfo.ThreadId = ::GetCurrentThreadId();
+        ExceptionInfo.ThreadId = ExceptionThreadId;
         ExceptionInfo.ExceptionPointers = ExceptionPointers;
         ExceptionInfo.ClientPointers = FALSE;
 
@@ -50,11 +87,16 @@ namespace
             return false;
         }
 
-        wchar_t Message[MAX_PATH + 128]{};
+        const wchar_t* CrashType = ExceptionPointers && ExceptionPointers->ExceptionRecord
+            ? GetCrashType(ExceptionPointers->ExceptionRecord->ExceptionCode)
+            : L"분류되지 않은 예외";
+
+        wchar_t Message[MAX_PATH + 256]{};
         const int MessageLength = ::swprintf_s(
             Message,
             _countof(Message),
-            L"Hitori가 예기치 않게 종료됩니다.\n\n덤프 저장 위치:\n%ls",
+            L"Hitori가 예기치 않게 종료됩니다.\n\n오류 유형: %ls\n\n덤프 저장 위치:\n%ls",
+            CrashType,
             DumpPath);
 
         ::MessageBoxW(
@@ -67,20 +109,85 @@ namespace
 
     }
 
-    LONG WINAPI EngineUnhandledExceptionFilter(EXCEPTION_POINTERS* ExceptionPointers)
+    unsigned __stdcall DumpThreadMain(void*)
     {
-        // 여러 스레드가 동시에 예외를 내더라도 덤프 작성은 한 번만 시도
-        if (::InterlockedCompareExchange(&DumpStarted, 1, 0) != 0)
+        if (::WaitForSingleObject(DumpRequestedEvent, INFINITE) != WAIT_OBJECT_0)
         {
-            return EXCEPTION_CONTINUE_SEARCH;
+            return 1;
         }
-           
-        if (!WriteMinidump(ExceptionPointers))
+
+        if (!WriteMinidump(CrashThreadId, CrashExceptionPointers))
         {
             ::OutputDebugStringW(L"Hitori: Could not write the crash dump.\n");
         }
 
+        // 이 스레드의 종료가 완료 신호다. 기존 크래시 안내창도 닫힌 뒤 종료한다.
+        return 0;
+    }
+
+    LONG WINAPI EngineUnhandledExceptionFilter(EXCEPTION_POINTERS* ExceptionPointers)
+    {
+        // 덤프 스레드 자체가 실패했을 때 자기 자신을 기다리지 않는다.
+        if (::GetCurrentThreadId() == DumpThreadId || !DumpThread)
+        {
+            return EXCEPTION_CONTINUE_SEARCH;
+        }
+
+        // 여러 스레드가 동시에 예외를 내더라도 덤프 작성은 한 번만 시도
+        if (::InterlockedCompareExchange(&DumpStarted, 1, 0) == 0)
+        {
+            CrashThreadId = ::GetCurrentThreadId();
+            CrashExceptionPointers = ExceptionPointers;
+            if (!::SetEvent(DumpRequestedEvent))
+            {
+                return EXCEPTION_CONTINUE_SEARCH;
+            }
+        }
+
+        // 예외 처리 프레임을 유지해 EXCEPTION_POINTERS와 그 대상의 수명을 보장한다.
+        // 후속 크래시도 기다려야 첫 덤프가 끝나기 전에 프로세스를 종료하지 않는다.
+        if (::WaitForSingleObject(DumpThread, INFINITE) != WAIT_OBJECT_0)
+        {
+            return EXCEPTION_CONTINUE_SEARCH;
+        }
+
         return EXCEPTION_EXECUTE_HANDLER;
+    }
+
+    // CRT 종료 경로에서도 유효한 예외 컨텍스트를 확보해 기존 덤프 작성기를 사용한다.
+    // 로컬 SEH로 처리하므로 호출자의 catch (...) 유무와 관계없이 덤프를 시도한다.
+    [[noreturn]] void ReportRuntimeFailure(DWORD ExceptionCode)
+    {
+        __try
+        {
+            ::RaiseException(ExceptionCode, EXCEPTION_NONCONTINUABLE, 0, nullptr);
+        }
+        __except (EngineUnhandledExceptionFilter(GetExceptionInformation()))
+        {
+        }
+
+        ::TerminateProcess(::GetCurrentProcess(), ExceptionCode);
+        ::ExitProcess(ExceptionCode);
+    }
+
+    void __cdecl OnInvalidParameter(const wchar_t*, const wchar_t*, const wchar_t*, unsigned int, std::uintptr_t)
+    {
+        ReportRuntimeFailure(CrtInvalidParameterCode);
+    }
+
+    void __cdecl OnPureCall()
+    {
+        ReportRuntimeFailure(PureCallCode);
+    }
+
+    void __cdecl OnTerminate()
+    {
+        ReportRuntimeFailure(TerminateCode);
+    }
+
+    void __cdecl OnAbort(int)
+    {
+        ReportRuntimeFailure(AbortCode);
     }
 
     __declspec(noinline) unsigned char CrashStackOverflow(unsigned Depth)
@@ -100,6 +207,11 @@ namespace
 
 void WindowsPlatformCrashContext::RegisterUnhandledExceptionHandler()
 {
+    if (DumpThread)
+    {
+        return;
+    }
+
     wchar_t ExePath[MAX_PATH]{};
     const DWORD Length = ::GetModuleFileNameW(nullptr, ExePath, _countof(ExePath));
 
@@ -130,7 +242,36 @@ void WindowsPlatformCrashContext::RegisterUnhandledExceptionHandler()
     }
 
     ::wcscpy_s(DumpDirectory, _countof(DumpDirectory), Directory.c_str());
+
+    DumpRequestedEvent = ::CreateEventW(nullptr, TRUE, FALSE, nullptr);
+    if (!DumpRequestedEvent)
+    {
+        ::OutputDebugStringW(L"Hitori: Could not create the crash dump event.\n");
+        return;
+    }
+
+    DumpThread = reinterpret_cast<HANDLE>(::_beginthreadex(
+        nullptr, 0, &DumpThreadMain, nullptr, 0, &DumpThreadId));
+    if (!DumpThread)
+    {
+        ::CloseHandle(DumpRequestedEvent);
+        DumpRequestedEvent = nullptr;
+        ::OutputDebugStringW(L"Hitori: Could not create the crash dump thread.\n");
+        return;
+    }
+
+    // 전용 스레드 준비가 완료된 뒤에만 크래시 처리기를 설치한다.
     ::SetUnhandledExceptionFilter(&EngineUnhandledExceptionFilter);
+    ::_set_invalid_parameter_handler(&OnInvalidParameter);
+    ::_set_purecall_handler(&OnPureCall);
+    std::set_terminate(&OnTerminate);
+    std::signal(SIGABRT, &OnAbort);
+
+    // CRT 기본 대화상자보다 엔진의 크래시 안내창으로 바로 진행한다.
+    ::_set_abort_behavior(0, _WRITE_ABORT_MSG);
+#ifdef _DEBUG
+    ::_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_DEBUG);
+#endif
 }
 
 __declspec(noinline) void WindowsPlatformCrashContext::CrashDefault()
@@ -163,4 +304,27 @@ void WindowsPlatformCrashContext::TriggerStackOverflow()
     }
 
     CrashStackOverflow(0);
+}
+
+__declspec(noinline) void WindowsPlatformCrashContext::CrashInvalidParameter()
+{
+    char Buffer[2]{};
+    ::strcpy_s(Buffer, _countof(Buffer), "abc");
+}
+
+__declspec(noinline) void WindowsPlatformCrashContext::CrashPureCall()
+{
+    // 미정의 동작에 의존하지 않고 CRT의 순수 가상 함수 오류 진입점을 호출한다.
+    volatile int Result = ::_purecall();
+    (void)Result;
+}
+
+__declspec(noinline) void WindowsPlatformCrashContext::CrashTerminate()
+{
+    std::terminate();
+}
+
+__declspec(noinline) void WindowsPlatformCrashContext::CrashAbort()
+{
+    std::abort();
 }
