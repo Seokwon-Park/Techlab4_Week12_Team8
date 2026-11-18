@@ -22,6 +22,7 @@ rem ② 도구와 결과물 확인
 set "SYMSTORE=%ProgramFiles(x86)%\Windows Kits\10\Debuggers\x64\symstore.exe"
 if not exist "%SYMSTORE%" goto :NoSymstore
 if not exist "%BIN_DIR%\HitoriEditor.pdb" goto :NoBuild
+if not exist "%BIN_DIR%\HitoriEditor.exe" goto :NoBuild
 
 
 rem 기본 저장소는 팀 공유 폴더다.
@@ -42,10 +43,11 @@ rem ⑤ 심볼 등록
 echo [심볼 등록] %COMMENT% / %COMMIT%
 
 rem 먼저 선택된 저장소에 EXE와 PDB를 등록한다.
-rem 첫 시도의 상세 출력은 숨기고, 실패하면 로컬로 전환했다는 메시지를 남긴다.
+rem 소스 검증 실패 원인을 볼 수 있도록 첫 시도의 출력도 표시한다.
 rem 로컬 등록까지 실패하면 빌드 후 이벤트에 실패 코드를 반환한다.
-call :RegisterSymbols >nul 2>&1
+call :RegisterSymbols
 if not errorlevel 1 goto :Done
+if errorlevel 2 goto :Fail
 
 if /I "%STORE%"=="%LOCAL_STORE%" goto :Fail
 echo [심볼 등록] %STORE% 등록 실패. 로컬 저장소로 다시 시도합니다.
@@ -80,6 +82,12 @@ rem EXE와 PDB는 별도로 등록된다. PDB 등록이 실패하면 EXE만 남�
 rem 호출부는 로컬 저장소로 전환할 때 두 파일을 모두 다시 등록한다.
 if not exist "%STORE%\." mkdir "%STORE%"
 if not exist "%STORE%\." exit /b 1
+
+rem PDB의 체크섬과 일치하는 소스를 보관하고, 등록 전에 srcsrv 정보를 삽입한다.
+rem 저장소 fallback 시에는 소스 경로도 새 저장소에 맞춰 다시 기록한다.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\IndexSources.ps1" -PdbPath "%BIN_DIR%\HitoriEditor.pdb" -SourceRoot "%STORE%\Sources"
+if errorlevel 2 exit /b 2
+if errorlevel 1 exit /b 1
 
 "%SYMSTORE%" add /f "%BIN_DIR%\HitoriEditor.exe" /s "%STORE%" /t Hitori /v "%COMMIT%" /c "%COMMENT%"
 if errorlevel 1 exit /b 1
