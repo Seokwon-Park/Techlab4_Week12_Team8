@@ -67,6 +67,20 @@ enum class EEditorIcon : uint8
 	Script,
 	File,
 	Widget,
+	// 뷰 모드 (Lit은 위의 Lit을 쓴다)
+	ViewWireframe,
+	ViewDepth,
+	ViewNormal,
+	ViewLightCulling,
+	ViewCascade,
+	ViewShadowMask,
+	// 쇼 플래그 (Skeletal Meshes·Particles는 위의 에셋 아이콘을 쓴다)
+	ShowPrimitives,
+	ShowDecal,
+	ShowFog,
+	ShowAntiAliasing,
+	ShowVignette,
+	ShowCameraOverlay,
 
 	Count
 };

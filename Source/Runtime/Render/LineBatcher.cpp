@@ -36,12 +36,15 @@ void FLineBatcher::BuildVertexBuffer()
 {
 	for (TObjectIterator<UPrimitiveComponent> Itr; Itr; ++Itr)
 	{
-		// 로컬 AABB와 월드 행렬을 그대로 넘기고 변환은 AddOrientedBox가 한다.
-		// (월드 행렬이어야 부모에 붙은 컴포넌트도 제자리에 그려진다)
-		AddOrientedBox(
-			Itr->CalcLocalBounds(),
-			Itr->GetWorldMatrix(),
-			FVector4(1.0f, 1.0f, 1.0f, 1.0f));
+		if (Itr->GetWorld() == World)
+		{
+			// 로컬 AABB와 월드 행렬을 그대로 넘기고 변환은 AddOrientedBox가 한다.
+			// (월드 행렬이어야 부모에 붙은 컴포넌트도 제자리에 그려진다)
+			AddOrientedBox(
+				Itr->CalcLocalBounds(),
+				Itr->GetWorldMatrix(),
+				FVector4(1.0f, 1.0f, 1.0f, 1.0f));
+		}
 	}
 }
 

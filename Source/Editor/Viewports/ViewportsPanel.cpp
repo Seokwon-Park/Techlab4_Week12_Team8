@@ -867,7 +867,12 @@ void FViewportsPanel::DrawViewportToolbar(int32 ViewIndex, FEditorViewportClient
 
 	// 뷰 모드
 	ImGui::SameLine();
-	if (EditorIcons::Button("##ViewMode", EEditorIcon::Lit, IconColor, bLabels ? ModeLabel : nullptr, true,
+	// EViewModeIndex 순서와 같다. 버튼도 지금 모드의 아이콘을 보여 준다
+	static constexpr EEditorIcon ViewModeIcons[] = { EEditorIcon::Lit, EEditorIcon::ViewWireframe, EEditorIcon::ViewDepth,
+		EEditorIcon::ViewNormal, EEditorIcon::ViewLightCulling, EEditorIcon::ViewCascade, EEditorIcon::ViewShadowMask };
+	static_assert(IM_ARRAYSIZE(ViewModeIcons) == IM_ARRAYSIZE(ViewModeLabels), "뷰 모드 아이콘과 이름 수를 맞춘다");
+	const EEditorIcon ModeIcon = (ModeIndex >= 0 && ModeIndex < IM_ARRAYSIZE(ViewModeIcons)) ? ViewModeIcons[ModeIndex] : EEditorIcon::Lit;
+	if (EditorIcons::Button("##ViewMode", ModeIcon, IconColor, bLabels ? ModeLabel : nullptr, true,
 		ImGui::IsPopupOpen("##ViewModeMenu"), ButtonHeight))
 		OpenBelow("##ViewModeMenu", true);
 	ImGui::SetItemTooltip("View Mode: %s", ModeLabel);
@@ -882,7 +887,7 @@ void FViewportsPanel::DrawViewportToolbar(int32 ViewIndex, FEditorViewportClient
 				ImGui::Spacing();
 				EditorIcons::MenuSection("Buffer Visualization");
 			}
-			if (EditorIcons::MenuRow(ViewModeLabels[Mode], Mode == 0 ? EEditorIcon::Lit : EEditorIcon::None, ModeIndex == Mode))
+			if (EditorIcons::MenuRow(ViewModeLabels[Mode], ViewModeIcons[Mode], ModeIndex == Mode))
 				Client->SetViewMode(static_cast<EViewModeIndex>(Mode));
 		}
 		ImGui::EndPopup();
@@ -899,21 +904,21 @@ void FViewportsPanel::DrawViewportToolbar(int32 ViewIndex, FEditorViewportClient
 	if (ImGui::BeginPopup("##ShowMenu"))
 	{
 		FEngineShowFlags& Flags = Client->GetEngineShowFlags();
-		struct FFlagRow { const char* Label; bool* Value; };
+		struct FFlagRow { const char* Label; EEditorIcon Icon; bool* Value; };
 		const FFlagRow Rows[] = {
-			{ "Rendering", &Flags.Rendering },
-			{ "Skeletal Meshes", &Flags.SkeletalMeshes },
-			{ "Particles", &Flags.Particles },
-			{ "Decals", &Flags.Decals },
-			{ "Fog", &Flags.Fog },
-			{ "Anti-aliasing", &Flags.AntiAliasing },
-			{ "Vignette", &Flags.Vignette },
-			{ "Camera Overlay", &Flags.CameraOverlay },
+			{ "Rendering", EEditorIcon::ShowPrimitives, &Flags.Rendering },
+			{ "Skeletal Meshes", EEditorIcon::SkeletalMesh, &Flags.SkeletalMeshes },
+			{ "Particles", EEditorIcon::Particle, &Flags.Particles },
+			{ "Decals", EEditorIcon::ShowDecal, &Flags.Decals },
+			{ "Fog", EEditorIcon::ShowFog, &Flags.Fog },
+			{ "Anti-aliasing", EEditorIcon::ShowAntiAliasing, &Flags.AntiAliasing },
+			{ "Vignette", EEditorIcon::ShowVignette, &Flags.Vignette },
+			{ "Camera Overlay", EEditorIcon::ShowCameraOverlay, &Flags.CameraOverlay },
 		};
 		EditorIcons::MenuSection("Show Flags");
 		for (const FFlagRow& Row : Rows)
 		{
-			if (EditorIcons::MenuRow(Row.Label, EEditorIcon::None, *Row.Value, true, true))
+			if (EditorIcons::MenuRow(Row.Label, Row.Icon, *Row.Value, true, true))
 				*Row.Value = !*Row.Value;
 		}
 		ImGui::EndPopup();
