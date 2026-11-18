@@ -23,7 +23,9 @@ function Index([int]$ExpectedExit) {
 function Compile([string]$Name) {
     Push-Location $fixture
     try {
-        & cl.exe /nologo /Zi /Od /FC probe.cpp "/Fe:$Name.exe" "/Fo:$Name.obj" "/Fd:$Name-compile.pdb" /link /DEBUG "/PDB:$Name.pdb"
+        & rc.exe /nologo /foBuild\Intermediate\EngineProject.res probe.rc
+        Assert ($LASTEXITCODE -eq 0) 'Fixture resource compilation failed.'
+        & cl.exe /nologo /Zi /Od /FC probe.cpp "/Fe:$Name.exe" "/Fo:$Name.obj" "/Fd:$Name-compile.pdb" /link /DEBUG "/PDB:$Name.pdb" Build\Intermediate\EngineProject.res
         Assert ($LASTEXITCODE -eq 0) 'Fixture compilation failed.'
     } finally { Pop-Location }
 }
@@ -53,10 +55,14 @@ try {
     [IO.File]::WriteAllText((Join-Path $thirdPartyDirectory 'imgui.h'), "#define THIRD_PARTY_VALUE 0`r`n", [Text.Encoding]::ASCII)
     $original = "#include `"tracked.h`"`r`n#include `"Intermediate/Generated/Runtime/Material.generated.h`"`r`n#include `"Source/ThirdParty/ImGui/ImGui.h`"`r`nint main() { return PROBE_VALUE + GENERATED_VALUE + THIRD_PARTY_VALUE; }`r`n"
     [IO.File]::WriteAllText($source, $original, [Text.Encoding]::ASCII)
-    Git @('add', 'probe.cpp', 'tracked.h')
+    [IO.Directory]::CreateDirectory((Join-Path $fixture 'Build\Intermediate')) | Out-Null
+    [IO.File]::WriteAllText((Join-Path $fixture 'probe.rc'), "1 RCDATA { 1, 2, 3 }`r`n", [Text.Encoding]::ASCII)
+    Git @('add', 'probe.cpp', 'tracked.h', 'probe.rc')
     Git @('commit', '-m', 'fixture')
     Git @('push', 'origin', 'HEAD:refs/heads/main')
     Compile 'probe'
+    $rawSources = @(& $srcTool -r -h -z $pdb) -join "`n"
+    Assert ($rawSources -match 'EngineProject\.res') 'Resource artifact missing from fixture PDB.'
     Index 0
     Index 0
     Assert (-not (Test-Path -LiteralPath $env:LOCALAPPDATA)) 'Indexing fetched Git sources.'
@@ -65,6 +71,7 @@ try {
     Assert ($stream.Contains('VERCTRL=Git')) 'Git provider missing.'
     Assert (-not $stream.Contains('Material.generated.h')) 'Generated header was indexed for Git retrieval.'
     Assert ($stream -notmatch '(?i)imgui\.h') 'Third-party header was indexed for Git retrieval.'
+    Assert (-not $stream.Contains('EngineProject.res')) 'Build artifact was indexed for Git retrieval.'
     Assert (-not $stream.Contains('HITORI_SOURCE_ROOT=')) 'Snapshot provider remains.'
     # Trust the extraction executable only for this isolated test process (never a global setting).
     $env:SRCSRV_INI_FILE = Join-Path $testRoot 'srcsrv.ini'

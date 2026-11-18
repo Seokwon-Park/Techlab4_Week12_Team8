@@ -39,6 +39,8 @@ try {
     $externalCount = 0
     $thirdPartyCount = 0
     $thirdPartyRoot = Join-Path $repository 'Source\ThirdParty\'
+    $buildArtifactCount = 0
+    $buildRoot = Join-Path $repository 'Build\'
     $generatedCount = 0
     $generatedRoot = Join-Path $repository 'Intermediate\Generated\'
     foreach ($line in $rawSources) {
@@ -53,6 +55,11 @@ try {
         # Third-party sources are not published through our Git source index.
         if ($original.StartsWith($thirdPartyRoot, [StringComparison]::OrdinalIgnoreCase)) {
             $thirdPartyCount++
+            continue
+        }
+        # PDBs also list linker inputs such as .res files, which are build artifacts.
+        if ($original.StartsWith($buildRoot, [StringComparison]::OrdinalIgnoreCase)) {
+            $buildArtifactCount++
             continue
         }
         Assert-StreamValue $original
@@ -130,7 +137,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Failed to read back PDB srcsrv stream.' }
     if ([IO.File]::ReadAllText($temporaryStream, $encoding) -cne $streamText) { throw 'PDB srcsrv verification failed.' }
     [IO.File]::Copy($temporaryPdb, $pdb, $true)
-    Write-Host "[Source indexing] $($entries.Count) project files; $externalCount external SDK entries, $thirdPartyCount third-party entries and $generatedCount generated files excluded."
+    Write-Host "[Source indexing] $($entries.Count) project files; $externalCount external SDK entries, $thirdPartyCount third-party entries, $buildArtifactCount build artifacts and $generatedCount generated files excluded."
     Write-Host '[Source indexing] Git commit metadata only. Push all indexed commits before distributing this build.'
 } catch {
     Write-Error $_ -ErrorAction Continue
