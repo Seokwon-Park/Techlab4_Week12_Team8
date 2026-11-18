@@ -15,6 +15,7 @@
 #include "UObject/UObjectIterator.h"
 #include "Render/GPUStats.h"
 #include "Render/SkinningStats.h"
+#include "Particles/ParticleStats.h"
 #include "Render/SkeletalMeshObject.h"
 #include "Components/SkinnedMeshComponent.h"
 #include "Editor/EditorUI/EditorIcons.h"
@@ -529,6 +530,28 @@ const FRenderStats& Stats = RenderData.RenderStats;
 			: FString("  Decal GPU -"), ValueColor });
 	}
 
+	if (FStatOverlay::IsEnabled(EStatFlags::Particles)) {
+		Lines.Add({ "Particles", TitleColor });
+		Lines.Add({ std::format("  Systems {}   Emitters {}", Stats.ParticleSystems, Stats.ParticleEmitters), ValueColor });
+		Lines.Add({ std::format("  Particles {}", Stats.ParticleCount), ValueColor });
+		Lines.Add({ std::format("  Draw Calls {}", Stats.ParticleDrawCalls), ValueColor });
+
+		// 시간은 모든 뷰를 합친 값이다 (Simulate는 프레임당 1번, Render Data는 뷰마다 1번)
+		ProfileLines.Add({ "Particles CPU (ms)", TitleColor, { "Last", "Avg", "Max" } });
+		for (TStatId Id : { ParticleStats::STAT_ParticleSimulate, ParticleStats::STAT_ParticleRenderData }) {
+			FProfileStatLine Line{ "  " + FString(Id.GetName()), ValueColor };
+			if (const FCycleStatData* D = FStatRegistry::Find(Id)) {
+				Line.Values[0] = std::format("{:.2f}", D->GetLastMs());
+				Line.Values[1] = std::format("{:.2f}", D->GetRecentAverageMs());
+				Line.Values[2] = std::format("{:.2f}", D->GetMaxMs());
+			}
+			else {
+				Line.Values[0] = Line.Values[1] = Line.Values[2] = "-";
+			}
+			ProfileLines.Add(Line);
+		}
+	}
+
 	if (FStatOverlay::IsEnabled(EStatFlags::Skinning)) {
 		uint32 NumCPU = 0, NumGPU = 0;
 		uint64 CPUVerts = 0, GPUVerts = 0, GPUBones = 0;
@@ -880,6 +903,7 @@ void FViewportsPanel::DrawViewportToolbar(int32 ViewIndex, FEditorViewportClient
 		const FFlagRow Rows[] = {
 			{ "Rendering", &Flags.Rendering },
 			{ "Skeletal Meshes", &Flags.SkeletalMeshes },
+			{ "Particles", &Flags.Particles },
 			{ "Decals", &Flags.Decals },
 			{ "Fog", &Flags.Fog },
 			{ "Anti-aliasing", &Flags.AntiAliasing },

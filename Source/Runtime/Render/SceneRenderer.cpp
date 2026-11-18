@@ -10,6 +10,8 @@
 #include "Tasks/Tasks.h"
 #include "Core/Stats/LightweightStats.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/ParticleSystemComponent.h"
+#include "Particles/ParticleStats.h"
 #include "Asset/LOD/StaticMeshLODSelector.h"
 #include "Render/SkyLightEnvironment.h"
 #include "Engine/SceneManagement.h"
@@ -181,6 +183,7 @@ void FSceneRenderer::InitViews(FRenderer* Renderer)
 	}
 
 	CachedViewContext.bShowSkeletalMesh = ViewFamily.EngineShowFlags.SkeletalMeshes;
+	CachedViewContext.bShowParticles = ViewFamily.EngineShowFlags.Particles;
 
 	// 월드 프리미티브 수집 및 절두체 컬링
 	GatherRenderPackets(World->GetScene(), RenderData, CachedViewContext, &View.Frustum, Renderer);
@@ -1358,6 +1361,10 @@ void FSceneRenderer::GatherRenderPackets(FScene& Scene, FSceneRenderData& Data,
 				if (Proxy->IsSkinned() && !View.bShowSkeletalMesh)
 					continue;
 
+				const UParticleSystemComponent* ParticleComponent = Cast<UParticleSystemComponent>(Primitive);
+				if (ParticleComponent && !View.bShowParticles)
+					continue;
+
 				const uint32 FirstNew = RenderQueue.Num();
 
 				// 프록시 캐시가 없는 스태틱 메시는 기존처럼 LOD를 골라 제출하고, 그 외는 컴포넌트에 맡긴다.
@@ -1367,9 +1374,25 @@ void FSceneRenderer::GatherRenderPackets(FScene& Scene, FSceneRenderData& Data,
 					const uint32 LOD = SelectedLODs[VisibleIndex];
 					StaticMeshComponent->SubmitToRenderQueue(RenderQueue, LOD);
 				}
+				else if (ParticleComponent)
+				{
+					// stat particles: 이 뷰에서 파티클이 만든 패킷 수 = 드로우 콜 (Mesh 인스턴싱은 섹션당 1)
+					{
+						SCOPE_CYCLE_COUNTER(ParticleStats::STAT_ParticleRenderData);
+						Proxy->GetDynamicMeshElements(RenderQueue, View);
+					}
+					++RenderStats.ParticleSystems;
+					RenderStats.ParticleDrawCalls += RenderQueue.Num() - FirstNew;
+					for (const FDynamicEmitterDataBase* Emitter : ParticleComponent->EmitterRenderData)
+					{
+						if (!Emitter || !Emitter->bValid) continue;
+						++RenderStats.ParticleEmitters;
+						RenderStats.ParticleCount += static_cast<uint32>(Emitter->GetSource().ActiveParticleCount);
+					}
+				}
 				else
 				{
-					Proxy->GetDynamicMeshElements(RenderQueue, View); 
+					Proxy->GetDynamicMeshElements(RenderQueue, View);
 				}
 
 				// continue 없이 항상 여기까지 와서 새 패킷에 여유 칸을 배정한다.

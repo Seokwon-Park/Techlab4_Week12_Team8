@@ -1,0 +1,245 @@
+{
+    "Emitters": [
+        {
+            "LODLevels": [
+                {
+                    "Enabled": true,
+                    "Level": 0,
+                    "Modules": [
+                        {
+                            "Class": "UParticleModuleSpawn",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "Burst0": {
+                                        "Count": 2,
+                                        "CountLow": -1,
+                                        "Time": 0.0
+                                    },
+                                    "Burst1": {
+                                        "Count": 0,
+                                        "CountLow": -1,
+                                        "Time": 0.0
+                                    },
+                                    "Burst2": {
+                                        "Count": 0,
+                                        "CountLow": -1,
+                                        "Time": 0.0
+                                    },
+                                    "Burst3": {
+                                        "Count": 0,
+                                        "CountLow": -1,
+                                        "Time": 0.0
+                                    },
+                                    "Rate": 0.0,
+                                    "bEnabled": true
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleLifetime",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "Lifetime": {
+                                        "Constant": 0.25,
+                                        "CurveEnd": 0.0,
+                                        "CurveStart": 0.0,
+                                        "Max": 0.0,
+                                        "Min": 0.0,
+                                        "Type": "Constant"
+                                    },
+                                    "bEnabled": true
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleSize",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "StartSize": {
+                                        "Constant": {
+                                            "X": 0.12,
+                                            "Y": 0.12,
+                                            "Z": 0.12
+                                        },
+                                        "CurveEnd": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "CurveStart": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "LockedAxes": "EDVLF_None",
+                                        "Max": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "Min": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "MirrorX": "EDVMF_Different",
+                                        "MirrorY": "EDVMF_Different",
+                                        "MirrorZ": "EDVMF_Different",
+                                        "Type": "Constant"
+                                    },
+                                    "bEnabled": true
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleColor",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "StartColor": {
+                                        "Constant": {
+                                            "X": 0.55,
+                                            "Y": 0.75,
+                                            "Z": 1.0
+                                        },
+                                        "CurveEnd": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "CurveStart": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "LockedAxes": "EDVLF_None",
+                                        "Max": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "Min": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "MirrorX": "EDVMF_Different",
+                                        "MirrorY": "EDVMF_Different",
+                                        "MirrorZ": "EDVMF_Different",
+                                        "Type": "Constant"
+                                    },
+                                    "StartAlpha": {
+                                        "Constant": 1.0,
+                                        "CurveEnd": 0.0,
+                                        "CurveStart": 0.0,
+                                        "Max": 0.0,
+                                        "Min": 0.0,
+                                        "Type": "Constant"
+                                    },
+                                    "bEnabled": true
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UParticleModuleColorOverLife",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "ColorOverLife": {
+                                        "Constant": {
+                                            "X": 0.55,
+                                            "Y": 0.75,
+                                            "Z": 1.0
+                                        },
+                                        "CurveEnd": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "CurveStart": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "LockedAxes": "EDVLF_None",
+                                        "Max": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "Min": {
+                                            "X": 0.0,
+                                            "Y": 0.0,
+                                            "Z": 0.0
+                                        },
+                                        "MirrorX": "EDVMF_Different",
+                                        "MirrorY": "EDVMF_Different",
+                                        "MirrorZ": "EDVMF_Different",
+                                        "Type": "Constant"
+                                    },
+                                    "AlphaOverLife": {
+                                        "Constant": 1.0,
+                                        "CurveEnd": 0.2,
+                                        "CurveStart": 1.0,
+                                        "Max": 0.0,
+                                        "Min": 0.0,
+                                        "Type": "ConstantCurve"
+                                    },
+                                    "bEnabled": true
+                                }
+                            }
+                        }
+                    ],
+                    "Properties": {
+                        "MinDistance": 0.0
+                    },
+                    "Required": {
+                        "Class": "UParticleModuleRequired",
+                        "Curves": {},
+                        "Object": {
+                            "Properties": {
+                                "Material": null,
+                                "Texture": "WhiteTexture",
+                                "bAdditive": true,
+                                "SubImagesHorizontal": 1,
+                                "SubImagesVertical": 1,
+                                "bUseLocalSpace": false,
+                                "SortMode": 0,
+                                "EmitterDuration": 0.25,
+                                "EmitterLoops": 0,
+                                "bEnabled": true
+                            }
+                        }
+                    },
+                    "TypeData": {
+                        "Class": "UParticleModuleTypeDataBeam",
+                        "Curves": {},
+                        "Object": {
+                            "Properties": {
+                                "TargetOffset": {
+                                    "X": 0.0,
+                                    "Y": 0.0,
+                                    "Z": 5.0
+                                },
+                                "Segments": 28,
+                                "NoiseAmplitude": 0.45,
+                                "NoiseFrequency": 3.5,
+                                "NoiseSpeed": 14.0,
+                                "TextureTile": 1.0,
+                                "bEnabled": true
+                            }
+                        }
+                    }
+                }
+            ],
+            "Properties": {
+                "EmitterName": "Lightning"
+            }
+        }
+    ],
+    "Properties": {},
+    "Version": 1
+}

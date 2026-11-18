@@ -88,6 +88,10 @@ public:
 	FVector OldLocation;
 	/** The number of loops completed by the instance.					*/
 	int32 LoopCount;
+	/** 이번 루프에서 이미 터진 Burst 슬롯 (UParticleModuleSpawn::MaxBursts개). 루프가 바뀌면 지운다 */
+	bool BurstFired[4] = {};
+	/** BurstFired가 기록된 루프 번호. -1이면 아직 없음 */
+	int32 BurstLoopIndex = -1;
 	/** The current duration fo the emitter instance.					*/
 	float EmitterDuration;
 	/** The material to render this instance with.						*/

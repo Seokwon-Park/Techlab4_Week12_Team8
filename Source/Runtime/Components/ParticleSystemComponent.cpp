@@ -1,6 +1,7 @@
 #include "EnginePCH.h"
 #include "ParticleSystemComponent.h"
 #include "Engine/ParticleSystemSceneProxy.h"
+#include "Particles/ParticleStats.h"
 #include "Particles/ParticleEmitter.h"
 #include "Particles/ParticleLODLevel.h"
 #include "Particles/ParticleModuleRequired.h"
@@ -336,6 +337,7 @@ void UParticleSystemComponent::UpdateLODLevelFromCamera()
 void UParticleSystemComponent::TickComponent(float DeltaTime)
 {
 	Super::TickComponent(DeltaTime);
+	SCOPE_CYCLE_COUNTER(ParticleStats::STAT_ParticleSimulate);   // stat particles
 	CollisionEvents.Reset();
 	if (!std::isfinite(DeltaTime) || DeltaTime <= 0.0f)
 	{

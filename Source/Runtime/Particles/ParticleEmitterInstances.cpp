@@ -138,6 +138,8 @@ void FParticleEmitterInstance::Init()
 	TypeDataInstanceOffset = -1;
 	SpawnFraction = SecondsSinceCreation = EmitterTime = LastDeltaTime = 0.0f;
 	LoopCount = 0;
+	BurstLoopIndex = -1;
+	std::fill(std::begin(BurstFired), std::end(BurstFired), false);
 	EmitterDuration = 0.0f; // 아래에서 현재 LOD의 Required 설정을 읽는다.
 	bHaltSpawning = bEmitterIsDone = false;
 	Location = Component ? Component->GetWorldLocation() : FVector(0.0f);
@@ -373,6 +375,23 @@ float FParticleEmitterInstance::Spawn(float DeltaTime)
 	{
 		return SpawnFraction;
 	}
+	const bool bLocalSpawn = CurrentLODLevel->RequiredModule && CurrentLODLevel->RequiredModule->bUseLocalSpace;
+
+	// Burst: 루프마다 슬롯별로 한 번씩, 루프 시작부터 흐른 시간(EmitterTime)이 Burst.Time을 넘으면 터진다
+	static_assert(sizeof(BurstFired) / sizeof(BurstFired[0]) == UParticleModuleSpawn::MaxBursts, "Burst 슬롯 수 불일치");
+	FParticleBurstFired Fired;
+	if (BurstLoopIndex == LoopCount)
+	{
+		std::copy(std::begin(BurstFired), std::end(BurstFired), Fired.Fired);
+	}
+	BurstLoopIndex = LoopCount;
+	const int32 BurstCount = SpawnModule->GetBurstCount(EmitterTime, Fired);
+	std::copy(std::begin(Fired.Fired), std::end(Fired.Fired), BurstFired);
+	if (BurstCount > 0)
+	{
+		SpawnParticles(BurstCount, 0.0f, 0.0f, bLocalSpawn ? FVector(0.0f) : Location, FVector(0.0f), nullptr);
+	}
+
 	const float Rate = SpawnModule->Rate;
 	if (!std::isfinite(Rate) || Rate <= 0.0f)
 	{

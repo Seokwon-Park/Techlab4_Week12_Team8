@@ -48,6 +48,12 @@ struct FRenderStats
 	uint32 CascadeViewsRedrawn = 0;
 	uint32 CascadeViewsCached = 0;
 
+	// stat particles. 이 뷰에서 그린 것만 센다 (컬링·Show Flag로 빠진 컴포넌트는 제외)
+	uint32 ParticleSystems = 0;    // 그려진 파티클 시스템 컴포넌트 수
+	uint32 ParticleEmitters = 0;   // 그릴 데이터가 있던 이미터 수 (bValid)
+	uint32 ParticleCount = 0;      // 그 이미터들의 활성 파티클 합
+	uint32 ParticleDrawCalls = 0;  // 파티클이 큐에 넣은 패킷 수
+
 	void Reset() { *this = FRenderStats(); }
 };
 

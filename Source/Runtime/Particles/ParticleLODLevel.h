@@ -28,7 +28,8 @@ public:
 	/** The index value of the LOD level */
 	int32 Level = 0;
 
-	/** 이 LOD를 선택할 최소 카메라 거리 (엔진 월드 단위). LOD0은 0. */
+	/** 이 LOD를 선택할 최소 카메라 거리 (엔진 월드 단위). LOD0은 0. UPROPERTY라야 .particle에 저장된다 */
+	UPROPERTY(EditAnywhere)
 	float MinDistance = 0.0f;
 
 	/** False면 생성/모듈 실행/렌더링을 생략한다. 기존 파티클의 수명은 계속 흐른다. */

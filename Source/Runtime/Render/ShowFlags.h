@@ -19,6 +19,8 @@ struct FEngineShowFlags
 	bool CameraOverlay = true;
 	// 스켈레탈 메시
 	bool SkeletalMeshes = true;
+	// 파티클 시스템 컴포넌트 (Sprite, Mesh, Beam, Ribbon 이미터 전부). UE의 Particles 쇼 플래그
+	bool Particles = true;
 };
 
 // 뷰포트가 씬을 어떤 방식으로 보여 줄지. 한 번에 하나만 고른다.
