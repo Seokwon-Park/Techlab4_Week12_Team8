@@ -385,9 +385,10 @@ float FParticleEmitterInstance::Spawn(float DeltaTime)
 		std::copy(std::begin(BurstFired), std::end(BurstFired), Fired.Fired);
 	}
 	BurstLoopIndex = LoopCount;
+	const int32 EmitterLoops = CurrentLODLevel->RequiredModule->EmitterLoops;
 	const int32 BurstCount = SpawnModule->GetBurstCount(EmitterTime, Fired);
 	std::copy(std::begin(Fired.Fired), std::end(Fired.Fired), BurstFired);
-	if (BurstCount > 0)
+	if (BurstCount > 0 && (EmitterLoops == 0 || LoopCount < EmitterLoops))
 	{
 		SpawnParticles(BurstCount, 0.0f, 0.0f, bLocalSpawn ? FVector(0.0f) : Location, FVector(0.0f), nullptr);
 	}

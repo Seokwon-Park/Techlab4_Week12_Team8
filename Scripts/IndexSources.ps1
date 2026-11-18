@@ -39,6 +39,10 @@ try {
     $entries = [Collections.Generic.List[object]]::new()
     $seen = @{}
     $externalCount = 0
+    $thirdPartyCount = 0
+    $buildArtifactCount = 0
+    $thirdPartyRoot = Join-Path $repository 'Source\ThirdParty\'
+    $buildRoot = Join-Path $repository 'Build\'
     foreach ($line in $rawSources) {
         if ($line -notmatch '^(.*?)\t\s*Checksum (MD5|SHA1|SHA256):\s*([0-9A-Fa-f]+)\s*$') { continue }
         $original = $Matches[1]
@@ -46,6 +50,15 @@ try {
         $expected = $Matches[3]
         if (-not $original.StartsWith($repository, [StringComparison]::OrdinalIgnoreCase)) {
             $externalCount++
+            continue
+        }
+        # Keep external libraries and linker inputs (.res, etc.) out of the source store.
+        if ($original.StartsWith($thirdPartyRoot, [StringComparison]::OrdinalIgnoreCase)) {
+            $thirdPartyCount++
+            continue
+        }
+        if ($original.StartsWith($buildRoot, [StringComparison]::OrdinalIgnoreCase)) {
+            $buildArtifactCount++
             continue
         }
         if ($original -match '[%*\r\n]') { throw "Unsupported source path: $original" }
@@ -121,7 +134,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Failed to read back PDB srcsrv stream.' }
     if ([IO.File]::ReadAllText($temporaryStream, $encoding) -cne $streamText) { throw 'PDB srcsrv verification failed.' }
     [IO.File]::Copy($temporaryPdb, $pdb, $true)
-    Write-Host "[Source indexing] $($entries.Count) project files; $externalCount external SDK entries excluded."
+    Write-Host "[Source indexing] $($entries.Count) project files; $externalCount external SDK entries, $thirdPartyCount third-party entries and $buildArtifactCount build artifacts excluded."
     Write-Host "[Source indexing] $sourceStore"
     if (-not $sourceStore.StartsWith('\\')) {
         Write-Warning 'Local source store: other PCs need access to this path or a HITORI_SOURCE_ROOT override in srcsrv.ini.'
