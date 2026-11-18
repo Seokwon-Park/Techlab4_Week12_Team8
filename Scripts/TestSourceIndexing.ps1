@@ -44,7 +44,11 @@ try {
     Git @('remote', 'add', 'origin', 'https://source-index.invalid/fixture.git')
     Git @('init', '--bare', $remote)
     [IO.File]::WriteAllText($header, "#define PROBE_VALUE 0`r`n", [Text.Encoding]::ASCII)
-    $original = "#include `"tracked.h`"`r`nint main() { return PROBE_VALUE; }`r`n"
+    $generatedDirectory = Join-Path $fixture 'Intermediate\Generated\Runtime'
+    [IO.Directory]::CreateDirectory($generatedDirectory) | Out-Null
+    $generatedHeader = Join-Path $generatedDirectory 'Material.generated.h'
+    [IO.File]::WriteAllText($generatedHeader, "#define GENERATED_VALUE 0`r`n", [Text.Encoding]::ASCII)
+    $original = "#include `"tracked.h`"`r`n#include `"Intermediate/Generated/Runtime/Material.generated.h`"`r`nint main() { return PROBE_VALUE + GENERATED_VALUE; }`r`n"
     [IO.File]::WriteAllText($source, $original, [Text.Encoding]::ASCII)
     Git @('add', 'probe.cpp', 'tracked.h')
     Git @('commit', '-m', 'fixture')
@@ -56,6 +60,7 @@ try {
     & (Join-Path $PSScriptRoot 'SetupGitSourceDebugging.ps1') -SessionOnly
     $stream = @(& $pdbStr -r "-p:$pdb" -s:srcsrv) -join "`n"
     Assert ($stream.Contains('VERCTRL=Git')) 'Git provider missing.'
+    Assert (-not $stream.Contains('Material.generated.h')) 'Generated header was indexed for Git retrieval.'
     Assert (-not $stream.Contains('HITORI_SOURCE_ROOT=')) 'Snapshot provider remains.'
     # Trust the extraction executable only for this isolated test process (never a global setting).
     $env:SRCSRV_INI_FILE = Join-Path $testRoot 'srcsrv.ini'

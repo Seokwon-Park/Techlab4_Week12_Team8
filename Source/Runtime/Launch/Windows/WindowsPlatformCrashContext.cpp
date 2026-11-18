@@ -21,6 +21,7 @@ namespace
 
     // 시작 시 준비하고 프로세스가 끝날 때까지 유지한다. 크래시 경로에서는
     // 스레드 생성이나 요청 저장 공간의 동적 할당을 하지 않는다.
+
     HANDLE DumpRequestedEvent = nullptr;
     HANDLE DumpThread = nullptr;
     unsigned DumpThreadId = 0;

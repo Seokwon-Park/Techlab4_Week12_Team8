@@ -37,6 +37,8 @@ try {
     $entries = [Collections.Generic.List[object]]::new()
     $seen = @{}
     $externalCount = 0
+    $generatedCount = 0
+    $generatedRoot = Join-Path $repository 'Intermediate\Generated\'
     foreach ($line in $rawSources) {
         if ($line -notmatch '^(.*?)\t\s*Checksum (MD5|SHA1|SHA256):\s*([0-9A-Fa-f]+)\s*$') { continue }
         $original = $Matches[1]
@@ -58,6 +60,11 @@ try {
         try { $actual = [BitConverter]::ToString($hasher.ComputeHash($bytes)).Replace('-', '') }
         finally { $hasher.Dispose() }
         if ($actual -ne $expected) { throw "Source differs from PDB: $original. Rebuild required." }
+        # HHT output is checked against the PDB, but cannot be retrieved from Git.
+        if ($original.StartsWith($generatedRoot, [StringComparison]::OrdinalIgnoreCase)) {
+            $generatedCount++
+            continue
+        }
         # Resolve the owning repository separately for submodule sources.
         $owner = Git-Text ([IO.Path]::GetDirectoryName($original)) @('rev-parse', '--show-toplevel')
         if (-not $repositories.ContainsKey($owner)) {
@@ -116,7 +123,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Failed to read back PDB srcsrv stream.' }
     if ([IO.File]::ReadAllText($temporaryStream, $encoding) -cne $streamText) { throw 'PDB srcsrv verification failed.' }
     [IO.File]::Copy($temporaryPdb, $pdb, $true)
-    Write-Host "[Source indexing] $($entries.Count) project files; $externalCount external SDK entries excluded."
+    Write-Host "[Source indexing] $($entries.Count) project files; $externalCount external SDK entries and $generatedCount generated files excluded."
     Write-Host '[Source indexing] Git commit metadata only. Push all indexed commits before distributing this build.'
 } catch {
     Write-Error $_ -ErrorAction Continue
