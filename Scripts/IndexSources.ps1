@@ -37,6 +37,8 @@ try {
     $entries = [Collections.Generic.List[object]]::new()
     $seen = @{}
     $externalCount = 0
+    $thirdPartyCount = 0
+    $thirdPartyRoot = Join-Path $repository 'Source\ThirdParty\'
     $generatedCount = 0
     $generatedRoot = Join-Path $repository 'Intermediate\Generated\'
     foreach ($line in $rawSources) {
@@ -46,6 +48,11 @@ try {
         $expected = $Matches[3]
         if (-not $original.StartsWith($repository, [StringComparison]::OrdinalIgnoreCase)) {
             $externalCount++
+            continue
+        }
+        # Third-party sources are not published through our Git source index.
+        if ($original.StartsWith($thirdPartyRoot, [StringComparison]::OrdinalIgnoreCase)) {
+            $thirdPartyCount++
             continue
         }
         Assert-StreamValue $original
@@ -123,7 +130,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Failed to read back PDB srcsrv stream.' }
     if ([IO.File]::ReadAllText($temporaryStream, $encoding) -cne $streamText) { throw 'PDB srcsrv verification failed.' }
     [IO.File]::Copy($temporaryPdb, $pdb, $true)
-    Write-Host "[Source indexing] $($entries.Count) project files; $externalCount external SDK entries and $generatedCount generated files excluded."
+    Write-Host "[Source indexing] $($entries.Count) project files; $externalCount external SDK entries, $thirdPartyCount third-party entries and $generatedCount generated files excluded."
     Write-Host '[Source indexing] Git commit metadata only. Push all indexed commits before distributing this build.'
 } catch {
     Write-Error $_ -ErrorAction Continue

@@ -14,7 +14,8 @@ PDB 체크섬, Git HEAD의 파일을 비교한 뒤 원격 주소, 전체 커밋 
 
 빌드 후 수정된 파일, HEAD와 다른 빌드 소스, Git에 없는 일반 소스는 등록을 중단한다.
 `Intermediate/Generated/`의 HHT 생성 파일은 PDB 체크섬 검증 후 Git 인덱싱에서 제외한다.
-이 생성 파일은 다른 PC에서 소스 서버를 통해 자동 복원할 수 없다. 기존 게시 PDB와 기존 `Sources`
+`Source/ThirdParty/` 전체는 체크섬 검증과 Git 조회 전에 제외한다.
+이 생성 파일과 ThirdParty 소스는 다른 PC에서 소스 서버를 통해 자동 복원할 수 없다. 기존 게시 PDB와 기존 `Sources`
 사본은 자동으로 변경하거나 삭제하지 않는다. 새 방식은 재게시한 PDB에 적용된다.
 
 ## 디버깅 PC에서 한 번 설정

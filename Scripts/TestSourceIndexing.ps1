@@ -48,7 +48,10 @@ try {
     [IO.Directory]::CreateDirectory($generatedDirectory) | Out-Null
     $generatedHeader = Join-Path $generatedDirectory 'Material.generated.h'
     [IO.File]::WriteAllText($generatedHeader, "#define GENERATED_VALUE 0`r`n", [Text.Encoding]::ASCII)
-    $original = "#include `"tracked.h`"`r`n#include `"Intermediate/Generated/Runtime/Material.generated.h`"`r`nint main() { return PROBE_VALUE + GENERATED_VALUE; }`r`n"
+    $thirdPartyDirectory = Join-Path $fixture 'Source\ThirdParty\ImGui'
+    [IO.Directory]::CreateDirectory($thirdPartyDirectory) | Out-Null
+    [IO.File]::WriteAllText((Join-Path $thirdPartyDirectory 'imgui.h'), "#define THIRD_PARTY_VALUE 0`r`n", [Text.Encoding]::ASCII)
+    $original = "#include `"tracked.h`"`r`n#include `"Intermediate/Generated/Runtime/Material.generated.h`"`r`n#include `"Source/ThirdParty/ImGui/ImGui.h`"`r`nint main() { return PROBE_VALUE + GENERATED_VALUE + THIRD_PARTY_VALUE; }`r`n"
     [IO.File]::WriteAllText($source, $original, [Text.Encoding]::ASCII)
     Git @('add', 'probe.cpp', 'tracked.h')
     Git @('commit', '-m', 'fixture')
@@ -61,6 +64,7 @@ try {
     $stream = @(& $pdbStr -r "-p:$pdb" -s:srcsrv) -join "`n"
     Assert ($stream.Contains('VERCTRL=Git')) 'Git provider missing.'
     Assert (-not $stream.Contains('Material.generated.h')) 'Generated header was indexed for Git retrieval.'
+    Assert ($stream -notmatch '(?i)imgui\.h') 'Third-party header was indexed for Git retrieval.'
     Assert (-not $stream.Contains('HITORI_SOURCE_ROOT=')) 'Snapshot provider remains.'
     # Trust the extraction executable only for this isolated test process (never a global setting).
     $env:SRCSRV_INI_FILE = Join-Path $testRoot 'srcsrv.ini'
