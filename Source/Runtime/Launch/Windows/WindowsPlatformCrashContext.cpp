@@ -4,6 +4,11 @@
 #include <filesystem>
 #include <DbgHelp.h>
 #include <cwchar>
+#include <csignal>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <exception>
 
 #pragma comment(lib, "dbghelp.lib")
 
@@ -11,6 +16,11 @@ namespace
 {
     wchar_t DumpDirectory[MAX_PATH]{};
     volatile LONG DumpStarted = 0;
+
+    constexpr DWORD CrtInvalidParameterCode = 0xE0000002;
+    constexpr DWORD PureCallCode = 0xE0000003;
+    constexpr DWORD TerminateCode = 0xE0000004;
+    constexpr DWORD AbortCode = 0xE0000005;
 
     bool WriteMinidump(EXCEPTION_POINTERS* ExceptionPointers)
     {
@@ -83,6 +93,42 @@ namespace
         return EXCEPTION_EXECUTE_HANDLER;
     }
 
+    // CRT 종료 경로에서도 유효한 예외 컨텍스트를 확보해 기존 덤프 작성기를 사용한다.
+    // 로컬 SEH로 처리하므로 호출자의 catch (...) 유무와 관계없이 덤프를 시도한다.
+    [[noreturn]] void ReportRuntimeFailure(DWORD ExceptionCode)
+    {
+        __try
+        {
+            ::RaiseException(ExceptionCode, EXCEPTION_NONCONTINUABLE, 0, nullptr);
+        }
+        __except (EngineUnhandledExceptionFilter(GetExceptionInformation()))
+        {
+        }
+
+        ::TerminateProcess(::GetCurrentProcess(), ExceptionCode);
+        ::ExitProcess(ExceptionCode);
+    }
+
+    void __cdecl OnInvalidParameter(const wchar_t*, const wchar_t*, const wchar_t*, unsigned int, std::uintptr_t)
+    {
+        ReportRuntimeFailure(CrtInvalidParameterCode);
+    }
+
+    void __cdecl OnPureCall()
+    {
+        ReportRuntimeFailure(PureCallCode);
+    }
+
+    void __cdecl OnTerminate()
+    {
+        ReportRuntimeFailure(TerminateCode);
+    }
+
+    void __cdecl OnAbort(int)
+    {
+        ReportRuntimeFailure(AbortCode);
+    }
+
     __declspec(noinline) unsigned char CrashStackOverflow(unsigned Depth)
     {
         volatile unsigned char Frame[4096];
@@ -131,6 +177,10 @@ void WindowsPlatformCrashContext::RegisterUnhandledExceptionHandler()
 
     ::wcscpy_s(DumpDirectory, _countof(DumpDirectory), Directory.c_str());
     ::SetUnhandledExceptionFilter(&EngineUnhandledExceptionFilter);
+    ::_set_invalid_parameter_handler(&OnInvalidParameter);
+    ::_set_purecall_handler(&OnPureCall);
+    std::set_terminate(&OnTerminate);
+    std::signal(SIGABRT, &OnAbort);
 }
 
 __declspec(noinline) void WindowsPlatformCrashContext::CrashDefault()
@@ -163,4 +213,27 @@ void WindowsPlatformCrashContext::TriggerStackOverflow()
     }
 
     CrashStackOverflow(0);
+}
+
+__declspec(noinline) void WindowsPlatformCrashContext::CrashInvalidParameter()
+{
+    char Buffer[2]{};
+    ::strcpy_s(Buffer, _countof(Buffer), "abc");
+}
+
+__declspec(noinline) void WindowsPlatformCrashContext::CrashPureCall()
+{
+    // 미정의 동작에 의존하지 않고 CRT의 순수 가상 함수 오류 진입점을 호출한다.
+    volatile int Result = ::_purecall();
+    (void)Result;
+}
+
+__declspec(noinline) void WindowsPlatformCrashContext::CrashTerminate()
+{
+    std::terminate();
+}
+
+__declspec(noinline) void WindowsPlatformCrashContext::CrashAbort()
+{
+    std::abort();
 }

@@ -8,4 +8,8 @@ namespace WindowsPlatformCrashContext
     void CrashDivideByZero();
     void CrashNullPointer();
     void TriggerStackOverflow();
+    void CrashInvalidParameter();
+    void CrashPureCall();
+    void CrashTerminate();
+    void CrashAbort();
 }
