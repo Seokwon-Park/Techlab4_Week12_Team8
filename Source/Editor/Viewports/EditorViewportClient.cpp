@@ -235,6 +235,9 @@ void FEditorViewportClient::Draw(FViewport* InViewport, FUIRenderer* Canvas)
 	ViewFamily.RenderTarget = &InViewport->GetViewTargets();
 	ViewFamily.World = TargetWorld;
 	ViewFamily.EngineShowFlags = EngineShowFlags;
+	// 안개는 Lit 뷰 모드에서만 그린다. 사용자가 Show 메뉴로 끈 값은 그대로 둔다.
+	if (GetViewMode() != VMI_Lit)
+		ViewFamily.EngineShowFlags.Fog = false;
 	ViewFamily.ViewMode = GetViewMode();
 	ViewFamily.RenderOptions = RenderOptions;
 	ViewFamily.Views.Add(&SceneView);
@@ -297,6 +300,24 @@ void FEditorViewportClient::SetViewportType(const ELevelViewportType InType) {
     bIsPerspective = false;
     ViewLocation = FVector(0.0f, 20.0f, 0.0f);
     ViewRotation = FRotator(0.0f, -90.0f, 0.0f);
+    break;
+  // 아래 셋은 위의 Top / Front / Right를 반대쪽에서 본다.
+  case ELevelViewportType::Bottom:
+    bIsPerspective = false;
+    ViewLocation = FVector(0.0f, 0.0f, -20.0f);
+    ViewRotation = FRotator(-90.0f, 0.0f, 0.0f);
+    break;
+  case ELevelViewportType::Back:
+    bIsPerspective = false;
+    ViewLocation = FVector(-20.0f, 0.0f, 0.0f);
+    ViewRotation = FRotator(0.0f, 0.0f, 0.0f);
+    break;
+  case ELevelViewportType::Left:
+    bIsPerspective = false;
+    ViewLocation = FVector(0.0f, -20.0f, 0.0f);
+    ViewRotation = FRotator(0.0f, 90.0f, 0.0f);
+    break;
+  default:
     break;
   }
 }

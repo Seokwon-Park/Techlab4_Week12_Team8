@@ -3,6 +3,7 @@
 #include "UObject/ObjectMacros.h"
 #include "UObject/Class.h"
 #include "Math/Vector.h"
+#include "Particles/ParticleCurve.h"
 #include "Distributions.generated.h"
 
 // 분포 종류
@@ -12,6 +13,7 @@ enum class ERawDistributionType : uint8
 	Constant,       // 상수
 	Uniform,        // Min~Max 랜덤값
 	ConstantCurve,  // 입력을 0~1로 자른 후 보간
+	Curve,
 };
 
 // Uniform 벡터에서 한 축의 값을 다른 축에 그대로 쓴다
@@ -55,6 +57,13 @@ public:
 	void GetOutRange(float& OutMin, float& OutMax) const;
 
 	ERawDistributionType GetType() const { return Type; }
+
+	// 추가: 키가 없으면 Constant를 첫 키로 삼는다 (커브 에디터가 트랙을 열 때 부른다)
+	void EnsureCurveKeys();
+
+	// 추가: Curve 타입의 키. UPROPERTY가 아니다 (구조체 안 TArray는 리플렉션이 저장 못 함).
+	// 저장은 11단계가, 편집은 12단계 커브 에디터가 한다
+	FParticleCurve Curve;
 
 private:
 	UPROPERTY(EditAnywhere)
@@ -104,6 +113,11 @@ public:
 	void GetOutRange(float& OutMin, float& OutMax) const;
 
 	ERawDistributionType GetType() const { return Type; }
+
+	void EnsureCurveKeys();
+
+	// 축마다 독립 커브 (X, Y, Z). 색 분포면 R, G, B
+	FParticleCurve Curves[3];
 
 private:
 	// Uniform에서 Mirror Flags를 적용한 축별 Min / Max

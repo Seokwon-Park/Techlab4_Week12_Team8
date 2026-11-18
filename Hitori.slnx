@@ -3,8 +3,10 @@
     <BuildType Name="Benchmark" />
     <BuildType Name="Benchmark_Debug" />
     <BuildType Name="Debug" />
+    <BuildType Name="DebugPublishSymbols" />
     <BuildType Name="ObjViewer" />
     <BuildType Name="Release" />
+    <BuildType Name="ReleasePublishSymbols" />
     <BuildType Name="Shipping" />
     <Platform Name="x64" />
   </Configurations>

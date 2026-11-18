@@ -45,6 +45,8 @@ struct FMeshDrawBatch
 	FVertexBuffer* VertexBuffer = nullptr;
 	FIndexBuffer* IndexBuffer = nullptr;
 	const FStructuredBuffer* BoneBuffer = nullptr;
+	std::span<const FMeshParticleInstanceVertex> MeshParticleInstances;
+	FVertexShader* MeshParticleFallbackVS = nullptr;
 
 	TArray<FTextureBinding> Textures;
 	ESamplerState Sampler = ESamplerState::LinearClamp;

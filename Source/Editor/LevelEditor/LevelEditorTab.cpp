@@ -18,6 +18,13 @@ namespace
 	}
 }
 
+bool FLevelEditorTab::GetTabIcon(EEditorIcon& OutIcon, ImU32& OutColor) const
+{
+	OutIcon = EEditorIcon::Level;
+	OutColor = IM_COL32(255, 160, 40, 255);   // 콘텐츠 드로어의 Level 색
+	return true;
+}
+
 FLevelEditorTab::FLevelEditorTab()
 {
 	OnLevelLoaded.Add([this](std::string_view Path) {
@@ -122,6 +129,8 @@ void FLevelEditorTab::OnRender(bool bActive)
 
 		ImGuiDockNodeFlags Flags = bPassthruCentralNode
 			? ImGuiDockNodeFlags_PassthruCentralNode : ImGuiDockNodeFlags_None;
+		// UE5처럼 탭마다 닫기(X)만 두고, 탭 줄 왼쪽의 창 메뉴(Hide tab bar)와 노드 오른쪽 끝의 닫기는 없앤다.
+		Flags |= ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoCloseButton;
 		if (!bActive)
 			Flags |= ImGuiDockNodeFlags_KeepAliveOnly;
 

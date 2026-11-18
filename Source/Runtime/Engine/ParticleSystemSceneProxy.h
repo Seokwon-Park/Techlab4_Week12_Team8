@@ -38,6 +38,7 @@ private:
 	static FIndexBuffer* GetSharedQuadIndexBuffer();
 
 	void DrawSpriteEmitter(const FDynamicSpriteEmitterData& Data, int32 EmitterIndex, FRenderQueue& Queue, const FViewContext& View);
+	void DrawMeshEmitter(const FDynamicMeshEmitterData& Data, FRenderQueue& Queue, const FViewContext& View);
 
 	TMap<uint64, TUniquePtr<FSpriteDrawSlot>> Slots;
 	TArray<FParticleOrder> SortScratch;

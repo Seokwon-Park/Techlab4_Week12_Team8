@@ -45,6 +45,7 @@
 #include "Script/LuaBindings.h"
 #include "Physics/Collision.h"
 #include "Components/ShapeComponent.h"
+#include "Particles/ParticleEventManager.h"
 
 namespace
 {
@@ -289,6 +290,16 @@ void UWorld::PreviewWorldTick(float DeltaTime)
 		Comp->TickComponent(DeltaTime);
 	}
 
+	// 파티클 에디터 미리보기: 미리보기 월드는 이 함수만 돌므로 PSC도 여기서 Tick한다
+	for (TObjectIterator<UParticleSystemComponent> Comp; Comp; ++Comp)
+	{
+		if (!Comp || !Comp->IsRegistered() || Comp->GetWorld() != this)
+		{
+			continue;
+		}
+
+		Comp->TickComponent(DeltaTime);
+	}
 }
 
 void UWorld::ClearWorld()
@@ -903,6 +914,9 @@ void UWorld::BeginPlay()
 	
 	if (PlayerController && PlayerPawn) PlayerController->Possess(PlayerPawn);
 
+	if (!MyParticleEventManager)
+		MyParticleEventManager = SpawnActor<AParticleEventManager>();
+
 	// 기존 액터 목록을 고정한 후 시작한다. BeginPlay 중 생성된 액터는 대기열로 간다.
 	TArray<AActor*> InitialActors;
 	for (ULevel* Level : Levels)
@@ -934,6 +948,7 @@ void UWorld::EndPlay()
 	PlayerController = nullptr;
 	PlayerPawn = nullptr;
 	bIsPaused = false;
+	MyParticleEventManager = nullptr;
 }
 
 UWorld* UWorld::CreateWorld(const EWorldType InWorldType, bool bInformEngineOfWorld, FName WorldName)

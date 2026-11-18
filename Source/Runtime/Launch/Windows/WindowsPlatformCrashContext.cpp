@@ -1,0 +1,166 @@
+#include "EnginePCH.h"
+#include "WindowsPlatformCrashContext.h"
+
+#include <filesystem>
+#include <DbgHelp.h>
+#include <cwchar>
+
+#pragma comment(lib, "dbghelp.lib")
+
+namespace
+{
+    wchar_t DumpDirectory[MAX_PATH]{};
+    volatile LONG DumpStarted = 0;
+
+    bool WriteMinidump(EXCEPTION_POINTERS* ExceptionPointers)
+    {
+        SYSTEMTIME CrashTime{};
+        ::GetLocalTime(&CrashTime);
+
+        wchar_t DumpPath[MAX_PATH]{};
+        if (::_snwprintf_s(
+            DumpPath, _countof(DumpPath), _TRUNCATE,
+            L"%ls\\Hitori-%lu-%04hu-%02hu-%02hu_%02hu-%02hu-%02hu.dmp",
+            DumpDirectory, ::GetCurrentProcessId(),
+            CrashTime.wYear, CrashTime.wMonth, CrashTime.wDay,
+            CrashTime.wHour, CrashTime.wMinute, CrashTime.wSecond) < 0)
+        {
+            return false;
+        }
+
+        const HANDLE DumpFile = ::CreateFileW(DumpPath, GENERIC_WRITE, 0, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
+
+        if (DumpFile == INVALID_HANDLE_VALUE)
+        {
+            return false;
+        }
+
+        MINIDUMP_EXCEPTION_INFORMATION ExceptionInfo{};
+        ExceptionInfo.ThreadId = ::GetCurrentThreadId();
+        ExceptionInfo.ExceptionPointers = ExceptionPointers;
+        ExceptionInfo.ClientPointers = FALSE;
+
+        const BOOL Written = ::MiniDumpWriteDump(::GetCurrentProcess(), ::GetCurrentProcessId(), DumpFile, MiniDumpNormal, &ExceptionInfo, nullptr, nullptr);
+
+        ::CloseHandle(DumpFile);
+
+        if (!Written)
+        {
+            ::DeleteFileW(DumpPath);
+            return false;
+        }
+
+        wchar_t Message[MAX_PATH + 128]{};
+        const int MessageLength = ::swprintf_s(
+            Message,
+            _countof(Message),
+            L"Hitori가 예기치 않게 종료됩니다.\n\n덤프 저장 위치:\n%ls",
+            DumpPath);
+
+        ::MessageBoxW(
+            nullptr,
+            MessageLength >= 0 ? Message : L"Hitori가 크래시했습니다. 덤프를 저장했습니다.",
+            L"Hitori Crash Report",
+            MB_OK | MB_ICONERROR);
+
+        return true;
+
+    }
+
+    LONG WINAPI EngineUnhandledExceptionFilter(EXCEPTION_POINTERS* ExceptionPointers)
+    {
+        // 여러 스레드가 동시에 예외를 내더라도 덤프 작성은 한 번만 시도
+        if (::InterlockedCompareExchange(&DumpStarted, 1, 0) != 0)
+        {
+            return EXCEPTION_CONTINUE_SEARCH;
+        }
+           
+        if (!WriteMinidump(ExceptionPointers))
+        {
+            ::OutputDebugStringW(L"Hitori: Could not write the crash dump.\n");
+        }
+
+        return EXCEPTION_EXECUTE_HANDLER;
+    }
+
+    __declspec(noinline) unsigned char CrashStackOverflow(unsigned Depth)
+    {
+        volatile unsigned char Frame[4096];
+        const auto Index = Depth % sizeof(Frame);
+        Frame[Index] = 1;
+
+        using FRecurse = unsigned char (*)(unsigned);
+        FRecurse volatile Recurse = &CrashStackOverflow;
+        Recurse(Depth + 1);
+
+        // 재귀 호출 뒤에도 현재 스택 프레임을 사용
+        return Frame[Index];
+    }
+}
+
+void WindowsPlatformCrashContext::RegisterUnhandledExceptionHandler()
+{
+    wchar_t ExePath[MAX_PATH]{};
+    const DWORD Length = ::GetModuleFileNameW(nullptr, ExePath, _countof(ExePath));
+
+    if (Length == 0 || Length >= _countof(ExePath))
+    {
+        ::OutputDebugStringW(L"Hitori: Could not get the executable path.\n");
+        return;
+    }
+
+    const std::filesystem::path Directory =
+        std::filesystem::path(ExePath).parent_path() / L"Saved" / L"Crashes";
+
+    // WriteMinidump()가 붙이는 파일명과 널 문자까지 들어갈 공간을 확인
+    constexpr size_t MaxDumpFileNameLength = _countof(L"\\Hitori-4294967295-9999-12-31_23-59-59.dmp") - 1;
+
+    if (Directory.native().size() + MaxDumpFileNameLength >= _countof(DumpDirectory))
+    {
+        ::OutputDebugStringW(L"Hitori: Crash dump path is too long.\n");
+        return;
+    }
+
+    std::error_code Error;
+    std::filesystem::create_directories(Directory, Error);
+    if (Error)
+    {
+        ::OutputDebugStringW(L"Hitori: Could not create the crash dump directory.\n");
+        return;
+    }
+
+    ::wcscpy_s(DumpDirectory, _countof(DumpDirectory), Directory.c_str());
+    ::SetUnhandledExceptionFilter(&EngineUnhandledExceptionFilter);
+}
+
+__declspec(noinline) void WindowsPlatformCrashContext::CrashDefault()
+{
+    constexpr DWORD TestCrashCode = 0xE0000001;
+    ::RaiseException(TestCrashCode, EXCEPTION_NONCONTINUABLE, 0, nullptr);
+}
+
+__declspec(noinline) void WindowsPlatformCrashContext::CrashDivideByZero()
+{
+    volatile int Dividend = 42;
+    volatile int Divisor = 0;
+    volatile int Result = Dividend / Divisor;
+    (void)Result;
+}
+
+__declspec(noinline) void WindowsPlatformCrashContext::CrashNullPointer()
+{
+    volatile int* volatile Pointer = nullptr;
+    *Pointer = 1;
+}
+
+void WindowsPlatformCrashContext::TriggerStackOverflow()
+{
+    ULONG StackGuarantee = 64 * 1024;
+    if (!::SetThreadStackGuarantee(&StackGuarantee))
+    {
+        ::OutputDebugStringW(L"Hitori: Could not reserve stack for crash handling.\n");
+        return;
+    }
+
+    CrashStackOverflow(0);
+}

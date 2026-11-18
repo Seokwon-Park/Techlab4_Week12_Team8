@@ -51,8 +51,30 @@ void FLevelEditorViewportClient::Draw(FViewport* InViewport, FUIRenderer* Canvas
 	{
 		const FEditorSettings& S = *EditorSettings;
 
-		// 모든 뷰포트에 똑같이 적용되는 에디터 설정
-		EngineShowFlags.AntiAliasing = S.bEnableFXAA;
+		// 쇼 플래그는 뷰포트마다 따로 갖는다 (UE5 뷰포트 Show 메뉴).
+		// 설정 창은 "모든 뷰포트에 한꺼번에 적용"으로 쓰여서, 설정 값이 바뀐 플래그만 옮긴다.
+		FEngineShowFlags SettingsFlags = LastSettingsShowFlags;
+		SettingsFlags.AntiAliasing = S.bEnableFXAA;
+		SettingsFlags.Vignette = S.bShowVignette;
+		SettingsFlags.CameraOverlay = S.bShowCameraOverlay;
+		SettingsFlags.SkeletalMeshes = S.bShowSkeletalMesh;
+		SettingsFlags.Rendering = S.bDrawPrimitives;
+		SettingsFlags.Decals = S.bDrawDecals;
+		auto SyncFlag = [this, &SettingsFlags](bool FEngineShowFlags::* Flag)
+		{
+			if (!bSettingsShowFlagsSynced || SettingsFlags.*Flag != LastSettingsShowFlags.*Flag)
+				EngineShowFlags.*Flag = SettingsFlags.*Flag;
+		};
+		SyncFlag(&FEngineShowFlags::AntiAliasing);
+		SyncFlag(&FEngineShowFlags::Vignette);
+		SyncFlag(&FEngineShowFlags::CameraOverlay);
+		SyncFlag(&FEngineShowFlags::SkeletalMeshes);
+		SyncFlag(&FEngineShowFlags::Rendering);
+		SyncFlag(&FEngineShowFlags::Decals);
+		LastSettingsShowFlags = SettingsFlags;
+		bSettingsShowFlagsSynced = true;
+
+		// 모든 뷰포트에 똑같이 적용되는 품질 설정
 		RenderOptions.bCacheShadows = S.bCacheShadows;
 		RenderOptions.PcfMode = S.PcfMode;
 		RenderOptions.RenderingPath = S.RenderingPath;
@@ -63,18 +85,12 @@ void FLevelEditorViewportClient::Draw(FViewport* InViewport, FUIRenderer* Canvas
 		RenderOptions.SpotShadowMapSize = S.GetSpotShadowMapSize();
 		RenderOptions.bGammaCorrection = S.bGammaCorrection;
 		RenderOptions.DisplayGamma = S.DisplayGamma;
-		EngineShowFlags.Vignette = S.bShowVignette;
-		EngineShowFlags.CameraOverlay = S.bShowCameraOverlay;
-		EngineShowFlags.SkeletalMeshes = S.bShowSkeletalMesh;
-		EngineShowFlags.Rendering = S.bDrawPrimitives;
-		EngineShowFlags.Decals = S.bDrawDecals;
 		RenderOptions.bDecalCulling = S.bDecalCulling;
 		RenderOptions.bDecalNarrowCulling = S.bDecalNarrowCulling;
 		RenderOptions.bDecalBVHCulling = S.bDecalBVHCulling;
 		RenderOptions.bDecalOBBTree = S.bDecalOBBTree;
 
-		// 이 뷰포트의 뷰 모드에서 나오는 설정
-		EngineShowFlags.Fog = ViewModeIndex == VMI_Lit;
+		// 이 뷰포트의 뷰 모드에서 나오는 설정 (안개는 Lit일 때만 FEditorViewportClient::Draw가 켜 둔다)
 		RenderOptions.SceneDepthRange = MaxRange;
 	}
 
@@ -181,8 +197,10 @@ void FLevelEditorViewportClient::Draw(const FSceneView* View, FScenePassCallback
 				EGridPlane GridPlane = EGridPlane::XY;
 				switch (ViewportType)
 				{
-				case ELevelViewportType::Front: GridPlane = EGridPlane::YZ; break;
-				case ELevelViewportType::Right: GridPlane = EGridPlane::XZ; break;
+				case ELevelViewportType::Front:
+				case ELevelViewportType::Back: GridPlane = EGridPlane::YZ; break;
+				case ELevelViewportType::Right:
+				case ELevelViewportType::Left: GridPlane = EGridPlane::XZ; break;
 				default: break;
 				}
 				if (Settings.bDrawPSGrid && SceneView.bIsPerspective)

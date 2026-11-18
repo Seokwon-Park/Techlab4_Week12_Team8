@@ -8,6 +8,8 @@
 
 #include "Components/SkinnedMeshComponent.h"
 
+#include "Launch/Windows/WindowsPlatformCrashContext.h"
+
 #include <charconv>
 #include <sstream>
 
@@ -75,7 +77,7 @@ void FOutputLogPanel::OnRender()
 {
 	ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
 
-	EditorPanelUI::BeginPanel("Output Log");
+	EditorPanelUI::BeginPanel("Output Log", GetOpenFlag());
 
 	//////////////////////////////////////////////////////////
 
@@ -383,14 +385,45 @@ void FOutputLogPanel::RegisterCommands()
 			return true;
 		});
 
-		Add("r.Skinning.ForceUpdate", "r.Skinning.ForceUpdate [0|1]", [](const TArray<FString>& Args, const FString&)
+	Add("r.Skinning.ForceUpdate", "r.Skinning.ForceUpdate [0|1]", [](const TArray<FString>& Args, const FString&)
+		{
+			bool bOn = false;
+			if (!ParseToggle(Args, USkinnedMeshComponent::bForceSkinUpdate, bOn)) return false;
+			USkinnedMeshComponent::bForceSkinUpdate = bOn;
+			FLog::Log(ELogVerbosity::Info, "r.Skinning.ForceUpdate = {}", bOn ? 1 : 0);
+			return true;
+		});
+	Add("CauseCrash", "CauseCrash [zero|​​null|stack]", [](const TArray<FString>& Args, const FString&)
+		{
+			if (Args.Num() == 1)
 			{
-				bool bOn = false;
-				if (!ParseToggle(Args, USkinnedMeshComponent::bForceSkinUpdate, bOn)) return false;
-				USkinnedMeshComponent::bForceSkinUpdate = bOn;
-				FLog::Log(ELogVerbosity::Info, "r.Skinning.ForceUpdate = {}", bOn ? 1 : 0);
+				WindowsPlatformCrashContext::CrashDefault();
 				return true;
-			});
+			}
+
+			if (Args.Num() != 2)
+			{
+				return false;
+			}
+
+			const FString& Type = Args[1];
+			if (EqualsIgnoreCase(Type, "zero"))
+			{
+				WindowsPlatformCrashContext::CrashDivideByZero();
+			}
+			else if (EqualsIgnoreCase(Type, "null"))
+			{
+				WindowsPlatformCrashContext::CrashNullPointer();
+			}
+			else if (EqualsIgnoreCase(Type, "stack"))
+			{
+				WindowsPlatformCrashContext::TriggerStackOverflow();
+			}
+			else
+				return false;
+
+			return true;
+		});
 }
 
 void FOutputLogPanel::AddToHistory(const FString& CommandLine)

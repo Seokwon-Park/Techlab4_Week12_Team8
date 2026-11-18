@@ -13,6 +13,8 @@ public:
 
 	bool IsOpen() const { return bIsOpen; }
 	void SetOpen(bool bOpen) { bIsOpen = bOpen; }
+	// Begin에 넘기면 도킹 탭에 닫기(X)가 생기고, 누르면 패널이 닫힌다 (Window 메뉴에서 다시 연다).
+	bool* GetOpenFlag() { return &bIsOpen; }
 	virtual const char* GetPanelName() const = 0;
 
 private:

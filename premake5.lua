@@ -10,6 +10,8 @@ workspace "Hitori"
 		"ObjViewer",
 		"Benchmark",
 		"Benchmark_Debug",
+		"DebugPublishSymbols",
+		"ReleasePublishSymbols",
 	}
 
 
@@ -33,6 +35,7 @@ IncludeDir["DDSLoader"] = "Source/ThirdParty/DDSLoader"
 IncludeDir["lua"]   = "Source/ThirdParty/lua/src"
 IncludeDir["sol2"]  = "Source/ThirdParty/sol2/include"
 IncludeDir["miniaudio"]  = "Source/ThirdParty/miniaudio"
+IncludeDir["nanosvg"] = "Source/ThirdParty/nanosvg"
 
 -- premake의 filter는 project()를 만나면 초기화된다.
 -- 두 프로젝트가 같은 런타임(/MDd vs /MD)으로 컴파일되지 않으면 링크가 실패하므로
@@ -104,6 +107,16 @@ function CommonSettings()
 		optimize "speed"
 		symbols  "on"
 
+	filter "configurations:DebugPublishSymbols"
+		defines { "ENGINE_DEBUG", "_DEBUG" }
+		runtime "Debug"
+		symbols "on"
+
+	filter "configurations:ReleasePublishSymbols"
+		defines { "ENGINE_RELEASE", "NDEBUG" }
+		runtime "Release"
+		optimize "on"
+		symbols "on"
 
 	filter {}
 end
@@ -235,12 +248,18 @@ project "HitoriEditor"
 	defines { "FBXSDK_SHARED" }
 	links { "libfbxsdk.lib" }
 
-	for _, Config in ipairs({ "Debug", "Release", "Shipping", "ObjViewer", "Benchmark", "Benchmark_Debug" }) do
-		local SdkConfig = (Config == "Debug" or Config == "Benchmark_Debug") and "debug" or "release"
+	for _, Config in ipairs({ "Debug", "Release", "Shipping", "ObjViewer", "Benchmark", "Benchmark_Debug", "DebugPublishSymbols", "ReleasePublishSymbols"}) do
+		local SdkConfig = (Config == "Debug" or Config == "Benchmark_Debug" or Config == "DebugPublishSymbols") and "debug" or "release"
 		local SdkLibDir = path.join(FbxSdkRoot, "lib/x64", SdkConfig)
+		local Commands = { '{COPYFILE} "' .. path.join(SdkLibDir, "libfbxsdk.dll") .. '" "%{cfg.targetdir}"' }
+
+		if Config == "DebugPublishSymbols" or Config == "ReleasePublishSymbols" then
+			table.insert(Commands, 'call "$(SolutionDir)PublishSymbols.bat" "$(Configuration)" "Post-build" --no-pause')
+		end
+
 		filter ("configurations:" .. Config)
 			libdirs { SdkLibDir }
-			postbuildcommands { '{COPYFILE} "' .. path.join(SdkLibDir, "libfbxsdk.dll") .. '" "%{cfg.targetdir}"' }
+			postbuildcommands (Commands)
 	end
 	filter {}
 
@@ -283,6 +302,7 @@ project "HitoriEditor"
 		"%{IncludeDir.json}",
 		"%{IncludeDir.lua}",
 		"%{IncludeDir.sol2}",
+		"%{IncludeDir.nanosvg}",
 	}
 
 	links

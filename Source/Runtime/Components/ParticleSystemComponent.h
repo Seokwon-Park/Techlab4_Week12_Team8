@@ -8,6 +8,22 @@
 struct FParticleEmitterInstance;
 struct FDynamicEmitterDataBase;
 
+// 충돌 이벤트 하나
+struct FParticleEventCollideData
+{
+	FString EventName;			// 받는 쪽에서 해당 이름으로 고른다.
+	float EmitterTime = 0.0f;	// 이벤트가 발생한 순간의 EmitterTime
+	FVector Location;			// 충돌 지점
+	FVector Velocity;			// 충돌 당시 파티클 속도
+	float ParticleTime = 0.0f;	// 충돌 당시 파티클 RelativeTime
+	FVector Direction;			// 진행 방향
+	FVector Normal;				// 충돌 면 법선
+	float Time = 0.0f;			// 이번 검사 구간의 몇 % 지점에서 충돌했는지 (0~1)
+};
+
+// 인자: 이벤트 이름, EmitterTime, 파티클 나이(RelativeTime), 위치, 속도, 진행 방향, 법선
+DECLARE_DELEGATE(FParticleCollisionSignature, const FString&, float, float, const FVector&, const FVector&, const FVector&, const FVector&);
+
 //Source/Runtime/Engine/Classes/Particles/ParticleSystemComponent.h 참고
 //원래는 Cascade와 Niagara 를 통합관리하기 위한 UFXSystemComponent가 부모로 존재하지만 생략한다.
 UCLASS()
@@ -49,12 +65,25 @@ public:
 	void UpdateDynamicData();                         // 이전 RenderData delete -> 인스턴스마다 GetDynamicData(bSelected)
 	void ClearDynamicData();
 
+	// EventGenerator가 충돌 하나를 기록할 때 호출
+	void ReportEventCollision(
+		const FString& InEventName,
+		float InEmitterTime,
+		const FVector& InLocation,
+		const FVector& InDirection,
+		const FVector& InVelocity,
+		float InParticleTime,
+		const FVector& InNormal,
+		float InTime
+	);
+
 	// ── Stat ──
 	int32 GetNumActiveParticles() const;              // ActiveParticles 합계
 
-	// (선택) Collision 이벤트
-	// TArray<FParticleEventCollideData> CollisionEvents;
+	FParticleCollisionSignature OnParticleCollide;
 
+	// 이번 Tick 동안 EventGenerator가 기록한 충돌. Tick 시작 때 비운다.
+	TArray<FParticleEventCollideData> CollisionEvents;
 
 	////////////////////파티클 테스팅 용 코드(지워도 됨)
 	UPROPERTY(EditAnywhere)

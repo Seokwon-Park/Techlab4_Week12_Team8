@@ -258,20 +258,24 @@ void UEditorEngine::InitPanels()
 	// StaticMesh / SkeletalMesh Viewer 열기
 	ContentDrawerPanel->SetOpenMeshCallback([this](const FString& Path) { EditorManager->OpenEditor(Path); });
 
+	// Content Browser 툴바의 Import / Save All
+	ContentDrawerPanel->SetImportCallback([](EFbxImportMode Mode) { FEditorFileUtils::ImportFbx(Mode); });
+	ContentDrawerPanel->SetSaveAllCallback([this]() { SaveCurrentScene(); });
+
 	ContentDrawerPanel->SetBlendSpaceCreatedCallback([this](const FString& Path) { EditorManager->OpenEditor(Path); });
     ContentDrawerPanel->SetAnimBlueprintCreatedCallback([this](const FString& Path) { EditorManager->OpenEditor(Path); });
 
 	// 화면 나눔 비율 설정 가져오기
-	ViewportSplitRatio = {
+	ViewportSplitRatio = ClampSplitRatio({
 		SettingsPanel->GetSettings().MultipleViewportsHorizontal,
-		SettingsPanel->GetSettings().MultipleViewportsVertical
-	};
-	// SingleView에 사용할 인덱스 설정
-	SingleViewportIndex = SettingsPanel->GetSettings().MultipleViewportsSingleViewIndex;
-	// 뷰포트 레이아웃 설정
-	ViewportLayoutMode = SettingsPanel->GetSettings().bMultipleViewportsSingle
-		? ELayoutMode::Single
-		: ELayoutMode::QuadSplit;
+		SettingsPanel->GetSettings().MultipleViewportsVertical,
+		SettingsPanel->GetSettings().MultipleViewportsThird0,
+		SettingsPanel->GetSettings().MultipleViewportsThird1
+	}, 0.1f);
+	// 뷰포트 배치와 최대화 상태
+	ViewportLayout.Layout = SettingsPanel->GetSettings().ViewportLayout;
+	ViewportLayout.bMaximized = SettingsPanel->GetSettings().bMultipleViewportsSingle;
+	ViewportLayout.MaximizedViewIndex = SettingsPanel->GetSettings().MultipleViewportsSingleViewIndex;
 	EditorWorld->GetMainCamera()->GetCameraComponent()->SetExternalInputManaged(true);
 
 	OutlinerPanel = LevelEditorTab->AddPanel<FOutlinerPanel>();
@@ -325,7 +329,7 @@ void UEditorEngine::InitPanels()
 			Client->SetViewFOV(Camera->GetFieldOfView());
 		}
 	});
-	ViewportsPanel->SetLayoutMode(ViewportLayoutMode, SingleViewportIndex);
+	ViewportsPanel->SetLayoutState(ViewportLayout, ViewportSplitRatio);
 
 	for (int32 i = 0; i < 4; ++i)
 	{
@@ -506,54 +510,29 @@ void UEditorEngine::Tick(const float DeltaTime)
 		const FVector2 ViewportSize = ViewportsPanel->GetContentSize();
 		const FVector2 LocalMousePosition = ViewportsPanel->GetLocalMousePosition();
 
-		ELayoutMode RequestedLayout{};
-		int32 RequestedSingleViewIndex = SingleViewportIndex;
-
-		if (ViewportsPanel->ConsumeLayoutRequest(RequestedLayout, RequestedSingleViewIndex))
+		if (ViewportsPanel->ConsumeLayoutRequest(ViewportLayout))
 		{
-			if (RequestedLayout == ELayoutMode::Single)
-				SingleViewportIndex = RequestedSingleViewIndex;
-			ViewportLayoutMode = RequestedLayout;
-
 			FEditorSettings& Settings = SettingsPanel->GetMutableSettings();
-			Settings.bMultipleViewportsSingle = RequestedLayout == ELayoutMode::Single;
-			Settings.MultipleViewportsSingleViewIndex = RequestedSingleViewIndex;
+			Settings.ViewportLayout = ViewportLayout.Layout;
+			Settings.bMultipleViewportsSingle = ViewportLayout.bMaximized;
+			Settings.MultipleViewportsSingleViewIndex = ViewportLayout.MaximizedViewIndex;
 		}
 
-		const float HorizontalDrag = ViewportsPanel->ConsumeHorizontalDrag();
-		const float VerticalDrag = ViewportsPanel->ConsumeVerticalDrag();
-		if (HorizontalDrag != 0.0f)
-			ViewportSplitRatio = ApplySplitterDrag(ViewportSplitRatio, EDragAxis::Horizontal, HorizontalDrag, ViewportSize, 0.1f);
-		if (VerticalDrag != 0.0f)
-			ViewportSplitRatio = ApplySplitterDrag(ViewportSplitRatio, EDragAxis::Vertical, VerticalDrag, ViewportSize, 0.1f);
-		if (HorizontalDrag != 0.0f || VerticalDrag != 0.0f)
+		if (ViewportsPanel->ConsumeSplitRatio(ViewportSplitRatio))
 		{
-			SettingsPanel->GetMutableSettings().MultipleViewportsHorizontal = ViewportSplitRatio.Horizontal;
-			SettingsPanel->GetMutableSettings().MultipleViewportsVertical = ViewportSplitRatio.Vertical;
+			FEditorSettings& Settings = SettingsPanel->GetMutableSettings();
+			Settings.MultipleViewportsHorizontal = ViewportSplitRatio.Horizontal;
+			Settings.MultipleViewportsVertical = ViewportSplitRatio.Vertical;
+			Settings.MultipleViewportsThird0 = ViewportSplitRatio.Third0;
+			Settings.MultipleViewportsThird1 = ViewportSplitRatio.Third1;
 		}
 
+		// 배치(One~Four Panes)와 최대화 상태로 View별 사각형을 구한다. 쓰지 않는 View는 크기 0이라 꺼진다.
 		FRect ViewRects[4]{};
-		if (ViewportLayoutMode == ELayoutMode::Single)
-		{
-			for (int32 i = 0; i < 4; ++i)
-			{
-				ViewRects[i] = (i == SingleViewportIndex)
-					? FRect{ 0.0f, 0.0f, ViewportSize.X, ViewportSize.Y }
-				: FRect{};
-			}
-		}
-		else
-		{
-			ComputeViewRects(ViewportSplitRatio, ViewportSize, ViewRects);
-		}
-
+		ComputeViewRects(ViewportLayout, ViewportSplitRatio, ViewportSize, ViewRects);
+		ViewportsPanel->SetLayoutState(ViewportLayout, ViewportSplitRatio);
 		for (int32 i = 0; i < 4; ++i)
-		{
-			const bool bSlotActive = (ViewportLayoutMode == ELayoutMode::Single)
-				? (i == SingleViewportIndex)
-				: true;
-			ViewportsPanel->SetView(i, ViewRects[i], bSlotActive);
-		}
+			ViewportsPanel->SetView(i, ViewRects[i], true);
 
 		// 마우스 호버 감지
 		int32 HoveredViewIndex = -1;

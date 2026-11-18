@@ -267,6 +267,35 @@ bool FMeshPassProcessor::Build(const FSceneView& View, const FRenderQueue& Queue
 
 		const uint32 IndexCount = Packet.IndexCount ? Packet.IndexCount : Batch.IndexBuffer->GetIndexCount();
 		const void* ObjectKey = Packet.Proxy ? static_cast<const void*>(Packet.Proxy) : static_cast<const void*>(&Packet);
+		if (!Packet.MeshParticleInstances.empty())
+		{
+			FShaderProgram* Variant = FRenderResourceManager::FindMeshParticleShader(*Batch.Pipeline.Shader);
+			if (Pass == EMeshPassType::Forward)
+			{
+				const FPipelineState* Decal = FRenderResourceManager::GetPSO(EPSOType::Decal);
+				if (Decal && Decal->Shader && !FRenderResourceManager::FindMeshParticleShader(*Decal->Shader))
+					Variant = nullptr;
+			}
+			if (Variant)
+			{
+				Batch.MeshParticleInstances = Packet.MeshParticleInstances;
+				Batch.MeshParticleFallbackVS = Batch.Pipeline.Shader->VertexShader;
+				Batch.Pipeline.Shader = Variant;
+				Batch.bUseObjectSlots = false;
+				Batch.Items.Add(BuildItem(FMatrix::Identity, View, Pass, InvalidObjectSlot, Packet.StartIndex,
+					IndexCount, ObjectKey, false, true, true, ConservativeBounds, nullptr));
+			}
+			else
+			{
+				for (const FMeshParticleInstanceVertex& Instance : Packet.MeshParticleInstances)
+				{
+					Batch.Items.Add(BuildItem(Instance.GetWorldMatrix(), View, Pass, InvalidObjectSlot, Packet.StartIndex,
+						IndexCount, ObjectKey, false, true, true, ConservativeBounds, nullptr));
+				}
+			}
+			Out.Add(std::move(Batch));
+			continue;
+		}
 
 		Batch.Items.Add(BuildItem(PacketWorld(Packet), View, Pass, Packet.Slot,
 			Packet.StartIndex, IndexCount, ObjectKey, Packet.bOccludedByGpu, !Packet.Proxy || Packet.Proxy->bReceiveShadow,

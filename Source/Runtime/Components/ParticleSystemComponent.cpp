@@ -5,6 +5,9 @@
 #include "Particles/ParticleLODLevel.h"
 #include "Particles/ParticleModuleRequired.h"
 #include "Particles/TypeData/ParticleModuleTypeDataBase.h"
+#include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
+#include "Particles/ParticleEventManager.h"
+#include "Engine/World.h"
 #include "Asset/AssetManager.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
@@ -261,6 +264,7 @@ void UParticleSystemComponent::UpdateLODLevelFromCamera()
 void UParticleSystemComponent::TickComponent(float DeltaTime)
 {
 	Super::TickComponent(DeltaTime);
+	CollisionEvents.Reset();
 	if (!std::isfinite(DeltaTime) || DeltaTime <= 0.0f)
 	{
 		return;
@@ -310,6 +314,15 @@ void UParticleSystemComponent::TickComponent(float DeltaTime)
 		}
 	}
 
+	if (!CollisionEvents.IsEmpty())
+	{
+		UWorld* World = GetWorld();
+		if (World && World->MyParticleEventManager)
+		{
+			World->MyParticleEventManager->HandleParticleCollisionEvents(this, CollisionEvents);
+		}
+	}
+
 	UpdateCompletion();
 	UpdateDynamicData();
 
@@ -343,14 +356,31 @@ FBox UParticleSystemComponent::CalcLocalBounds() const
 			continue;
 		}
 		const bool bLocalSpace = Instance->CurrentLODLevel->RequiredModule->bUseLocalSpace;
+		const auto* MeshTypeData = Cast<UParticleModuleTypeDataMesh>(Instance->CurrentLODLevel->TypeDataModule);
+		const UStaticMesh* Mesh = MeshTypeData ? MeshTypeData->StaticMesh : nullptr;
+		if (MeshTypeData && (!MeshTypeData->bEnabled || !Mesh))
+		{
+			continue;
+		}
+
 		for (int32 Index = 0; Index < Instance->ActiveParticles; ++Index)
 		{
 			DECLARE_PARTICLE_CONST(Particle, Instance->ParticleData + Instance->ParticleIndices[Index] * Instance->ParticleStride);
-			const FVector Center = bLocalSpace ? LocalToWorld.TransformPosition(Particle.Location) : Particle.Location;
-			// 빌보드는 월드 공간에서 펼쳐지므로 어느 카메라 방향과 회전에서도 쿼드를 포함한다.
-			const float Radius = 0.7071068f * std::max(std::abs(Particle.Size.X), std::abs(Particle.Size.Y));
-			const FVector Extent(Radius);
-			const FBox ParticleBounds = FBox{ Center - Extent, Center + Extent }.GetWorldAABB(WorldToLocal);
+			FBox ParticleBounds;
+			if (Mesh)
+			{
+				const FMatrix ParticleTransform = BuildMeshParticleTransform(Particle, FVector::OneVector);
+				const FMatrix MeshToLocal = bLocalSpace ? ParticleTransform : ParticleTransform * WorldToLocal;
+				ParticleBounds = Mesh->GetMeshData().AABB.GetWorldAABB(MeshToLocal);
+			}
+			else
+			{
+				const FVector Center = bLocalSpace ? LocalToWorld.TransformPosition(Particle.Location) : Particle.Location;
+				// 빌보드는 월드 공간에서 펼쳐지므로 어느 카메라 방향과 회전에서도 쿼드를 포함한다.
+				const float Radius = 0.7071068f * std::max(std::abs(Particle.Size.X), std::abs(Particle.Size.Y));
+				const FVector Extent(Radius);
+				ParticleBounds = FBox{ Center - Extent, Center + Extent }.GetWorldAABB(WorldToLocal);
+			}
 			if (bHasBounds)
 			{
 				Bounds.Expand(ParticleBounds);
@@ -448,4 +478,27 @@ void UParticleSystemComponent::UpdateCompletion()
 		Super::Deactivate();
 		SetComponentTickEnabled(false);
 	}
+}
+
+void UParticleSystemComponent::ReportEventCollision(
+	const FString& InEventName,
+	float InEmitterTime,
+	const FVector& InLocation,
+	const FVector& InDirection,
+	const FVector& InVelocity,
+	float InParticleTime,
+	const FVector& InNormal,
+	float InTime
+)
+{
+	FParticleEventCollideData Data;
+	Data.EventName = InEventName;
+	Data.EmitterTime = InEmitterTime;
+	Data.Location = InLocation;
+	Data.Velocity = InVelocity;
+	Data.ParticleTime = InParticleTime;
+	Data.Direction = InDirection;
+	Data.Normal = InNormal;
+	Data.Time = InTime;
+	CollisionEvents.Add(Data);
 }

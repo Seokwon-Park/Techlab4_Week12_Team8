@@ -43,6 +43,7 @@
 #include "Editor/HitoriEd/EditorFileUtils.h"
 #include "Editor/EditorUI/EditorIcons.h"
 #include "Script/LuaScriptManager.h"
+#include <unordered_map>
 
 
 namespace
@@ -1002,7 +1003,14 @@ namespace
 		return static_cast<uint32>(Value);
 	}
 
-	bool DrawPropertyRow(UObject* Object, void* Container, const FProperty& Property, ImFont* CustomFont);
+	bool DrawPropertyRow(UObject* Object, void* Container, const FProperty& Property, ImFont* CustomFont, const char* DisplayNameOverride = nullptr);
+
+	// FPropertyEditor::RegisterStructMemberRule로 등록한 구조체별 멤버 표시 규칙
+	std::unordered_map<const UStruct*, FPropertyEditor::FStructMemberRule>& GetStructMemberRules()
+	{
+		static std::unordered_map<const UStruct*, FPropertyEditor::FStructMemberRule> Rules;
+		return Rules;
+	}
 
 	// 프로퍼티 타입에 맞는 위젯 하나를 그린다. 값이 바뀌면 true
 	// UE도 FProperty는 위젯을 모르고, 에디터(PropertyEditor 모듈)가 CastField로 타입을 보고 위젯을 고른다.
@@ -1209,6 +1217,10 @@ namespace
 				StructChain.Add(Struct);
 			}
 
+			const auto& Rules = GetStructMemberRules();
+			const auto RuleIt = Rules.find(StructProperty->Struct);
+			const FPropertyEditor::FStructMemberRule* Rule = RuleIt != Rules.end() ? &RuleIt->second : nullptr;
+
 			bool bChanged = false;
 			for (auto It = StructChain.rbegin(); It != StructChain.rend(); ++It)
 			{
@@ -1218,9 +1230,15 @@ namespace
 					{
 						continue;
 					}
+					FPropertyEditor::FStructMemberDisplay Display;
+					if (Rule) Display = (*Rule)(ValuePtr, *Member);
+					if (!Display.bVisible)
+					{
+						continue;
+					}
 					const bool bReadOnly = Member->HasAnyFlags(CPF_EditConst);
 					if (bReadOnly) ImGui::BeginDisabled();
-					bChanged |= DrawPropertyRow(Object, ValuePtr, *Member, CustomFont);
+					bChanged |= DrawPropertyRow(Object, ValuePtr, *Member, CustomFont, Display.Label);
 					if (bReadOnly) ImGui::EndDisabled();
 				}
 			}
@@ -1236,12 +1254,12 @@ namespace
 
 	// 프로퍼티 한 줄: 라벨과 값 위젯. 값이 바뀌면 true
 	// Container는 프로퍼티를 가진 메모리 (UObject 멤버면 객체, USTRUCT 멤버면 그 구조체 값)
-	bool DrawPropertyRow(UObject* Object, void* Container, const FProperty& Property, ImFont* CustomFont)
+	bool DrawPropertyRow(UObject* Object, void* Container, const FProperty& Property, ImFont* CustomFont, const char* DisplayNameOverride)
 	{
 		void* ValuePtr = Property.ContainerPtrToValuePtr(Container);
 		const FString Label = "##" + Property.Name;
 
-		const char* DisplayName = Property.Name.c_str();
+		const char* DisplayName = DisplayNameOverride ? DisplayNameOverride : Property.Name.c_str();
 
 		// 패널이 넓으면 라벨 | 값을 한 줄에, 좁거나 라벨이 길면 라벨 아래 줄에 값을 놓는다.
 		const float StartX = ImGui::GetCursorPosX();
@@ -1412,6 +1430,11 @@ namespace FPropertyEditor
 	{
 		DrawProperties(Object, CustomFont);
 	}
+
+	void RegisterStructMemberRule(const UStruct* Struct, FStructMemberRule Rule)
+	{
+		if (Struct) GetStructMemberRules()[Struct] = std::move(Rule);
+	}
 }
 
 bool FDetailsPanel::Init()
@@ -1491,7 +1514,7 @@ void FDetailsPanel::OnRender()
 {
 	ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
 
-	EditorPanelUI::BeginPanel("Details");
+	EditorPanelUI::BeginPanel("Details", GetOpenFlag());
 
 	if (TargetActor)
 	{

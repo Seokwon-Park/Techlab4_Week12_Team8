@@ -7,11 +7,11 @@
 #include "UObject/Object.h"
 #include "UObject/Class.h"
 #include "Particles/ParticleModule.h"
+#include "Particles/Spawn/ParticleModuleSpawn.h"
 #include "ParticleLODLevel.generated.h"
 
 class UParticleModuleRequired;
 class UParticleModuleTypeDataBase;
-class UParticleModuleSpawn;
 
 UCLASS()
 class UParticleLODLevel : public UObject
@@ -20,6 +20,10 @@ class UParticleLODLevel : public UObject
 
 public:
 	UParticleLODLevel() = default;
+	virtual ~UParticleLODLevel() override;
+
+	using Super::Serialize;
+	void Serialize(FStructuredArchive::FRecord Record) override;
 
 	/** The index value of the LOD level */
 	int32 Level = 0;
@@ -52,12 +56,18 @@ public:
 		// 재호출 시 이전 목록이 남지 않도록 비우고 Modules 순서대로 다시 만든다.
 		SpawnModules.Reset();
 		UpdateModules.Reset();
+		SpawnModule = nullptr;
 
 		for (UParticleModule* Module : Modules)
 		{
 			if (!Module)
 			{
 				continue;
+			}
+
+			if (!SpawnModule)
+			{
+				SpawnModule = Cast<UParticleModuleSpawn>(Module);
 			}
 
 			// 두 플래그는 독립적이므로 하나의 모듈이 두 목록에 모두 들어갈 수 있다.

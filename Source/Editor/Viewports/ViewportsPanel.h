@@ -31,15 +31,15 @@ public:
 	bool IsHovered() const;
 	bool IsFocused() const { return bFocused; }
 
-	float ConsumeHorizontalDrag();
-	float ConsumeVerticalDrag();
+	// 분할선을 끈 만큼 비율을 바꿔 InOutRatio에 쓴다. 바뀐 게 있으면 true.
+	bool ConsumeSplitRatio(FSplitRatio& InOutRatio);
 
-	// UI에서 발생한 Layout 변경 요청을 한 번 소비하도록 반환한다.
-	bool ConsumeLayoutRequest(ELayoutMode &OutMode, int32 &OutSingleViewIndex);
-	void SetLayoutMode(ELayoutMode InMode, int32 InSingleIndex = 0) {
-		CurrentLayoutMode = InMode;
-		CurrentSingleViewIndex = InSingleIndex;
-	}
+	// UI에서 발생한 레이아웃 변경(배치, 최대화) 요청을 한 번 소비하도록 반환한다.
+	bool ConsumeLayoutRequest(FViewportLayoutState &OutLayout);
+	// 엔진이 매 프레임 지금 배치와 분할 비율을 알려 준다. 분할선과 Layout 메뉴가 이것을 쓴다.
+	void SetLayoutState(const FViewportLayoutState& InLayout, const FSplitRatio& InRatio);
+	// Immersive View(F11): 뷰포트 패널이 에디터 창 전체를 덮는다.
+	bool IsImmersive() const { return bImmersive; }
 
 	// 뷰포트 클라이언트 조회
 	FLevelEditorViewportClient* GetViewportClient(const int32 ViewIndex) const
@@ -82,6 +82,15 @@ private:
 	void DrawViewportToolbar(int32 ViewIndex, FEditorViewportClient* Client, const ImVec2& ViewMin, const ImVec2& ViewMax);
 
 	void DrawStatOverlay(ImDrawList* DrawList, const ImVec2& ViewMin, FEditorViewportClient* Client) const;
+	// 뷰 왼쪽 아래 월드 축 표시 (UE5 뷰포트 좌하단 XYZ). 카메라 회전을 따라 돈다.
+	static void DrawAxisIndicator(ImDrawList* DrawList, const FEditorViewportClient* Client, const ImVec2& ViewMin, const ImVec2& ViewMax);
+	// 칸 사이 경계선을 그리고 끌기를 받는다.
+	void DrawSplitters(ImDrawList* DrawList);
+	// UE5 Layout 메뉴 (One~Four Panes 그림 버튼 + Immersive View / Maximize Viewport)
+	void DrawLayoutMenu(int32 ViewIndex);
+	// 배치를 작은 그림으로 그린다 (Layout 메뉴 버튼과 툴바 버튼 아이콘)
+	static void DrawLayoutGlyph(ImDrawList* DrawList, EViewportLayout Layout, const ImVec2& Min, const ImVec2& Size, ImU32 Color);
+	void RequestLayout(const FViewportLayoutState& InLayout);
 
 	TUniquePtr<FLevelEditorViewportClient> ViewportClients[4]{};
 	// View마다 하나씩 있는 뷰포트. 그릴 대상(텍스처)과 크기를 갖고, 그리는 일은 위의 클라이언트에게 맡긴다.
@@ -99,15 +108,14 @@ private:
 	float* CameraSpeed = nullptr;
 	ImVec2 StatResetButtonMin{};
 	ImVec2 StatResetButtonMax{};
-	float PendingHorizontalDrag = 0.0f;
-	float PendingVerticalDrag = 0.0f;
+	// 분할선 드래그로 쌓인 비율 변화량 (ESplitRatioField 순서, 패널 크기 대비)
+	float PendingRatioDelta[static_cast<int32>(ESplitRatioField::Count)]{};
 	// 누른 뒤 커서가 Splitter 영역을 벗어나도 버튼을 놓을 때까지 드래그를 유지한다.
-	bool bDraggingVerticalSplitter = false;
-	bool bDraggingHorizontalSplitter = false;
-	ELayoutMode CurrentLayoutMode = ELayoutMode::QuadSplit;
-	int32 CurrentSingleViewIndex = 0;
+	uint8 DraggingSplitterMask = 0;   // 끌고 있는 비율 값 (1 << ESplitRatioField). 교차점을 잡으면 둘 다
+	FViewportLayoutState CurrentLayout;
+	FSplitRatio CurrentSplitRatio;
 	bool bHasLayoutRequest = false;
-	ELayoutMode RequestedLayoutMode = ELayoutMode::QuadSplit;
-	int32 RequestedSingleViewIndex = 0;
+	FViewportLayoutState RequestedLayout;
+	bool bImmersive = false;
 
 };
