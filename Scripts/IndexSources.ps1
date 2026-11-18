@@ -1,10 +1,11 @@
 <#
-Indexes native PDBs against checksum-verified Git commits. No source snapshots are published.
+Indexes native PDBs against checksum-verified source snapshots beside the symbol store.
 Run after linking and before symstore add. Requires Windows SDK Debugging Tools.
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$PdbPath,
+    [Parameter(Mandatory = $true)][string]$SourceRoot,
     [string]$RepositoryRoot,
     [string]$ToolsDirectory = "${env:ProgramFiles(x86)}\Windows Kits\10\Debuggers\x64\srcsrv"
 )
@@ -14,18 +15,19 @@ $ErrorActionPreference = 'Stop'
 $temporaryStream = $null
 $temporaryPdb = $null
 $validated = $false
-. (Join-Path $PSScriptRoot 'GitSourceTools.ps1')
-function Git-Text([string]$Directory, [string[]]$GitArguments) {
-    [Text.Encoding]::UTF8.GetString((Invoke-SourceGit $Directory $GitArguments)).Trim()
-}
-function Assert-StreamValue([string]$Value) {
-    if ($Value -match '[%*|\x00-\x1f]') { throw "Unsupported SrcSrv value: $Value" }
+function Get-SourceHash([string]$Path) {
+    $sha = [Security.Cryptography.SHA256]::Create()
+    $inputStream = [IO.File]::OpenRead($Path)
+    try { [BitConverter]::ToString($sha.ComputeHash($inputStream)).Replace('-', '').ToLowerInvariant() }
+    finally { $inputStream.Dispose(); $sha.Dispose() }
 }
 try {
     if (-not $RepositoryRoot) { $RepositoryRoot = Split-Path $PSScriptRoot -Parent }
     $pdb = (Resolve-Path -LiteralPath $PdbPath).Path
     $repository = (Resolve-Path -LiteralPath $RepositoryRoot).Path.TrimEnd('\') + '\'
-    $repositories = @{}
+    $sourceStore = [IO.Path]::GetFullPath($SourceRoot).TrimEnd('\')
+    # SrcSrv interprets these characters as delimiters or variable references.
+    if ($sourceStore -match '[%*\r\n]') { throw 'SourceRoot contains SrcSrv reserved characters.' }
     $srcTool = Join-Path $ToolsDirectory 'srctool.exe'
     $pdbStr = Join-Path $ToolsDirectory 'pdbstr.exe'
     foreach ($tool in @($srcTool, $pdbStr)) {
@@ -38,11 +40,9 @@ try {
     $seen = @{}
     $externalCount = 0
     $thirdPartyCount = 0
-    $thirdPartyRoot = Join-Path $repository 'Source\ThirdParty\'
     $buildArtifactCount = 0
+    $thirdPartyRoot = Join-Path $repository 'Source\ThirdParty\'
     $buildRoot = Join-Path $repository 'Build\'
-    $generatedCount = 0
-    $generatedRoot = Join-Path $repository 'Intermediate\Generated\'
     foreach ($line in $rawSources) {
         if ($line -notmatch '^(.*?)\t\s*Checksum (MD5|SHA1|SHA256):\s*([0-9A-Fa-f]+)\s*$') { continue }
         $original = $Matches[1]
@@ -52,17 +52,16 @@ try {
             $externalCount++
             continue
         }
-        # Third-party sources are not published through our Git source index.
+        # Keep external libraries and linker inputs (.res, etc.) out of the source store.
         if ($original.StartsWith($thirdPartyRoot, [StringComparison]::OrdinalIgnoreCase)) {
             $thirdPartyCount++
             continue
         }
-        # PDBs also list linker inputs such as .res files, which are build artifacts.
         if ($original.StartsWith($buildRoot, [StringComparison]::OrdinalIgnoreCase)) {
             $buildArtifactCount++
             continue
         }
-        Assert-StreamValue $original
+        if ($original -match '[%*\r\n]') { throw "Unsupported source path: $original" }
         if ($seen.ContainsKey($original)) {
             if ($seen[$original] -ne "$algorithm`:$expected") { throw "Conflicting PDB checksums: $original. Rebuild required." }
             continue
@@ -74,54 +73,52 @@ try {
         try { $actual = [BitConverter]::ToString($hasher.ComputeHash($bytes)).Replace('-', '') }
         finally { $hasher.Dispose() }
         if ($actual -ne $expected) { throw "Source differs from PDB: $original. Rebuild required." }
-        # HHT output is checked against the PDB, but cannot be retrieved from Git.
-        if ($original.StartsWith($generatedRoot, [StringComparison]::OrdinalIgnoreCase)) {
-            $generatedCount++
-            continue
-        }
-        # Resolve the owning repository separately for submodule sources.
-        $owner = Git-Text ([IO.Path]::GetDirectoryName($original)) @('rev-parse', '--show-toplevel')
-        if (-not $repositories.ContainsKey($owner)) {
-            $commit = Git-Text $owner @('rev-parse', 'HEAD')
-            $remote = Git-Text $owner @('config', '--get', 'remote.origin.url')
-            # Never embed credentials or a build-machine-local remote in published PDBs.
-            if ($remote -match '[?#]' -or $remote -notmatch '^(https://[^/@]+/[^\s]+|ssh://(?:git@)?[^/]+/[^\s]+|git@[^:]+:[^\s]+)$') {
-                throw 'Source indexing requires a credential-free HTTPS or SSH origin URL.'
-            }
-            Assert-StreamValue $remote
-            $key = (Get-SourceDigest ([Text.Encoding]::UTF8.GetBytes($remote))).Substring(0, 16)
-            $repositories[$owner] = @{ Commit = $commit; Remote = $remote; Key = $key }
-        }
-        $info = $repositories[$owner]
-        $relative = $original.Substring($owner.Length + 1).Replace('\', '/')
-        Assert-StreamValue $relative
-        # A generated/untracked file or uncommitted change must never point at unrelated HEAD content.
-        $blob = Invoke-SourceGit $owner @('cat-file', 'blob', ($info.Commit + ':' + $relative))
-        $mode = 'raw'
-        if ((Get-SourceDigest $blob $algorithm) -ne $expected.ToLowerInvariant()) {
-            $mode = 'crlf'
-            if ((Get-SourceDigest (Convert-SourceEol $blob $mode) $algorithm) -ne $expected.ToLowerInvariant()) {
-                throw "Build source differs from Git HEAD: $original. Commit changes and rebuild before publishing."
-            }
-        }
-        $entries.Add([pscustomobject]@{ Original = $original; Info = $info; Path = $relative; Eol = $mode; Hash = (Get-SourceDigest $bytes) })
+        $sha = [Security.Cryptography.SHA256]::Create()
+        try { $contentId = [BitConverter]::ToString($sha.ComputeHash($bytes)).Replace('-', '').ToLowerInvariant() }
+        finally { $sha.Dispose() }
+        $name = [IO.Path]::GetFileName($original)
+        $entries.Add([pscustomobject]@{ Original = $original; Hash = $contentId; Name = $name; Bytes = $bytes })
     }
     if ($entries.Count -eq 0) { throw 'No checksum-bearing project sources found. Check RepositoryRoot and PDB debug information.' }
     $validated = $true
 
+    # Validate every file before writing snapshots or changing the PDB.
+    foreach ($entry in $entries) {
+        $directory = Join-Path $sourceStore $entry.Hash
+        [IO.Directory]::CreateDirectory($directory) | Out-Null
+        $target = Join-Path $directory $entry.Name
+        if (Test-Path -LiteralPath $target) {
+            if ((Get-SourceHash $target) -ne $entry.Hash) {
+                throw "Source snapshot is corrupt: $target"
+            }
+        } else {
+            # A unique staging file prevents readers from seeing partial source files.
+            $staging = Join-Path $directory ([Guid]::NewGuid().ToString('N') + '.tmp')
+            try {
+                [IO.File]::WriteAllBytes($staging, $entry.Bytes)
+                try { [IO.File]::Move($staging, $target) }
+                catch {
+                    if (-not (Test-Path -LiteralPath $target) -or
+                        (Get-SourceHash $target) -ne $entry.Hash) { throw }
+                }
+            } finally {
+                if (Test-Path -LiteralPath $staging) { Remove-Item -LiteralPath $staging }
+            }
+        }
+    }
+
+    # Direct file/UNC targets need no command execution, Git checkout, or credentials in PDBs.
     $stream = [Collections.Generic.List[string]]::new()
     $stream.Add('SRCSRV: ini ------------------------------------------------')
-    $stream.Add('VERSION=1')
+    $stream.Add('VERSION=2')
     $stream.Add('INDEXVERSION=2')
-    $stream.Add('VERCTRL=Git')
+    $stream.Add('VERCTRL=HitoriSourceSnapshot')
     $stream.Add('SRCSRV: variables ------------------------------------------')
-    $stream.Add('SRCSRVTRG=%targ%\hitori-git\%var2%\%var4%\%var6%\%fnbksl%(%var5%)')
-    $stream.Add('SRCSRVCMD=%HITORI_GIT_SOURCE_COMMAND%')
-    $stream.Add('SRCSRVENV=HITORI_GIT_DATA=|%var2%|%var3%|%var4%|%var5%|%var6%|%var7%|%srcsrvtrg%')
+    $stream.Add("HITORI_SOURCE_ROOT=$sourceStore")
+    $stream.Add('SRCSRVTRG=%HITORI_SOURCE_ROOT%\%var2%\%var3%')
+    $stream.Add('SRCSRVCMD=')
     $stream.Add('SRCSRV: source files ---------------------------------------')
-    foreach ($entry in $entries) {
-        $stream.Add("$($entry.Original)*$($entry.Info.Key)*$($entry.Info.Remote)*$($entry.Info.Commit)*$($entry.Path)*$($entry.Eol)*$($entry.Hash)")
-    }
+    foreach ($entry in $entries) { $stream.Add("$($entry.Original)*$($entry.Hash)*$($entry.Name)") }
     $stream.Add('SRCSRV: end ------------------------------------------------')
     $temporaryStream = [IO.Path]::GetTempFileName()
     # Native SrcSrv tools use the Windows ANSI code page, not a UTF-8 BOM.
@@ -137,8 +134,11 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Failed to read back PDB srcsrv stream.' }
     if ([IO.File]::ReadAllText($temporaryStream, $encoding) -cne $streamText) { throw 'PDB srcsrv verification failed.' }
     [IO.File]::Copy($temporaryPdb, $pdb, $true)
-    Write-Host "[Source indexing] $($entries.Count) project files; $externalCount external SDK entries, $thirdPartyCount third-party entries, $buildArtifactCount build artifacts and $generatedCount generated files excluded."
-    Write-Host '[Source indexing] Git commit metadata only. Push all indexed commits before distributing this build.'
+    Write-Host "[Source indexing] $($entries.Count) project files; $externalCount external SDK entries, $thirdPartyCount third-party entries and $buildArtifactCount build artifacts excluded."
+    Write-Host "[Source indexing] $sourceStore"
+    if (-not $sourceStore.StartsWith('\\')) {
+        Write-Warning 'Local source store: other PCs need access to this path or a HITORI_SOURCE_ROOT override in srcsrv.ini.'
+    }
 } catch {
     Write-Error $_ -ErrorAction Continue
     if (-not $validated) { exit 2 }
