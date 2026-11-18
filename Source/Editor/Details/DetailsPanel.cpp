@@ -32,6 +32,8 @@
 
 #include "Asset/AssetManager.h"
 #include "Asset/AssetUtils.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemFile.h"
 #include "Render/Material.h"
 #include "Render/Texture2D.h"
 #include "Render/SkeletalMesh.h"
@@ -581,6 +583,64 @@ namespace
 			}
 		}
 		ImGui::EndCombo();
+	}
+
+	// UParticleSystem* 프로퍼티 (PSC::Template 등). 바꾸면 true를 돌려 PostEditChangeProperty로 재초기화를 맡긴다.
+	bool DrawParticleSystemSlot(UParticleSystem** SystemPtr)
+	{
+		static std::vector<FString> Paths;   // .particle 파일 키. 콤보를 열 때마다 다시 훑는다
+		UParticleSystem* Current = *SystemPtr;
+		const FString CurrentPath = UAssetManager::FindParticleSystemPath(Current);
+		const FString CurrentName = !Current ? "None" : (CurrentPath.empty() ? Current->GetName() : GetAssetDisplayName(CurrentPath));
+
+		ImGui::SetNextItemWidth(-1.0f);
+		const bool bOpen = ImGui::BeginCombo("##ParticleSystem", CurrentName.c_str());
+		if (ImGui::IsItemHovered() && !CurrentPath.empty()) ImGui::SetTooltip("%s", CurrentPath.c_str());
+		if (!bOpen) return false;
+
+		if (ImGui::IsWindowAppearing())
+		{
+			Paths.clear();
+			std::error_code Error;
+			std::filesystem::recursive_directory_iterator It("Assets", Error);
+			const std::filesystem::recursive_directory_iterator End;
+			while (!Error && It != End)
+			{
+				if (It->is_regular_file(Error))
+				{
+					const FString Path = FPaths::ToUtf8(It->path());
+					if (ParticleSystemFile::IsParticleSystemPath(Path))
+						Paths.push_back(FAssetUtils::GetAssetKey(Path));
+				}
+				if (!Error) It.increment(Error);
+			}
+			std::sort(Paths.begin(), Paths.end());
+		}
+
+		bool bChanged = false;
+		if (ImGui::Selectable("None", Current == nullptr) && Current)
+		{
+			*SystemPtr = nullptr;
+			bChanged = true;
+		}
+		for (const FString& Path : Paths)
+		{
+			ImGui::PushID(Path.c_str());
+			const bool bSelected = Path == CurrentPath;
+			if (ImGui::Selectable(GetAssetDisplayName(Path).c_str(), bSelected) && !bSelected)
+			{
+				if (UParticleSystem* Picked = UAssetManager::LoadParticleSystem(Path))   // 이미 로드됐으면 같은 객체
+				{
+					*SystemPtr = Picked;
+					bChanged = true;
+				}
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", Path.c_str());
+			if (bSelected) ImGui::SetItemDefaultFocus();
+			ImGui::PopID();
+		}
+		ImGui::EndCombo();
+		return bChanged;
 	}
 
 	void DrawMeshSlot(UObject* Owner, UStaticMesh** StaticMeshPtr)
@@ -1194,6 +1254,10 @@ namespace
 			else if (PropertyClass == UStaticMesh::StaticClass())
 			{
 				DrawMeshSlot(Object, reinterpret_cast<UStaticMesh**>(ObjPtr));
+			}
+			else if (PropertyClass == UParticleSystem::StaticClass())
+			{
+				return DrawParticleSystemSlot(reinterpret_cast<UParticleSystem**>(ObjPtr));
 			}
 			else if (PropertyClass == UTexture2D::StaticClass())
 			{

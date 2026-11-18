@@ -85,10 +85,20 @@ namespace
 		{
 			ImGui::SetCursorScreenPos(ImVec2(Min.x + Width - Height * 2.0f - 2.0f, Min.y));
 			ImGui::PushID(Id);
-			ImGui::PushStyleColor(ImGuiCol_Button, *bCurveOn ? IM_COL32(60, 170, 70, 255) : IM_COL32(0, 0, 0, 60));
-			Result.bCurveClicked = ImGui::Button("~##Curve", ImVec2(Height, Height));
-			ImGui::PopStyleColor();
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Show in Curve Editor");
+			// Cascade의 커브 버튼: 작은 그래프 상자 안에 곡선. 켜져 있으면 초록 바탕
+			const ImVec2 BMin = ImGui::GetCursorScreenPos();
+			Result.bCurveClicked = ImGui::InvisibleButton("##Curve", ImVec2(Height, Height));
+			const bool bHov = ImGui::IsItemHovered();
+			const float Pad = Height * 0.18f;
+			const ImVec2 A(BMin.x + Pad, BMin.y + Pad), B(BMin.x + Height - Pad, BMin.y + Height - Pad);
+			const ImU32 BoxBg = *bCurveOn ? IM_COL32(60, 170, 70, 255) : bHov ? IM_COL32(0, 0, 0, 110) : IM_COL32(0, 0, 0, 70);
+			const ImU32 Line = *bCurveOn || bHov ? IM_COL32(255, 255, 255, 255) : IM_COL32(200, 200, 205, 200);
+			DrawList->AddRectFilled(A, B, BoxBg, 2.0f);
+			DrawList->AddRect(A, B, Line, 2.0f, 0, 1.0f);
+			const float W = B.x - A.x, H = B.y - A.y;
+			DrawList->AddBezierCubic(ImVec2(A.x + W * 0.12f, A.y + H * 0.8f), ImVec2(A.x + W * 0.45f, A.y + H * 0.85f),
+				ImVec2(A.x + W * 0.5f, A.y + H * 0.15f), ImVec2(A.x + W * 0.88f, A.y + H * 0.22f), Line, 1.4f);
+			if (bHov) ImGui::SetTooltip("Show in Curve Editor");
 			ImGui::PopID();
 		}
 

@@ -28,6 +28,7 @@ struct FRenderPacket
 	UMaterial* Material = nullptr;
 	const void* MaterialParamData = nullptr;
 	float CameraToParticleDistance = 0.0f;
+	int16 TranslucencySortPriority = 0;   // 클수록 나중에 그린다
 	uint32 MaterialParamDataSize = 0;
 	uint32 StartIndex = 0;
 	uint32 IndexCount = 0; // 0이면 인덱스 버퍼 전체를 사용한다
@@ -114,9 +115,9 @@ class FRenderQueue : public TArray<FRenderPacket>
 		if (Packet.Material->PSOType != EPSOType::StaticMesh_Opaque)
 		{
 			const uint64 DistanceBits = static_cast<uint64>(std::bit_cast<uint32>(Packet.CameraToParticleDistance));
-			return (1ull << 63) | (~DistanceBits & 0xFFFFFFFFull);
+			const uint64 PriorityBits = static_cast<uint16>(static_cast<int32>(Packet.TranslucencySortPriority) + 32768);
+			return (1ull << 63) | (PriorityBits << 32) | (~DistanceBits & 0xFFFFFFFFull);
 		}
-
 		const uint64 MeshKey = Packet.Mesh ? Packet.Mesh->SortID : 0xFFFFu;
 		return (static_cast<uint64>(Packet.Material->SortID) << 47)
 			| (static_cast<uint64>(MeshKey) << 31)
@@ -186,10 +187,10 @@ public:
 			SortItems.Add({ MakeSortKey(Packet), Index });
 		}
 
-		std::sort(SortItems.begin(), SortItems.end(), [](const FSortItem& A, const FSortItem& B)
-		{
-			return A.Key < B.Key;
-		});
+		std::stable_sort(SortItems.begin(), SortItems.end(), [](const FSortItem& A, const FSortItem& B)
+			{
+				return A.Key < B.Key;
+			});
 
 		FirstTranslucentIndex = 0;
 		while (FirstTranslucentIndex < static_cast<uint32>(SortItems.Num()) && !(SortItems[FirstTranslucentIndex].Key >> 63))

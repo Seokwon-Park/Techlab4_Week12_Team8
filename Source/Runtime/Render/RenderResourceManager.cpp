@@ -51,6 +51,8 @@ constexpr FPipelineTableEntry PipelineTable[] =
 	{ EPSOType::DecalAdditive,	"Resources/Shader/DecalShader.hlsl",			EPrimitiveTopology::TriangleList,		ERasterizerState::SolidBack, EBlendState::Additive, EDepthStencilState::ReadOnly },
 	{ EPSOType::ParticleSprite_AlphaBlend, "Resources/Shader/ParticleSpriteShader.hlsl", EPrimitiveTopology::TriangleList, ERasterizerState::SolidNone, EBlendState::AlphaBlend, EDepthStencilState::ReadOnly },
 	{ EPSOType::ParticleSprite_Additive,   "Resources/Shader/ParticleSpriteShader.hlsl", EPrimitiveTopology::TriangleList, ERasterizerState::SolidNone, EBlendState::Additive,   EDepthStencilState::ReadOnly },
+	{ EPSOType::ParticleTrail_AlphaBlend, "Resources/Shader/ParticleTrailShader.hlsl", EPrimitiveTopology::TriangleList, ERasterizerState::SolidNone, EBlendState::AlphaBlend, EDepthStencilState::ReadOnly },
+	{ EPSOType::ParticleTrail_Additive,   "Resources/Shader/ParticleTrailShader.hlsl", EPrimitiveTopology::TriangleList, ERasterizerState::SolidNone, EBlendState::Additive,   EDepthStencilState::ReadOnly },
 };
 
 static_assert(sizeof(PipelineTable) / sizeof(PipelineTable[0]) == static_cast<size_t>(EPSOType::Count));

@@ -11,6 +11,7 @@
 #include "Particles/ParticleLODLevel.h"
 #include "Particles/ParticleModuleRequired.h"
 #include "Particles/Spawn/ParticleModuleSpawn.h"
+#include "Particles/SubUV/ParticleModuleSubUV.h"
 #include "Particles/TypeData/ParticleModuleTypeDataBase.h"
 #include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
 
@@ -167,6 +168,17 @@ void FParticleEmitterInstance::Init()
 	PayloadOffset = sizeof(FBaseParticle);
 	TypeDataOffset = SpriteTemplate->TypeDataOffset;
 	TypeDataInstanceOffset = SpriteTemplate->TypeDataInstanceOffset;
+
+	// SubUV 모듈이 켜져 있으면 그 페이로드(맨 앞 float = 칸 번호) 위치를 렌더러에 넘긴다. 없으면 0 → 항상 0번 칸
+	SubUVDataOffset = 0;
+	for (UParticleModule* Module : CurrentLODLevel->Modules)
+	{
+		if (Module && Module->bEnabled && Module->IsA(UParticleModuleSubUV::StaticClass()))
+		{
+			SubUVDataOffset = static_cast<int32>(GetModuleDataOffset(Module));
+			break;
+		}
+	}
 	UParticleModuleRequired* Required = CurrentLODLevel->RequiredModule;
 	CurrentMaterial = Required->Material;
 	SortMode = Required->SortMode;
@@ -637,4 +649,81 @@ bool FParticleMeshEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBase&
 	Data.bUseGPUInstancing = TypeData && TypeData->bUseGPUInstancing;
 	Data.MaxDrawCount = ActiveParticles;
 	return true;
+}
+
+#include "Particles/TypeData/ParticleModuleTypeDataBeam.h"    // 파일 위 include 목록
+#include "Particles/TypeData/ParticleModuleTypeDataRibbon.h"
+
+/*-----------------------------------------------------------------------------
+	Beam
+-----------------------------------------------------------------------------*/
+bool FParticleBeamEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBase& OutData)
+{
+	if (!FParticleSpriteEmitterInstance::FillReplayData(OutData)) return false;   // 메모리 복사 + 머티리얼 등
+	OutData.eEmitterType = DET_Beam;
+
+	FDynamicBeamEmitterReplayData& Data = static_cast<FDynamicBeamEmitterReplayData&>(OutData);
+	const UParticleModuleTypeDataBeam* Beam = static_cast<const UParticleModuleTypeDataBeam*>(CurrentLODLevel->TypeDataModule);
+	if (!Beam) return false;
+	Data.TargetOffset = Beam->TargetOffset;
+	Data.Segments = Beam->Segments;
+	Data.NoiseAmplitude = Beam->NoiseAmplitude;
+	Data.NoiseFrequency = Beam->NoiseFrequency;
+	Data.NoiseSpeed = Beam->NoiseSpeed;
+	Data.TextureTile = Beam->TextureTile;
+	Data.EmitterTime = SecondsSinceCreation;
+	return true;
+}
+
+FDynamicEmitterReplayDataBase* FParticleBeamEmitterInstance::GetReplayData()
+{
+	FDynamicBeamEmitterReplayData* NewData = new FDynamicBeamEmitterReplayData();
+	if (!FillReplayData(*NewData)) { delete NewData; return nullptr; }
+	return NewData;
+}
+
+FDynamicEmitterDataBase* FParticleBeamEmitterInstance::GetDynamicData(bool bSelected)
+{
+	UParticleLODLevel* LOD = CurrentLODLevel;
+	if (!LOD || !LOD->bEnabled || !LOD->RequiredModule || ActiveParticles <= 0) return nullptr;
+
+	FDynamicBeamEmitterData* NewData = new FDynamicBeamEmitterData(LOD->RequiredModule);
+	if (!FillReplayData(NewData->Source)) { delete NewData; return nullptr; }
+	NewData->Init(bSelected);
+	return NewData;
+}
+
+/*-----------------------------------------------------------------------------
+	Ribbon
+-----------------------------------------------------------------------------*/
+bool FParticleRibbonEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBase& OutData)
+{
+	if (!FParticleSpriteEmitterInstance::FillReplayData(OutData)) return false;
+	OutData.eEmitterType = DET_Ribbon;
+
+	FDynamicRibbonEmitterReplayData& Data = static_cast<FDynamicRibbonEmitterReplayData&>(OutData);
+	const UParticleModuleTypeDataRibbon* Ribbon = static_cast<const UParticleModuleTypeDataRibbon*>(CurrentLODLevel->TypeDataModule);
+	if (!Ribbon) return false;
+	Data.TilingDistance = Ribbon->TilingDistance;
+	Data.bConnectToSource = Ribbon->bConnectToSource;
+	Data.SourceLocation = Location;   // Tick이 매 프레임 컴포넌트 월드 위치로 갱신한다
+	return true;
+}
+
+FDynamicEmitterReplayDataBase* FParticleRibbonEmitterInstance::GetReplayData()
+{
+	FDynamicRibbonEmitterReplayData* NewData = new FDynamicRibbonEmitterReplayData();
+	if (!FillReplayData(*NewData)) { delete NewData; return nullptr; }
+	return NewData;
+}
+
+FDynamicEmitterDataBase* FParticleRibbonEmitterInstance::GetDynamicData(bool bSelected)
+{
+	UParticleLODLevel* LOD = CurrentLODLevel;
+	if (!LOD || !LOD->bEnabled || !LOD->RequiredModule || ActiveParticles <= 0) return nullptr;
+
+	FDynamicRibbonEmitterData* NewData = new FDynamicRibbonEmitterData(LOD->RequiredModule);
+	if (!FillReplayData(NewData->Source)) { delete NewData; return nullptr; }
+	NewData->Init(bSelected);
+	return NewData;
 }

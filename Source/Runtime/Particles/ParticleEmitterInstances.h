@@ -207,3 +207,18 @@ struct FParticleMeshEmitterInstance : public FParticleEmitterInstance
 	virtual FDynamicEmitterReplayDataBase* GetReplayData() override;
 	virtual bool FillReplayData( FDynamicEmitterReplayDataBase& OutData ) override;
 };
+
+
+struct FParticleBeamEmitterInstance : public FParticleSpriteEmitterInstance
+{
+	virtual FDynamicEmitterDataBase* GetDynamicData(bool bSelected) override;
+	virtual FDynamicEmitterReplayDataBase* GetReplayData() override;
+	virtual bool FillReplayData(FDynamicEmitterReplayDataBase& OutData) override;
+};
+
+struct FParticleRibbonEmitterInstance : public FParticleSpriteEmitterInstance
+{
+	virtual FDynamicEmitterDataBase* GetDynamicData(bool bSelected) override;
+	virtual FDynamicEmitterReplayDataBase* GetReplayData() override;
+	virtual bool FillReplayData(FDynamicEmitterReplayDataBase& OutData) override;
+};

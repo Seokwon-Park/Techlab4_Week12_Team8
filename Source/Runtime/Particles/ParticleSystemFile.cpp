@@ -109,12 +109,14 @@ UParticleEmitter* ParticleSystemFile::CreateDefaultEmitter()
 
 	UParticleModuleRequired* Required = NewObject<UParticleModuleRequired>();
 	Required->Texture = UAssetManager::GetAssetByPath<UTexture2D>("Engine/SubUV/StarParticle.png");
+	Required->SubImagesHorizontal = 8;    // StarParticle.png는 8 × 8 칸 스프라이트 시트
+	Required->SubImagesVertical = 8;
 	LOD->RequiredModule = Required;
 
 	// 2번 모듈이 있으면 UE 기본 이미터처럼 붙인다. 이름은 2번과 맞춘다. 없는 클래스는 건너뛴다
 	const char* DefaultModules[] = {
 		"UParticleModuleSpawn", "UParticleModuleLifetime", "UParticleModuleSize",
-		"UParticleModuleVelocity", "UParticleModuleColor",
+		"UParticleModuleVelocity", "UParticleModuleColor", "UParticleModuleSubUV",
 	};
 	for (const char* Name : DefaultModules)
 	{

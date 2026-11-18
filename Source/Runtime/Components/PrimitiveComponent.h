@@ -104,6 +104,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	bool bBlockComponent = false;
 
+	UPROPERTY(EditAnywhere)
+	int32 TranslucencySortPriority = 0;
+
 	bool IsOverlappingComponent(const UPrimitiveComponent* Other) const;
 	const TArray<FOverlapInfo>& GetOverlapInfos() const { return OverlapInfos; }
 

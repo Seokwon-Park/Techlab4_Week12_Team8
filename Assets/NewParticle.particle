@@ -122,14 +122,14 @@
                                             "Z": 1.0
                                         },
                                         "CurveEnd": {
-                                            "X": 0.0,
-                                            "Y": 0.0,
-                                            "Z": 0.0
+                                            "X": 2.0,
+                                            "Y": 2.0,
+                                            "Z": 2.0
                                         },
                                         "CurveStart": {
-                                            "X": 0.0,
-                                            "Y": 0.0,
-                                            "Z": 0.0
+                                            "X": 1.0,
+                                            "Y": 1.0,
+                                            "Z": 1.0
                                         },
                                         "LockedAxes": "EDVLF_None",
                                         "Max": {
@@ -161,16 +161,8 @@
                                             "Auto": true,
                                             "Leave": 0.0,
                                             "Mode": 2,
-                                            "T": 0.0,
-                                            "V": 3.0
-                                        },
-                                        {
-                                            "Arrive": 0.0,
-                                            "Auto": true,
-                                            "Leave": 0.0,
-                                            "Mode": 2,
-                                            "T": 0.5562664270401001,
-                                            "V": 1.1757720708847046
+                                            "T": -0.00022624805569648743,
+                                            "V": -0.01967206597328186
                                         }
                                     ],
                                     "Y": [
@@ -179,16 +171,8 @@
                                             "Auto": true,
                                             "Leave": 0.0,
                                             "Mode": 2,
-                                            "T": 0.0,
-                                            "V": 0.0
-                                        },
-                                        {
-                                            "Arrive": 0.0,
-                                            "Auto": true,
-                                            "Leave": 0.0,
-                                            "Mode": 2,
-                                            "T": 1.0,
-                                            "V": 0.0
+                                            "T": 0.0005691945552825928,
+                                            "V": -0.019672095775604248
                                         }
                                     ],
                                     "Z": [
@@ -197,16 +181,16 @@
                                             "Auto": true,
                                             "Leave": 0.0,
                                             "Mode": 2,
-                                            "T": 0.6369113326072693,
-                                            "V": 3.643065929412842
+                                            "T": 0.0005094483494758606,
+                                            "V": 0.2601134777069092
                                         },
                                         {
                                             "Arrive": 0.0,
-                                            "Auto": true,
+                                            "Auto": false,
                                             "Leave": 0.0,
                                             "Mode": 2,
-                                            "T": 1.0,
-                                            "V": 0.0
+                                            "T": 0.4882776141166687,
+                                            "V": 1.4495446681976318
                                         }
                                     ]
                                 }
@@ -231,19 +215,19 @@
                                         },
                                         "LockedAxes": "EDVLF_None",
                                         "Max": {
-                                            "X": 5.0,
-                                            "Y": 0.0,
-                                            "Z": 0.0
+                                            "X": 1.0,
+                                            "Y": 1.0,
+                                            "Z": 1.0
                                         },
                                         "Min": {
-                                            "X": 1.0,
-                                            "Y": 0.0,
-                                            "Z": 0.0
+                                            "X": -1.0,
+                                            "Y": -1.0,
+                                            "Z": -1.0
                                         },
                                         "MirrorX": "EDVMF_Different",
                                         "MirrorY": "EDVMF_Different",
                                         "MirrorZ": "EDVMF_Different",
-                                        "Type": "Curve"
+                                        "Type": "Uniform"
                                     },
                                     "bEnabled": true
                                 }
@@ -299,6 +283,18 @@
                                     "bEnabled": true
                                 }
                             }
+                        },
+                        {
+                            "Class": "UParticleModuleSubUV",
+                            "Curves": {},
+                            "Object": {
+                                "Properties": {
+                                    "FramesPerSecond": 60.0,
+                                    "Mode": "FrameRate",
+                                    "bEnabled": true,
+                                    "bRandomStartFrame": false
+                                }
+                            }
                         }
                     ],
                     "Properties": {},
@@ -311,8 +307,8 @@
                                 "EmitterLoops": 0,
                                 "Material": null,
                                 "SortMode": 0,
-                                "SubImagesHorizontal": 1,
-                                "SubImagesVertical": 1,
+                                "SubImagesHorizontal": 8,
+                                "SubImagesVertical": 8,
                                 "Texture": "WhiteTexture",
                                 "bAdditive": true,
                                 "bEnabled": true,
@@ -321,7 +317,15 @@
                         }
                     },
                     "TypeData": {
-                        "Class": ""
+                        "Class": "UParticleModuleTypeDataRibbon",
+                        "Curves": {},
+                        "Object": {
+                            "Properties": {
+                                "TilingDistance": 1.0,
+                                "bConnectToSource": true,
+                                "bEnabled": true
+                            }
+                        }
                     }
                 }
             ],

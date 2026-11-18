@@ -220,6 +220,14 @@ struct FMeshParticleInstanceVertex
 	}
 };
 
+struct FParticleTrailVertex
+{
+	FVector      Position;   // 월드
+	FVector2     UV;         // U: 띠 길이 방향, V: 0 = 한쪽 가장자리, 1 = 반대쪽
+	FLinearColor Color;
+};
+static_assert(sizeof(FParticleTrailVertex) == 36, "ParticleTrailShader.hlsl VS_INPUT과 맞춘다");
+
 // SortSpriteParticles()의 결과 한 칸
 struct FParticleOrder
 {
@@ -259,7 +267,7 @@ enum EDynamicEmitterType
 	DET_Unknown = 0,
 	DET_Sprite,
 	DET_Mesh,
-	DET_Beam2,
+	DET_Beam,   // UE는 DET_Beam2 (폐기된 첫 빔 TypeData의 흔적). 이 엔진은 빔이 하나라 숫자를 뺐다
 	DET_Ribbon,
 	DET_AnimTrail,
 	DET_Custom
@@ -515,4 +523,52 @@ struct FDynamicMeshEmitterData : public FDynamicSpriteEmitterDataBase
 	FDynamicMeshEmitterReplayData Source;
 
 	UStaticMesh* StaticMesh;
+};
+
+/** Source data for Beam emitters. 파티클 하나 = 빔 한 줄 */
+struct FDynamicBeamEmitterReplayData : public FDynamicSpriteEmitterReplayDataBase
+{
+	FVector TargetOffset = FVector(5.0f, 0.0f, 0.0f);   // 시작점(파티클 위치)에서 목표점까지
+	int32   Segments = 16;                          // 빔을 몇 마디로 나눌지
+	float   NoiseAmplitude = 0.0f;                        // 출렁임 크기 (월드 단위)
+	float   NoiseFrequency = 3.0f;                        // 빔 한 줄에 들어가는 출렁임 수
+	float   NoiseSpeed = 10.0f;                       // 출렁임이 흐르는 속도
+	float   TextureTile = 1.0f;                        // 빔 한 줄에 텍스처 반복 횟수
+	float   EmitterTime = 0.0f;                        // 노이즈 애니메이션 시간
+};
+
+/** Source data for Ribbon emitters. 파티클 하나 = 띠 위의 점 하나 */
+struct FDynamicRibbonEmitterReplayData : public FDynamicSpriteEmitterReplayDataBase
+{
+	float   TilingDistance = 0.0f;    // > 0: 이 거리마다 텍스처 1번. 0: 띠 전체에 1번
+	bool    bConnectToSource = true;    // 머리를 지금 이미터 위치까지 잇는다 (꼬리가 늦게 따라오지 않게)
+	FVector SourceLocation;             // 이미터의 현재 월드 위치
+};
+
+struct FDynamicBeamEmitterData : public FDynamicSpriteEmitterDataBase
+{
+	FDynamicBeamEmitterData(const UParticleModuleRequired* RequiredModule)
+		: FDynamicSpriteEmitterDataBase(RequiredModule) {
+	}
+
+	void Init(bool bInSelected);   // 구현: ParticleSystemRender.cpp
+	virtual int32 GetDynamicVertexStride() const override { return sizeof(FParticleTrailVertex); }
+	virtual const FDynamicSpriteEmitterReplayDataBase* GetSourceData() const override { return &Source; }
+	virtual const FDynamicEmitterReplayDataBase& GetSource() const override { return Source; }
+
+	FDynamicBeamEmitterReplayData Source;
+};
+
+struct FDynamicRibbonEmitterData : public FDynamicSpriteEmitterDataBase
+{
+	FDynamicRibbonEmitterData(const UParticleModuleRequired* RequiredModule)
+		: FDynamicSpriteEmitterDataBase(RequiredModule) {
+	}
+
+	void Init(bool bInSelected);
+	virtual int32 GetDynamicVertexStride() const override { return sizeof(FParticleTrailVertex); }
+	virtual const FDynamicSpriteEmitterReplayDataBase* GetSourceData() const override { return &Source; }
+	virtual const FDynamicEmitterReplayDataBase& GetSource() const override { return Source; }
+
+	FDynamicRibbonEmitterReplayData Source;
 };

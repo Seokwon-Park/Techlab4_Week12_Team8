@@ -868,3 +868,13 @@ UParticleSystem* UAssetManager::LoadParticleSystem(const FString& Path)
 	Get().ParticleSystemMap.FindOrAdd(Key) = System;
 	return System;
 }
+
+FString UAssetManager::FindParticleSystemPath(const UParticleSystem* System)
+{
+	if (!System) return FString();
+	for (const auto& [Key, Loaded] : Get().ParticleSystemMap)
+	{
+		if (Loaded == System) return Key;
+	}
+	return FString();
+}

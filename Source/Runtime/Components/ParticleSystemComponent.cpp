@@ -37,7 +37,7 @@ namespace
 			FBaseParticle& P = *reinterpret_cast<FBaseParticle*>(Slot);
 
 			const float A = static_cast<float>(i) / Count * 6.2831853f + Time;
-			P.Location = FVector(std::cos(A) * 3.0f, std::sin(A) * 3.0f, 1.0f + 0.5f * std::sin(A * 3.0f));
+			P.Location = FVector(std::cos(A) * 3.0f, std::sin(A) * 3.0f, 5.0f + 0.5f * std::sin(A * 3.0f));   // 나선·빔 위쪽
 			P.OldLocation = P.Location;
 			P.Size = FVector(0.6f);
 			P.Rotation = A;
@@ -51,6 +51,76 @@ namespace
 		return Data;
 	}
 
+	// 테스트용 파티클 칸 하나를 0으로 비우고 돌려준다
+	FBaseParticle& TestParticleAt(FDynamicSpriteEmitterReplayDataBase& Src, int32 Slot)
+	{
+		uint8* Base = Src.DataContainer.ParticleData + Slot * Src.ParticleStride;
+		std::memset(Base, 0, Src.ParticleStride);
+		return *reinterpret_cast<FBaseParticle*>(Base);
+	}
+
+	void AllocTestParticles(FDynamicSpriteEmitterReplayDataBase& Src, UMaterial* Material, int32 Count)
+	{
+		Src.ActiveParticleCount = Count;
+		Src.ParticleStride = AlignParticleBytes(sizeof(FBaseParticle));
+		Src.MaterialInterface = Material;
+		Src.bUseLocalSpace = true;   // 컴포넌트를 옮기면 같이 따라온다
+		Src.DataContainer.Alloc(Count * Src.ParticleStride, Count);
+	}
+
+	// Ribbon 정답 모양: 바깥·아래(오래된 점, 흐림)에서 안쪽·위(새 점, 진함)로 감기는 나선. 천천히 돈다.
+	// 스폰 번호(Flags)로 순서를 정하는지 보려고 인덱스 배열은 일부러 섞는다 (홀수 칸 먼저, 짝수 칸 나중).
+	FDynamicRibbonEmitterData* MakeTestRibbonData(UMaterial* Material, float Time)
+	{
+		constexpr int32 Count = 160;
+		FDynamicRibbonEmitterData* Data = new FDynamicRibbonEmitterData(nullptr);
+		FDynamicRibbonEmitterReplayData& Src = Data->Source;
+		Src.eEmitterType = DET_Ribbon;
+		Src.bConnectToSource = false;
+		AllocTestParticles(Src, Material, Count);
+
+		for (int32 i = 0; i < Count; ++i)
+		{
+			const float T = static_cast<float>(i) / (Count - 1);          // 0 = 가장 오래된 점, 1 = 가장 새 점
+			const float Angle = T * 3.0f * 6.2831853f + Time * 1.5f;      // 세 바퀴
+			const float Radius = 3.0f - 2.2f * T;
+			FBaseParticle& P = TestParticleAt(Src, i);
+			P.Location = FVector(std::cos(Angle) * Radius, std::sin(Angle) * Radius, 0.2f + 1.6f * T);
+			P.OldLocation = P.Location;
+			P.Size = FVector(0.18f);
+			P.Color = FLinearColor(0.65f, 0.35f, 1.0f, 0.1f + 0.9f * T);  // 꼬리로 갈수록 투명
+			P.Flags = i & STATE_CounterMask;                              // 스폰 순번
+		}
+		int32 Write = 0;
+		for (int32 i = 1; i < Count; i += 2) Src.DataContainer.ParticleIndices[Write++] = static_cast<uint16>(i);
+		for (int32 i = 0; i < Count; i += 2) Src.DataContainer.ParticleIndices[Write++] = static_cast<uint16>(i);
+
+		Data->Init(false);
+		return Data;
+	}
+
+	// Beam 정답 모양: (-2.5,0,1)에서 (2.5,0,1)까지 가는 가는 선. 양 끝은 고정, 가운데만 흔들린다.
+	FDynamicBeamEmitterData* MakeTestBeamData(UMaterial* Material, float Time)
+	{
+		FDynamicBeamEmitterData* Data = new FDynamicBeamEmitterData(nullptr);
+		FDynamicBeamEmitterReplayData& Src = Data->Source;
+		Src.eEmitterType = DET_Beam;
+		AllocTestParticles(Src, Material, 1);
+		Src.TargetOffset = FVector(5.0f, 0.0f, 0.0f);
+		Src.Segments = 32;
+		Src.NoiseAmplitude = 0.25f;
+		Src.EmitterTime = Time;
+
+		FBaseParticle& P = TestParticleAt(Src, 0);
+		P.Location = FVector(-2.5f, 0.0f, 3.0f);
+		P.OldLocation = P.Location;
+		P.Size = FVector(0.08f);
+		P.Color = FLinearColor(0.6f, 0.85f, 1.0f, 1.0f);
+		Src.DataContainer.ParticleIndices[0] = 0;
+
+		Data->Init(false);
+		return Data;
+	}
 }
 
 UParticleSystemComponent::UParticleSystemComponent()
@@ -63,6 +133,8 @@ UParticleSystemComponent::UParticleSystemComponent()
 UParticleSystemComponent::~UParticleSystemComponent()
 {
 	ResetParticles();
+	ClearDynamicData();
+	delete RenderTestMaterial;   // 테스트 데이터용 사본 (SubUV 컴포넌트와 같은 방식)
 }
 
 void UParticleSystemComponent::SetTemplate(UParticleSystem* NewTemplate)
@@ -269,6 +341,40 @@ void UParticleSystemComponent::TickComponent(float DeltaTime)
 	{
 		return;
 	}
+
+	////////////////////파티클 테스팅 용 코드(지워도 됨)
+	// 에디터 툴바의 Test Data: 시뮬레이션 대신 정답 모양을 아는 렌더 데이터를 그린다
+	//   이미터 0 = Sprite 고리 (z=5), 1 = Ribbon 나선 (z 0.2~1.8), 2 = Beam 선 (z=3)
+	if (bUseRenderTestData)
+	{
+		if (!RenderTestMaterial)
+		{
+			UMaterial* Base = UAssetManager::GetAssetByPath<UMaterial>("SubUVMaterial");   // 텍스처: StarParticle.png
+			RenderTestMaterial = UMaterial::CreateInstance(Base);
+			if (RenderTestMaterial)
+			{
+				RenderTestMaterial->Textures = { UAssetManager::GetAssetByPath<UTexture2D>("WhiteTexture") };   // 띠가 텍스처 모양에 가려지지 않게
+				RenderTestMaterial->PSOType = EPSOType::ParticleSprite_AlphaBlend;   // 띠는 프록시가 Trail PSO로 바꾼다
+				RenderTestMaterial->SamplerState = ESamplerState::LinearClamp;
+			}
+		}
+		RenderTestTime += DeltaTime;
+		ClearDynamicData();
+		if (RenderTestMaterial)
+		{
+			FDynamicEmitterDataBase* Test[] = {
+				MakeTestSpriteData(RenderTestMaterial, 32, RenderTestTime),
+				MakeTestRibbonData(RenderTestMaterial, RenderTestTime),
+				MakeTestBeamData(RenderTestMaterial, RenderTestTime) };
+			for (int32 i = 0; i < 3; ++i)
+			{
+				Test[i]->EmitterIndex = i;
+				EmitterRenderData.Add(Test[i]);
+			}
+		}
+		return;
+	}
+	////////////////////파티클 테스팅 용 코드(지워도 됨)
 	// 에디터 월드는 BeginPlay 없이 직접 TickComponent를 호출한다.
 	if (!HasBegunPlay() && !bWasCompleted && EmitterInstances.IsEmpty() && IsAutoActivate() && Template)
 	{
